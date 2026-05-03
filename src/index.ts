@@ -1,6 +1,9 @@
 console.log('Tools loaded.');
 
-const tools = [{ name: 'MP3 Splitter', path: 'mp3-splitter.html' }];
+const tools = [
+  { name: 'MP3 Splitter', path: 'mp3-splitter.html' },
+  { name: 'PDF Merger', path: 'pdf-merger.html' },
+];
 
 const list = document.getElementById('tools-list');
 if (!(list instanceof HTMLUListElement))

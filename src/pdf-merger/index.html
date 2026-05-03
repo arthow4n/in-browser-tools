@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>PDF Merger</title>
+  </head>
+  <body>
+    <h1>PDF Merger</h1>
+    <div>
+      <label for="pdf-files">Upload PDF files:</label>
+      <input type="file" id="pdf-files" accept="application/pdf" multiple />
+    </div>
+    <div style="margin-top: 1em">
+      <ul id="file-list"></ul>
+    </div>
+    <button id="merge-btn" style="margin-top: 1em">Merge PDFs</button>
+
+    <div id="status" style="margin-top: 1em"></div>
+    <div id="output" style="margin-top: 1em"></div>
+  </body>
+</html>
