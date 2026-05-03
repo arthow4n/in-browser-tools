@@ -1,5 +1,9 @@
 # Guide for coding agents
 
+## To intepret the task
+
+The tool you are asked to make might not be well thought through or not really doable in purely in-browser. If the tool can't really be made purely in-browser, you should tell the user that the tool can't be made in browser and why.
+
 ## How to work in this repo
 
 - This web app is very small and everything fits into the context window. Prefer to aggressively read everything and build a full understanding of the repo before you make any plan or edit.
@@ -18,12 +22,16 @@ You may use/build WASM dependencies if needed for performance.
 
 Dependencies should be bundled with the bundler.
 
+## Styling
+
+Keep everything simple, but leave some spacing between elements, so they are clickable in mobile.
+
 ## Pre-push checks
 
 You MUST run the pre-push checks and fix any issues raised during the pre-push checks, since any failure is directly caused by your changes.
 
 - `npm run build` to confirm the build works and type check passes.
-- `npm run format` to format the code.
+- `npm run format` to format the code. This formats all the files including Markdown and YAML.
 - `npm run test` and ensure they pass. These tests act as living documents of the expected features, you should add tests or update the existing tests if you are making changes. Double check if the tests cover your changes.
 
 ## Coding conventions
