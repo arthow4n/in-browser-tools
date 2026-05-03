@@ -5,6 +5,7 @@ export default defineConfig({
     entry: {
       index: './src/index.ts',
       'mp3-splitter': './src/mp3-splitter/index.ts',
+      'pdf-merger': './src/pdf-merger/index.ts',
     },
   },
   html: {
