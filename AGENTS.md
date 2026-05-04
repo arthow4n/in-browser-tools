@@ -1,5 +1,9 @@
 # Guide for coding agents
 
+## To find improvements in this repo
+
+If you are findng improvements in this repo, try focus more on finding concrete new tool ideas instead of improving the existing tool.
+
 ## To intepret the task
 
 The tool you are asked to make might not be well thought through or not really doable in purely in-browser. If the tool can't really be made purely in-browser, you should tell the user that the tool can't be made in browser and why.
