@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Google Drive POC</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        line-height: 1.6;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      textarea {
+        width: 100%;
+        height: 150px;
+        margin-bottom: 10px;
+      }
+      .instructions {
+        background: #f4f4f4;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+      }
+      .setup-input {
+        margin-bottom: 20px;
+      }
+      .setup-input input {
+        width: 300px;
+        padding: 5px;
+      }
+      button {
+        padding: 10px 15px;
+        margin-right: 10px;
+        cursor: pointer;
+      }
+      #status {
+        margin-top: 15px;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Google Drive Save/Load POC</h1>
+
+    <div class="instructions">
+      <h3>Setup Instructions</h3>
+      <p>To use this POC, you need to configure a Google Cloud Project:</p>
+      <ol>
+        <li>Go to the <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a>.</li>
+        <li>Create a new project or select an existing one.</li>
+        <li>Enable the <strong>Google Drive API</strong> in "APIs & Services" > "Library".</li>
+        <li>Go to "APIs & Services" > "Credentials".</li>
+        <li>Click "Create Credentials" > "OAuth client ID".</li>
+        <li>Choose "Web application" as the Application type.</li>
+        <li>Under "Authorized JavaScript origins", add the URL of this page (e.g., <code>http://localhost:3000</code> or your deployed URL).</li>
+        <li>Click "Create" and copy your <strong>Client ID</strong>.</li>
+      </ol>
+    </div>
+
+    <div class="setup-input">
+      <label for="clientId"><strong>Enter your Client ID:</strong></label><br/>
+      <input type="text" id="clientId" placeholder="YOUR_CLIENT_ID.apps.googleusercontent.com" />
+      <button id="authBtn">Authorize / Initialize</button>
+      <button id="signoutBtn" style="display: none;">Sign Out</button>
+    </div>
+
+    <div>
+      <h3>Data to Save/Load</h3>
+      <textarea id="dataInput" placeholder="Enter text here..."></textarea>
+      <br/>
+      <button id="saveBtn" disabled>Save to Drive</button>
+      <button id="loadBtn" disabled>Load from Drive</button>
+    </div>
+
+    <div id="status"></div>
+
+    <script async defer src="https://apis.google.com/js/api.js"></script>
+    <script async defer src="https://accounts.google.com/gsi/client"></script>
+  </body>
+</html>

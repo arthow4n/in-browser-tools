@@ -3,6 +3,7 @@ console.log('Tools loaded.');
 const tools = [
   { name: 'MP3 Splitter', path: 'mp3-splitter.html' },
   { name: 'PDF Merger', path: 'pdf-merger.html' },
+  { name: 'Google Drive POC', path: 'google-drive-poc.html' },
 ];
 
 const list = document.getElementById('tools-list');
