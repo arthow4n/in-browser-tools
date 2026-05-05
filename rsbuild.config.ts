@@ -6,6 +6,7 @@ export default defineConfig({
       index: './src/index.ts',
       'mp3-splitter': './src/mp3-splitter/index.ts',
       'pdf-merger': './src/pdf-merger/index.ts',
+      'google-drive-poc': './src/google-drive-poc/index.ts',
     },
   },
   html: {
