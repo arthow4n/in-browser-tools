@@ -7,6 +7,7 @@ export default defineConfig({
       'mp3-splitter': './src/mp3-splitter/index.ts',
       'pdf-merger': './src/pdf-merger/index.ts',
       'google-drive-poc': './src/google-drive-poc/index.ts',
+      'llm-chat': './src/llm-chat/index.ts',
     },
   },
   html: {

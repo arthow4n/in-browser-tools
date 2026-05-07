@@ -1,4 +1,5 @@
-const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
+const DISCOVERY_DOC =
+  'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
 const SCOPES = 'https://www.googleapis.com/auth/drive.file';
 const POC_FILE_NAME = 'in-browser-tools-poc-data.txt';
 
@@ -7,10 +8,15 @@ let gapiInited = false;
 let gisInited = false;
 let fileId: string | null = null; // Store the ID of our POC file
 
-function getRequiredElement<T extends HTMLElement>(id: string, type: new () => T): T {
+function getRequiredElement<T extends HTMLElement>(
+  id: string,
+  type: new () => T,
+): T {
   const element = document.getElementById(id);
   if (!(element instanceof type)) {
-    throw new Error(`Element with id '${id}' not found or is not of expected type.`);
+    throw new Error(
+      `Element with id '${id}' not found or is not of expected type.`,
+    );
   }
   return element;
 }
@@ -65,7 +71,6 @@ function checkLibrariesLoaded() {
   }
 }
 checkLibrariesLoaded();
-
 
 authBtn.addEventListener('click', () => {
   const clientId = clientIdInput.value.trim();
@@ -145,7 +150,9 @@ async function findPocFile() {
     const files = response.result.files;
     if (files && files.length > 0) {
       fileId = files[0].id!;
-      updateStatus(`Found existing file (ID: ${fileId}). Ready to load or overwrite.`);
+      updateStatus(
+        `Found existing file (ID: ${fileId}). Ready to load or overwrite.`,
+      );
     } else {
       fileId = null;
       updateStatus('No existing file found. Ready to save a new one.');
@@ -163,20 +170,23 @@ saveBtn.addEventListener('click', async () => {
   try {
     const fileMetadata = {
       name: POC_FILE_NAME,
-      mimeType: 'text/plain'
+      mimeType: 'text/plain',
     };
 
     const file = new Blob([content], { type: 'text/plain' });
-    const metadata = new Blob([JSON.stringify(fileMetadata)], { type: 'application/json' });
+    const metadata = new Blob([JSON.stringify(fileMetadata)], {
+      type: 'application/json',
+    });
 
     const form = new FormData();
     form.append('metadata', metadata);
     form.append('file', file);
 
     const token = gapi.client.getToken()?.access_token;
-    if (!token) throw new Error("No access token available.");
+    if (!token) throw new Error('No access token available.');
 
-    let url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+    let url =
+      'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
     let method = 'POST';
 
     // If file exists, update it instead of creating a new one
@@ -188,9 +198,9 @@ saveBtn.addEventListener('click', async () => {
     const res = await fetch(url, {
       method: method,
       headers: {
-        'Authorization': `Bearer ${token}`
+        Authorization: `Bearer ${token}`,
       },
-      body: form
+      body: form,
     });
 
     if (!res.ok) {
@@ -219,13 +229,16 @@ loadBtn.addEventListener('click', async () => {
 
   try {
     const token = gapi.client.getToken()?.access_token;
-    if (!token) throw new Error("No access token available.");
+    if (!token) throw new Error('No access token available.');
 
-    const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
+    const response = await fetch(
+      `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);

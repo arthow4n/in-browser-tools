@@ -4,6 +4,7 @@ const tools = [
   { name: 'MP3 Splitter', path: 'mp3-splitter.html' },
   { name: 'PDF Merger', path: 'pdf-merger.html' },
   { name: 'Google Drive POC', path: 'google-drive-poc.html' },
+  { name: 'LLM Chat', path: 'llm-chat.html' },
 ];
 
 const list = document.getElementById('tools-list');
