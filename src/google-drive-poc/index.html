@@ -2,8 +2,14 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Google Drive POC</title>
     <style>
+      *,
+      *:before,
+      *:after {
+        box-sizing: border-box;
+      }
       body {
         font-family: sans-serif;
         line-height: 1.6;
@@ -21,27 +27,42 @@
         padding: 15px;
         border-radius: 5px;
         margin-bottom: 20px;
+        word-wrap: break-word;
       }
       .setup-input {
         margin-bottom: 20px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
       }
       .setup-input input {
-        width: 300px;
+        width: 100%;
+        max-width: 300px;
         padding: 5px;
       }
       button {
         padding: 10px 15px;
-        margin-right: 10px;
+        margin-bottom: 5px;
         cursor: pointer;
       }
       #status {
         margin-top: 15px;
         font-weight: bold;
+        word-wrap: break-word;
+      }
+      .action-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
       }
     </style>
   </head>
   <body>
     <h1>Google Drive Save/Load POC</h1>
+    <a href="../index.html" style="display: inline-block; margin-bottom: 1em"
+      >← Back to Tools</a
+    >
 
     <div class="instructions">
       <h3>Setup Instructions</h3>
@@ -70,8 +91,9 @@
     </div>
 
     <div class="setup-input">
-      <label for="clientId"><strong>Enter your Client ID:</strong></label
-      ><br />
+      <div style="flex-basis: 100%">
+        <label for="clientId"><strong>Enter your Client ID:</strong></label>
+      </div>
       <input
         type="text"
         id="clientId"
@@ -85,8 +107,10 @@
       <h3>Data to Save/Load</h3>
       <textarea id="dataInput" placeholder="Enter text here..."></textarea>
       <br />
-      <button id="saveBtn" disabled>Save to Drive</button>
-      <button id="loadBtn" disabled>Load from Drive</button>
+      <div class="action-buttons">
+        <button id="saveBtn" disabled>Save to Drive</button>
+        <button id="loadBtn" disabled>Load from Drive</button>
+      </div>
     </div>
 
     <div id="status"></div>

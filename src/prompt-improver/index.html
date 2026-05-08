@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -6,7 +6,9 @@
     <title>Prompt Improver - In-Browser Tools</title>
     <style>
       body {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica,
+          Arial, sans-serif;
         line-height: 1.6;
         margin: 0;
         padding: 20px;
@@ -35,7 +37,7 @@
         background: white;
         padding: 20px;
         border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         margin-bottom: 20px;
       }
       .grid {
@@ -43,14 +45,19 @@
         grid-template-columns: 1fr 1fr;
         gap: 20px;
       }
+      @media (max-width: 768px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
       label {
         display: block;
         font-weight: bold;
         margin-bottom: 5px;
       }
-      input[type="text"],
-      input[type="number"],
-      input[type="password"],
+      input[type='text'],
+      input[type='number'],
+      input[type='password'],
       select,
       textarea {
         width: 100%;
@@ -94,17 +101,28 @@
         padding-bottom: 10px;
         border-bottom: 1px solid #333;
       }
-      .log-entry.info { color: #569cd6; }
-      .log-entry.implementer { color: #ce9178; }
-      .log-entry.tester { color: #4ec9b0; }
-      .log-entry.evaluator { color: #dcdcaa; }
-      .log-entry.result { color: #c586c0; }
+      .log-entry.info {
+        color: #569cd6;
+      }
+      .log-entry.implementer {
+        color: #ce9178;
+      }
+      .log-entry.tester {
+        color: #4ec9b0;
+      }
+      .log-entry.evaluator {
+        color: #dcdcaa;
+      }
+      .log-entry.result {
+        color: #c586c0;
+      }
 
       table {
         width: 100%;
         border-collapse: collapse;
       }
-      th, td {
+      th,
+      td {
         padding: 10px;
         border: 1px solid #ddd;
         text-align: left;
@@ -142,27 +160,49 @@
           <input type="password" id="api-key" placeholder="sk-or-v1-..." />
 
           <label for="model">Model ID:</label>
-          <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-             <input type="text" id="model" value="google/gemini-2.5-flash" style="margin-bottom: 0;" />
-             <button id="fetch-models" type="button" style="padding: 8px;">Fetch Models</button>
+          <div
+            style="
+              display: flex;
+              flex-wrap: wrap;
+              gap: 10px;
+              margin-bottom: 15px;
+            "
+          >
+            <input
+              type="text"
+              id="model"
+              value="google/gemini-2.5-flash"
+              style="margin-bottom: 0; flex: 1; min-width: 200px"
+            />
+            <button id="fetch-models" type="button" style="padding: 8px">
+              Fetch Models
+            </button>
           </div>
-          <select id="model-select" style="display: none;"></select>
+          <select id="model-select" style="display: none"></select>
 
           <label for="original-prompt">Original Prompt:</label>
-          <textarea id="original-prompt" rows="4" placeholder="Enter the vague or initial prompt here..."></textarea>
+          <textarea
+            id="original-prompt"
+            rows="4"
+            placeholder="Enter the vague or initial prompt here..."
+          ></textarea>
 
           <label for="intention">Intention (Optional):</label>
-          <textarea id="intention" rows="2">Used for Gemini Deep Research</textarea>
+          <textarea id="intention" rows="2">
+Used for Gemini Deep Research</textarea
+          >
 
           <label for="how-to-improve">How to Improve (Optional):</label>
-          <textarea id="how-to-improve" rows="2">Ensure the LLM is considerate and fills in details the original vague prompt might not have thought about.</textarea>
+          <textarea id="how-to-improve" rows="2">
+Ensure the LLM is considerate and fills in details the original vague prompt might not have thought about.</textarea
+          >
 
-          <div style="display: flex; gap: 20px;">
-            <div style="flex: 1;">
+          <div style="display: flex; flex-wrap: wrap; gap: 20px">
+            <div style="flex: 1; min-width: 150px">
               <label for="max-rounds">Max Rounds:</label>
               <input type="number" id="max-rounds" value="3" min="1" max="10" />
             </div>
-            <div style="flex: 1;">
+            <div style="flex: 1; min-width: 150px">
               <label for="prompt-type">Prompt Type:</label>
               <select id="prompt-type">
                 <option value="system">System Prompt</option>
@@ -171,7 +211,15 @@
             </div>
           </div>
 
-          <div style="display: flex; align-items: center; margin-top: 10px;">
+          <div
+            style="
+              display: flex;
+              flex-wrap: wrap;
+              gap: 10px;
+              align-items: center;
+              margin-top: 10px;
+            "
+          >
             <button id="start-btn">Start Improvement Loop</button>
             <span id="status-text" class="status"></span>
           </div>
@@ -185,9 +233,9 @@
       </div>
 
       <!-- Final Results Panel -->
-      <div class="panel" id="results-panel" style="display: none;">
+      <div class="panel" id="results-panel" style="display: none">
         <h2>Final Ranking (Highest Score First)</h2>
-        <div style="overflow-x: auto;">
+        <div style="overflow-x: auto">
           <table id="results-table">
             <thead>
               <tr>
