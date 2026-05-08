@@ -6,6 +6,7 @@ const tools = [
   { name: 'Google Drive POC', path: 'google-drive-poc.html' },
   { name: 'LLM Chat', path: 'llm-chat.html' },
   { name: 'Prompt Improver', path: 'prompt-improver.html' },
+  { name: 'Text Inspector', path: 'text-inspector.html' },
 ];
 
 const list = document.getElementById('tools-list');

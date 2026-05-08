@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Text Inspector</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        line-height: 1.6;
+        margin: 0 auto;
+        padding: 20px;
+        max-width: 800px;
+        box-sizing: border-box;
+      }
+      *,
+      *:before,
+      *:after {
+        box-sizing: inherit;
+      }
+      .input-group {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+      textarea {
+        width: 100%;
+        min-height: 150px;
+        padding: 10px;
+        font-family: inherit;
+      }
+      .output-group {
+        margin-top: 20px;
+      }
+      #output-text {
+        width: 100%;
+        min-height: 150px;
+        padding: 15px;
+        border: 1px solid #ccc;
+        background-color: #f9f9f9;
+        font-family: Consolas, 'Courier New', monospace;
+        font-size: 1.2em;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Text Inspector</h1>
+    <a href="../index.html" style="display: inline-block; margin-bottom: 1em"
+      >← Back to Tools</a
+    >
+
+    <div class="input-group">
+      <label for="input-text">Enter text to inspect:</label>
+      <textarea
+        id="input-text"
+        placeholder="Type or paste text here..."
+      ></textarea>
+    </div>
+
+    <div class="output-group">
+      <label>Inspected Text (monospace font):</label>
+      <div id="output-text"></div>
+    </div>
+  </body>
+</html>
