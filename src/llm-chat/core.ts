@@ -1,9 +1,12 @@
-import { LLMCore } from '../shared/llm-core.js';
+import {
+  LLMCore,
+  ChatMessage as SharedChatMessage,
+  StreamChunk,
+} from '../shared/llm-core.js';
+import { AgentTool } from './tools/index.js';
 
-export interface ChatMessage {
-  id: string; // Used for identifying in history for edit/delete
-  role: 'user' | 'assistant' | 'system';
-  content: string;
+export interface ChatMessage extends SharedChatMessage {
+  id: string; // Override to make it required
 }
 
 export interface SavedPrompt {
@@ -16,10 +19,16 @@ export class ChatCore extends LLMCore {
   public systemPrompt: string = 'You are a helpful assistant.';
   public savedPrompts: SavedPrompt[] = [];
   public history: ChatMessage[] = [];
+  public toolsEnabled: boolean = false;
+  public tools: AgentTool[] = [];
 
   constructor() {
     super();
     this.loadChatState();
+  }
+
+  registerTool(tool: AgentTool) {
+    this.tools.push(tool);
   }
 
   loadChatState() {
@@ -56,16 +65,36 @@ export class ChatCore extends LLMCore {
   async *streamChatCompletion(
     newMessages: ChatMessage[],
   ): AsyncGenerator<string, void, unknown> {
-    const messages: {
-      role: 'system' | 'user' | 'assistant';
-      content: string;
-    }[] = [
+    const allMessages = [...this.history, ...newMessages];
+    const messages: SharedChatMessage[] = [
       { role: 'system', content: this.systemPrompt },
-      ...this.history.map((m) => ({ role: m.role, content: m.content })),
-      ...newMessages.map((m) => ({ role: m.role, content: m.content })),
+      ...allMessages.map((m) => {
+        const mapped: SharedChatMessage = { role: m.role, content: m.content };
+        if (m.tool_calls) mapped.tool_calls = m.tool_calls;
+        if (m.tool_call_id) mapped.tool_call_id = m.tool_call_id;
+        return mapped;
+      }),
     ];
 
     yield* this.streamCompletion(messages);
+  }
+
+  async *streamChatCompletionWithTools(
+    newMessages: ChatMessage[],
+  ): AsyncGenerator<StreamChunk, void, unknown> {
+    const allMessages = [...this.history, ...newMessages];
+    const messages: SharedChatMessage[] = [
+      { role: 'system', content: this.systemPrompt },
+      ...allMessages.map((m) => {
+        const mapped: SharedChatMessage = { role: m.role, content: m.content };
+        if (m.tool_calls) mapped.tool_calls = m.tool_calls;
+        if (m.tool_call_id) mapped.tool_call_id = m.tool_call_id;
+        return mapped;
+      }),
+    ];
+
+    const toolsToPass = this.toolsEnabled ? this.tools : undefined;
+    yield* this.streamCompletionWithTools(messages, toolsToPass);
   }
 
   async improveSystemPrompt(): Promise<string> {
