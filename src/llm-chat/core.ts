@@ -1,12 +1,9 @@
+import { LLMCore } from '../shared/llm-core.js';
+
 export interface ChatMessage {
   id: string; // Used for identifying in history for edit/delete
   role: 'user' | 'assistant' | 'system';
   content: string;
-}
-
-export interface Model {
-  id: string;
-  name: string;
 }
 
 export interface SavedPrompt {
@@ -15,21 +12,17 @@ export interface SavedPrompt {
   content: string;
 }
 
-export class ChatCore {
-  public apiKey: string = '';
-  public model: string = '';
+export class ChatCore extends LLMCore {
   public systemPrompt: string = 'You are a helpful assistant.';
   public savedPrompts: SavedPrompt[] = [];
   public history: ChatMessage[] = [];
 
   constructor() {
-    this.loadState();
+    super();
+    this.loadChatState();
   }
 
-  loadState() {
-    // API key and model are managed by the shared component.
-    // They are updated via onChange callback instead.
-
+  loadChatState() {
     this.systemPrompt =
       localStorage.getItem('llm-chat-systemPrompt') ||
       'You are a helpful assistant.';
@@ -51,8 +44,7 @@ export class ChatCore {
     }
   }
 
-  saveState() {
-    // API key and model are managed by the shared component.
+  saveChatState() {
     localStorage.setItem('llm-chat-systemPrompt', this.systemPrompt);
     localStorage.setItem(
       'llm-chat-savedPrompts',
@@ -61,67 +53,19 @@ export class ChatCore {
     localStorage.setItem('llm-chat-history', JSON.stringify(this.history));
   }
 
-  async *streamCompletion(
+  async *streamChatCompletion(
     newMessages: ChatMessage[],
   ): AsyncGenerator<string, void, unknown> {
-    if (!this.apiKey) throw new Error('API Key is required');
-    if (!this.model) throw new Error('Model is required');
-
-    const messages = [
+    const messages: {
+      role: 'system' | 'user' | 'assistant';
+      content: string;
+    }[] = [
       { role: 'system', content: this.systemPrompt },
       ...this.history.map((m) => ({ role: m.role, content: m.content })),
       ...newMessages.map((m) => ({ role: m.role, content: m.content })),
     ];
 
-    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: this.model,
-        messages: messages,
-        stream: true,
-      }),
-    });
-
-    if (!res.ok) {
-      const errorText = await res.text();
-      throw new Error(
-        `Failed to fetch completion: ${res.status} ${res.statusText} - ${errorText}`,
-      );
-    }
-
-    if (!res.body) throw new Error('Response body is null');
-
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
-
-      for (const line of lines) {
-        if (line.startsWith('data: ') && line !== 'data: [DONE]') {
-          const dataStr = line.slice(6);
-          try {
-            const data = JSON.parse(dataStr);
-            const content = data.choices[0]?.delta?.content;
-            if (content) {
-              yield content;
-            }
-          } catch (e) {
-            console.error('Failed to parse streaming data', e, line);
-          }
-        }
-      }
-    }
+    yield* this.streamCompletion(messages);
   }
 
   async improveSystemPrompt(): Promise<string> {

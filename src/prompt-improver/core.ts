@@ -1,6 +1,6 @@
+import { LLMCore } from '../shared/llm-core.js';
+
 export interface PromptImproverConfig {
-  apiKey: string;
-  model: string;
   originalPrompt: string;
   intention: string;
   howToImprove: string;
@@ -53,50 +53,11 @@ function extractJSON(text: string): any {
 
 export class PromptImproverCore {
   private config: PromptImproverConfig;
+  private llmCore: LLMCore;
 
-  constructor(config: PromptImproverConfig) {
+  constructor(config: PromptImproverConfig, llmCore: LLMCore) {
     this.config = config;
-  }
-
-  private async callLLM(messages: any[], retries = 2): Promise<string> {
-    let attempt = 0;
-    let lastError: any;
-
-    while (attempt <= retries) {
-      try {
-        const res = await fetch(
-          'https://openrouter.ai/api/v1/chat/completions',
-          {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${this.config.apiKey}`,
-              'Content-Type': 'application/json',
-              'HTTP-Referer': window.location.href,
-              'X-Title': 'In-Browser Tools',
-            },
-            body: JSON.stringify({
-              model: this.config.model,
-              messages,
-            }),
-          },
-        );
-
-        if (!res.ok) {
-          const errorText = await res.text();
-          throw new Error(`API Error: ${res.status} - ${errorText}`);
-        }
-
-        const data = await res.json();
-        return data.choices[0]?.message?.content || '';
-      } catch (err) {
-        lastError = err;
-        attempt++;
-        if (attempt <= retries) {
-          await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
-        }
-      }
-    }
-    throw lastError;
+    this.llmCore = llmCore;
   }
 
   public async *run(): AsyncGenerator<LogEvent, IterationResult[]> {
@@ -118,8 +79,8 @@ Generate a JSON object with the following schema:
 Reply ONLY with valid JSON. Do not include any other text.
 `;
 
-    const setupResponse = await this.callLLM([
-      { role: 'user', content: setupPrompt },
+    const setupResponse = await this.llmCore.callLLM([
+      { role: 'user' as const, content: setupPrompt },
     ]);
 
     let setupData: SetupData;
@@ -153,13 +114,13 @@ Reply ONLY with valid JSON. Do not include any other text.
         message: 'Implementer is drafting a new prompt...',
       };
       const implementerMessages = [
-        { role: 'system', content: setupData.implementerSystemPrompt },
+        { role: 'system' as const, content: setupData.implementerSystemPrompt },
         {
-          role: 'user',
+          role: 'user' as const,
           content: `Original Prompt:\n${this.config.originalPrompt}\n\nLast Version:\n${currentPrompt}\n\nFeedback from Evaluator:\n${feedback}\n\nPlease provide ONLY the new rewritten prompt text. Do not wrap it in markdown block unless it is part of the prompt itself.`,
         },
       ];
-      let newPrompt = await this.callLLM(implementerMessages);
+      let newPrompt = await this.llmCore.callLLM(implementerMessages);
       if (newPrompt.startsWith('\`\`\`') && newPrompt.endsWith('\`\`\`')) {
         newPrompt = newPrompt
           .replace(/^\`\`\`[a-z]*\n/, '')
@@ -183,16 +144,19 @@ Reply ONLY with valid JSON. Do not include any other text.
 
       if (this.config.promptType === 'system') {
         testerMessages = [
-          { role: 'system', content: newPrompt },
-          { role: 'user', content: scenario },
+          { role: 'system' as const, content: newPrompt },
+          { role: 'user' as const, content: scenario },
         ];
       } else {
         testerMessages = [
-          { role: 'user', content: `${newPrompt}\n\nInput: ${scenario}` },
+          {
+            role: 'user' as const,
+            content: `${newPrompt}\n\nInput: ${scenario}`,
+          },
         ];
       }
 
-      const testOutput = await this.callLLM(testerMessages);
+      const testOutput = await this.llmCore.callLLM(testerMessages);
       yield { type: 'tester', message: `Test run complete.`, data: testOutput };
 
       // 3. Evaluator
@@ -223,11 +187,11 @@ Provide your evaluation in JSON format:
 Reply ONLY with valid JSON.
 `;
       const evaluatorMessages = [
-        { role: 'system', content: setupData.evaluatorSystemPrompt },
-        { role: 'user', content: evalPrompt },
+        { role: 'system' as const, content: setupData.evaluatorSystemPrompt },
+        { role: 'user' as const, content: evalPrompt },
       ];
 
-      const evalResponse = await this.callLLM(evaluatorMessages);
+      const evalResponse = await this.llmCore.callLLM(evaluatorMessages);
       let evalData: any;
       try {
         evalData = extractJSON(evalResponse);
