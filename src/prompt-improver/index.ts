@@ -3,12 +3,12 @@ import {
   PromptImproverConfig,
   IterationResult,
 } from './core.js';
+import { setupLLMSettings } from '../shared/llm-settings.js';
 
 const els = {
-  apiKey: document.getElementById('api-key') as HTMLInputElement,
-  model: document.getElementById('model') as HTMLInputElement,
-  fetchModelsBtn: document.getElementById('fetch-models') as HTMLButtonElement,
-  modelSelect: document.getElementById('model-select') as HTMLSelectElement,
+  llmSettingsContainer: document.getElementById(
+    'llm-settings-container',
+  ) as HTMLDivElement,
   originalPrompt: document.getElementById(
     'original-prompt',
   ) as HTMLTextAreaElement,
@@ -27,15 +27,15 @@ const els = {
   ) as HTMLTableSectionElement,
 };
 
+let currentApiKey = '';
+let currentModel = '';
+
 // Ensure all required elements exist
 for (const [key, el] of Object.entries(els)) {
   if (!el) throw new Error(`Missing required element: ${key}`);
 }
 
 function loadState() {
-  els.apiKey.value = localStorage.getItem('prompt-improver-apiKey') || '';
-  els.model.value =
-    localStorage.getItem('prompt-improver-model') || 'google/gemini-2.5-flash';
   els.originalPrompt.value =
     localStorage.getItem('prompt-improver-originalPrompt') || '';
   els.intention.value =
@@ -51,8 +51,6 @@ function loadState() {
 }
 
 function saveState() {
-  localStorage.setItem('prompt-improver-apiKey', els.apiKey.value);
-  localStorage.setItem('prompt-improver-model', els.model.value);
   localStorage.setItem(
     'prompt-improver-originalPrompt',
     els.originalPrompt.value,
@@ -63,8 +61,6 @@ function saveState() {
   localStorage.setItem('prompt-improver-promptType', els.promptType.value);
 }
 
-els.apiKey.addEventListener('input', saveState);
-els.model.addEventListener('input', saveState);
 els.originalPrompt.addEventListener('input', saveState);
 els.intention.addEventListener('input', saveState);
 els.howToImprove.addEventListener('input', saveState);
@@ -73,47 +69,9 @@ els.promptType.addEventListener('change', saveState);
 
 loadState();
 
-els.fetchModelsBtn.addEventListener('click', async () => {
-  const apiKey = els.apiKey.value;
-  if (!apiKey) {
-    alert('Please enter an API Key first.');
-    return;
-  }
-
-  try {
-    els.fetchModelsBtn.disabled = true;
-    els.fetchModelsBtn.textContent = 'Fetching...';
-
-    const res = await fetch('https://openrouter.ai/api/v1/models', {
-      headers: { Authorization: `Bearer ${apiKey}` },
-    });
-
-    if (!res.ok) throw new Error('Failed to fetch models');
-
-    const data = await res.json();
-    els.modelSelect.innerHTML = '';
-
-    data.data.forEach((m: any) => {
-      const option = document.createElement('option');
-      option.value = m.id;
-      option.textContent = m.name;
-      els.modelSelect.appendChild(option);
-    });
-
-    els.modelSelect.style.display = 'block';
-    els.model.style.display = 'none';
-
-    els.modelSelect.value = els.model.value;
-    els.modelSelect.addEventListener('change', () => {
-      els.model.value = els.modelSelect.value;
-      saveState();
-    });
-  } catch (e: any) {
-    alert('Error fetching models: ' + e.message);
-  } finally {
-    els.fetchModelsBtn.disabled = false;
-    els.fetchModelsBtn.textContent = 'Fetch Models';
-  }
+setupLLMSettings(els.llmSettingsContainer, (settings) => {
+  currentApiKey = settings.apiKey;
+  currentModel = settings.model;
 });
 
 function appendLog(type: string, message: string, data?: any) {
@@ -132,14 +90,14 @@ function appendLog(type: string, message: string, data?: any) {
 }
 
 els.startBtn.addEventListener('click', async () => {
-  if (!els.apiKey.value || !els.model.value || !els.originalPrompt.value) {
+  if (!currentApiKey || !currentModel || !els.originalPrompt.value) {
     alert('Please fill out API Key, Model, and Original Prompt.');
     return;
   }
 
   const config: PromptImproverConfig = {
-    apiKey: els.apiKey.value,
-    model: els.model.value,
+    apiKey: currentApiKey,
+    model: currentModel,
     originalPrompt: els.originalPrompt.value,
     intention: els.intention.value,
     howToImprove: els.howToImprove.value,

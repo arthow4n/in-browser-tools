@@ -11,6 +11,7 @@ The tool you are asked to make might not be well thought through or not really d
 ## How to work in this repo
 
 - This web app is very small and everything fits into the context window. Prefer to aggressively read everything and build a full understanding of the repo before you make any plan or edit.
+- Actively look for shared configurations, components, and logic across different tools (e.g., API keys, UI elements) and extract them into shared modules in `src/shared` whenever it makes sense to reduce duplication.
 - If you are updating any contents related to the instructions in this `AGENTS.md`, or you updated anything in the `package.json`, build/test config or pipeline actions, make sure you double check all of these and update if needed to make sure the contents in these files are all in sync.
 - Prioritize using the available tools you are given access to, instead of writing scripts or running arbitrary commands, even if the action might be slower to do with the tools. This is mainly to ensure your actions such as read/write files will be approved by the user.
 - If you are about to run any `npx`/`npm exec` or similar commands, prioritise to `npm run` the scripts already listed in `package.json` instead.

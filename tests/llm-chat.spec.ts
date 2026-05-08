@@ -14,18 +14,18 @@ test.describe('LLM Chat Tool', () => {
 
     // Check title and inputs exist
     await expect(page.locator('h1')).toHaveText('LLM Chat');
-    await expect(page.locator('#api-key')).toBeVisible();
-    await expect(page.locator('#model-input')).toBeVisible();
+    await expect(page.locator('#shared-api-key')).toBeVisible();
+    await expect(page.locator('#shared-model-input')).toBeVisible();
 
     // Modify settings to test local storage behavior
-    await page.fill('#api-key', 'test-api-key');
-    await page.fill('#model-input', 'test-model');
+    await page.fill('#shared-api-key', 'test-api-key');
+    await page.fill('#shared-model-input', 'test-model');
     await page.fill('#system-prompt', 'Custom system prompt');
 
     // Reload and check persistence
     await page.reload();
-    await expect(page.locator('#api-key')).toHaveValue('test-api-key');
-    await expect(page.locator('#model-input')).toHaveValue('test-model');
+    await expect(page.locator('#shared-api-key')).toHaveValue('test-api-key');
+    await expect(page.locator('#shared-model-input')).toHaveValue('test-model');
     await expect(page.locator('#system-prompt')).toHaveValue(
       'Custom system prompt',
     );
@@ -50,13 +50,13 @@ test.describe('LLM Chat Tool', () => {
     page.on('dialog', (dialog) => dialog.accept());
 
     await page.goto('/llm-chat.html');
-    await page.fill('#api-key', 'test-key');
+    await page.fill('#shared-api-key', 'test-key');
 
     // Click fetch
-    await page.click('#fetch-models-btn');
+    await page.click('#shared-fetch-models-btn');
 
     // Wait for models to populate in the datalist
-    const datalist = page.locator('#models-list');
+    const datalist = page.locator('#shared-models-list');
     await expect(datalist.locator('option').first()).toHaveAttribute(
       'value',
       'model-a',
@@ -90,8 +90,8 @@ test.describe('LLM Chat Tool', () => {
     );
 
     await page.goto('/llm-chat.html');
-    await page.fill('#api-key', 'test-key');
-    await page.fill('#model-input', 'test-model');
+    await page.fill('#shared-api-key', 'test-key');
+    await page.fill('#shared-model-input', 'test-model');
 
     // Send a message
     await page.fill('#user-input', 'Hi there');
@@ -158,8 +158,8 @@ test.describe('LLM Chat Tool', () => {
     );
 
     await page.goto('/llm-chat.html');
-    await page.fill('#api-key', 'test-key');
-    await page.fill('#model-input', 'test-model');
+    await page.fill('#shared-api-key', 'test-key');
+    await page.fill('#shared-model-input', 'test-model');
 
     // Send first message
     await page.fill('#user-input', 'Message 1');
@@ -218,8 +218,8 @@ test.describe('LLM Chat Tool', () => {
     );
 
     await page.goto('/llm-chat.html');
-    await page.fill('#api-key', 'test-key');
-    await page.fill('#model-input', 'test-model');
+    await page.fill('#shared-api-key', 'test-key');
+    await page.fill('#shared-model-input', 'test-model');
 
     // Try sending empty text with empty history - should do nothing
     await page.click('#send-btn');
