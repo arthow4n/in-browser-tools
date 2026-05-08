@@ -3,6 +3,7 @@ console.log('Tools loaded.');
 const tools = [
   { name: 'MP3 Splitter', path: 'mp3-splitter.html' },
   { name: 'PDF Merger', path: 'pdf-merger.html' },
+  { name: 'PDF Splitter', path: 'pdf-splitter.html' },
   { name: 'Google Drive POC', path: 'google-drive-poc.html' },
   { name: 'LLM Chat', path: 'llm-chat.html' },
   { name: 'Prompt Improver', path: 'prompt-improver.html' },
