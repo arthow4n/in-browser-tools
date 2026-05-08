@@ -11,7 +11,10 @@ test('MP3 Splitter page has expected elements and default values', async ({
   const fileInput = page.locator('#mp3-file');
   await expect(fileInput).toBeAttached();
   await expect(fileInput).toHaveAttribute('type', 'file');
-  await expect(fileInput).toHaveAttribute('accept', 'audio/mpeg');
+  await expect(fileInput).toHaveAttribute(
+    'accept',
+    'audio/mpeg,audio/mp4,audio/x-m4a,.m4a',
+  );
 
   const minutesInput = page.locator('#minutes');
   await expect(minutesInput).toBeAttached();

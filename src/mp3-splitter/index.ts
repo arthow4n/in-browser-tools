@@ -54,28 +54,37 @@ splitBtn.addEventListener('click', async () => {
   try {
     await loadFfmpeg();
 
+    const extMatch = file.name.match(/\.([^.]+)$/);
+    const ext = extMatch ? extMatch[1].toLowerCase() : 'mp3';
+    const isM4A = ext === 'm4a' || ext === 'mp4';
+    const inputFileName = isM4A ? 'input.m4a' : 'input.mp3';
+
     statusDiv.textContent = 'Writing file to memory...';
-    await ffmpeg.writeFile('input.mp3', await fetchFile(file));
+    await ffmpeg.writeFile(inputFileName, await fetchFile(file));
 
     statusDiv.textContent = 'Splitting...';
 
     // Calculate seconds
     const seconds = minutes * 60;
 
-    // Use segment muxer to split without re-encoding
-    await ffmpeg.exec([
+    const execArgs = [
       '-i',
-      'input.mp3',
-      '-c',
-      'copy',
-      '-map',
-      '0',
-      '-segment_time',
-      seconds.toString(),
-      '-f',
-      'segment',
-      'output%03d.mp3',
-    ]);
+      inputFileName,
+    ];
+
+    if (!isM4A) {
+      execArgs.push('-c', 'copy');
+    }
+
+    execArgs.push(
+      '-map', '0:a',
+      '-segment_time', seconds.toString(),
+      '-f', 'segment',
+      'output%03d.mp3'
+    );
+
+    // Use segment muxer to split
+    await ffmpeg.exec(execArgs);
 
     statusDiv.textContent = 'Done splitting! Preparing downloads...';
 
@@ -114,7 +123,7 @@ splitBtn.addEventListener('click', async () => {
       }
     }
 
-    await ffmpeg.deleteFile('input.mp3');
+    await ffmpeg.deleteFile(inputFileName);
   } catch (error) {
     console.error(error);
     statusDiv.textContent = `Error: ${error instanceof Error ? error.message : String(error)}`;
