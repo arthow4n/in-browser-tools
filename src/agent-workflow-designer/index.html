@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Agent Workflow Designer</title>
+    <style>
+      *,
+      *:before,
+      *:after {
+        box-sizing: border-box;
+      }
+      body {
+        font-family: sans-serif;
+        line-height: 1.6;
+        margin: 0;
+        padding: 20px;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      header {
+        margin-bottom: 20px;
+      }
+      section {
+        margin-bottom: 20px;
+        padding: 15px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+      }
+      h2 {
+        margin-top: 0;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+      input[type='text'],
+      input[type='password'],
+      textarea,
+      select {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 10px;
+        box-sizing: border-box;
+      }
+      button {
+        padding: 8px 15px;
+        cursor: pointer;
+        margin-right: 5px;
+        margin-bottom: 5px;
+      }
+
+      .main-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+      }
+
+      .chat-pane,
+      .viz-pane {
+        flex: 1 1 400px;
+        min-width: 0; /* Important for flex items to shrink below their content size if needed */
+      }
+
+      /* Chat specific styles */
+      .history-container {
+        max-height: 500px;
+        overflow-y: auto;
+        margin-bottom: 10px;
+        padding-right: 10px;
+      }
+      .message {
+        padding: 10px;
+        margin-bottom: 10px;
+        border-radius: 5px;
+        border: 1px solid #eee;
+        white-space: pre-wrap;
+      }
+      .message.user {
+        background-color: #e3f2fd;
+      }
+      .message.assistant {
+        background-color: #f5f5f5;
+      }
+      .streaming {
+        border-left: 3px solid #2196f3;
+      }
+
+      /* Workflow Visualization styles */
+      .workflow-card {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+        background-color: #f9f9f9;
+      }
+      .workflow-card h3 {
+        margin-top: 0;
+        margin-bottom: 10px;
+        color: #333;
+      }
+      .workflow-card textarea {
+        font-family: monospace;
+        font-size: 13px;
+        resize: vertical;
+        background: white;
+      }
+      .card-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+      }
+
+      /* Sub-agents */
+      .sub-agents-list {
+        margin-left: 20px;
+        border-left: 2px dashed #ccc;
+        padding-left: 20px;
+      }
+
+      .import-section {
+        margin-bottom: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Agent Workflow Designer</h1>
+      <a href="../index.html">← Back to Tools</a>
+    </header>
+
+    <section id="settings-section">
+      <h2>Settings</h2>
+      <div id="llm-settings-container"></div>
+    </section>
+
+    <div class="main-container">
+      <!-- Chat Pane -->
+      <div class="chat-pane">
+        <section>
+          <h2>Design Chat</h2>
+          <div class="history-container" id="history-container">
+            <!-- Messages will be rendered here -->
+          </div>
+
+          <label for="user-input">Message:</label>
+          <textarea
+            id="user-input"
+            rows="4"
+            placeholder="Describe the workflow you want to create or improve..."
+          ></textarea>
+          <button
+            id="send-btn"
+            style="
+              width: 100%;
+              padding: 10px;
+              font-weight: bold;
+              background-color: #4caf50;
+              color: white;
+              border: none;
+            "
+          >
+            Send
+          </button>
+          <button id="clear-history-btn" style="width: 100%; margin-top: 10px">
+            Clear Chat
+          </button>
+        </section>
+      </div>
+
+      <!-- Visualization & Export Pane -->
+      <div class="viz-pane">
+        <section>
+          <h2>Workflow Visualisation & Export</h2>
+
+          <div class="import-section">
+            <label for="import-textarea">Import Markdown:</label>
+            <textarea
+              id="import-textarea"
+              rows="3"
+              placeholder="Paste concatenated markdown here..."
+            ></textarea>
+            <button id="import-btn">Import</button>
+            <button id="fix-import-btn" style="display: none">
+              Fix Import with LLM
+            </button>
+          </div>
+
+          <div
+            style="
+              margin-bottom: 20px;
+              padding-bottom: 10px;
+              border-bottom: 1px solid #eee;
+            "
+          >
+            <button id="copy-all-btn">Copy All as Single Markdown</button>
+            <button id="download-all-btn">
+              Download All as Single Markdown
+            </button>
+          </div>
+
+          <div id="workflow-container">
+            <!-- Parsed workflow cards will be rendered here -->
+            <p style="color: #666; font-style: italic">
+              No workflow generated yet. Start chatting to design one.
+            </p>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <script type="module" src="./index.ts"></script>
+  </body>
+</html>

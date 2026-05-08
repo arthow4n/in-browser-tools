@@ -10,6 +10,7 @@ export default defineConfig({
       'llm-chat': './src/llm-chat/index.ts',
       'prompt-improver': './src/prompt-improver/index.ts',
       'text-inspector': './src/text-inspector/index.ts',
+      'agent-workflow-designer': './src/agent-workflow-designer/index.ts',
     },
   },
   html: {
