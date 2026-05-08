@@ -58,7 +58,8 @@
       }
 
       .chat-pane,
-      .viz-pane {
+      .viz-pane,
+      .test-pane {
         flex: 1 1 400px;
         min-width: 0; /* Important for flex items to shrink below their content size if needed */
       }
@@ -121,6 +122,18 @@
 
       .import-section {
         margin-bottom: 20px;
+      }
+
+      .suggestion-btn {
+        padding: 8px 12px;
+        cursor: pointer;
+        background: #eee;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        margin-bottom: 5px;
+        display: block;
+        width: 100%;
+        text-align: left;
       }
     </style>
   </head>
@@ -206,6 +219,53 @@
               No workflow generated yet. Start chatting to design one.
             </p>
           </div>
+        </section>
+      </div>
+
+      <!-- Test Pane -->
+      <div class="test-pane">
+        <section id="test-run-section" style="display: none">
+          <h2>Test Run</h2>
+          <div id="test-output-container" class="history-container">
+            <!-- Test chat history -->
+          </div>
+
+          <label for="test-user-input">Test Input:</label>
+          <textarea
+            id="test-user-input"
+            rows="3"
+            placeholder="Input for the test run..."
+          ></textarea>
+          <button
+            id="run-test-btn"
+            style="
+              width: 100%;
+              padding: 10px;
+              background-color: #2196f3;
+              color: white;
+              border: none;
+              font-weight: bold;
+              margin-bottom: 10px;
+            "
+          >
+            Run Test
+          </button>
+          <button
+            id="eval-test-btn"
+            disabled
+            style="
+              width: 100%;
+              padding: 10px;
+              background-color: #ff9800;
+              color: white;
+              border: none;
+              font-weight: bold;
+              margin-bottom: 10px;
+            "
+          >
+            Evaluate Run & Suggest Improvements
+          </button>
+          <div id="eval-output-container" style="margin-top: 15px"></div>
         </section>
       </div>
     </div>
