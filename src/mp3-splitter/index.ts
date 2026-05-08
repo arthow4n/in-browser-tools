@@ -67,20 +67,20 @@ splitBtn.addEventListener('click', async () => {
     // Calculate seconds
     const seconds = minutes * 60;
 
-    const execArgs = [
-      '-i',
-      inputFileName,
-    ];
+    const execArgs = ['-i', inputFileName];
 
     if (!isM4A) {
       execArgs.push('-c', 'copy');
     }
 
     execArgs.push(
-      '-map', '0:a',
-      '-segment_time', seconds.toString(),
-      '-f', 'segment',
-      'output%03d.mp3'
+      '-map',
+      '0:a',
+      '-segment_time',
+      seconds.toString(),
+      '-f',
+      'segment',
+      'output%03d.mp3',
     );
 
     // Use segment muxer to split

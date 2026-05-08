@@ -11,6 +11,7 @@ The tool you are asked to make might not be well thought through or not really d
 ## How to work in this repo
 
 - This web app is very small and everything fits into the context window. Prefer to aggressively read everything and build a full understanding of the repo before you make any plan or edit.
+- Actively look for shared configurations, components, and logic across different tools (e.g., API keys, UI elements) and extract them into shared modules in `src/shared` whenever it makes sense to reduce duplication.
 - If you are updating any contents related to the instructions in this `AGENTS.md`, or you updated anything in the `package.json`, build/test config or pipeline actions, make sure you double check all of these and update if needed to make sure the contents in these files are all in sync.
 - Prioritize using the available tools you are given access to, instead of writing scripts or running arbitrary commands, even if the action might be slower to do with the tools. This is mainly to ensure your actions such as read/write files will be approved by the user.
 - If you are about to run any `npx`/`npm exec` or similar commands, prioritise to `npm run` the scripts already listed in `package.json` instead.
@@ -29,6 +30,12 @@ Dependencies should be bundled with the bundler.
 ## Styling
 
 Keep everything simple, but leave some spacing between elements, so they are clickable in mobile.
+Adopt a mobile-first design:
+
+- Always include the `<meta name="viewport" content="width=device-width, initial-scale=1.0" />` tag in the `<head>` of HTML files.
+- Ensure layouts wrap properly on small screens (e.g. use `display: flex; flex-wrap: wrap;` or media queries for CSS grids). Input fields and buttons should wrap to the next line on mobile rather than overflowing.
+- Use `box-sizing: border-box` globally or for sizing elements to prevent padding/borders from breaking width limits.
+- Avoid hardcoded fixed widths (e.g. `width: 300px`); use `width: 100%; max-width: 300px;` instead.
 
 ## Pre-push checks
 

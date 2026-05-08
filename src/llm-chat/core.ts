@@ -27,8 +27,9 @@ export class ChatCore {
   }
 
   loadState() {
-    this.apiKey = localStorage.getItem('llm-chat-apiKey') || '';
-    this.model = localStorage.getItem('llm-chat-model') || '';
+    // API key and model are managed by the shared component.
+    // They are updated via onChange callback instead.
+
     this.systemPrompt =
       localStorage.getItem('llm-chat-systemPrompt') ||
       'You are a helpful assistant.';
@@ -51,26 +52,13 @@ export class ChatCore {
   }
 
   saveState() {
-    localStorage.setItem('llm-chat-apiKey', this.apiKey);
-    localStorage.setItem('llm-chat-model', this.model);
+    // API key and model are managed by the shared component.
     localStorage.setItem('llm-chat-systemPrompt', this.systemPrompt);
     localStorage.setItem(
       'llm-chat-savedPrompts',
       JSON.stringify(this.savedPrompts),
     );
     localStorage.setItem('llm-chat-history', JSON.stringify(this.history));
-  }
-
-  async fetchModels(): Promise<Model[]> {
-    if (!this.apiKey) throw new Error('API Key is required to fetch models');
-    const res = await fetch('https://openrouter.ai/api/v1/models', {
-      headers: {
-        Authorization: `Bearer ${this.apiKey}`,
-      },
-    });
-    if (!res.ok) throw new Error('Failed to fetch models');
-    const data = await res.json();
-    return data.data.map((m: any) => ({ id: m.id, name: m.name }));
   }
 
   async *streamCompletion(

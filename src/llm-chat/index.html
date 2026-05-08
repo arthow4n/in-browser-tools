@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LLM Chat</title>
     <style>
+      *,
+      *:before,
+      *:after {
+        box-sizing: border-box;
+      }
       body {
         font-family: sans-serif;
         line-height: 1.6;
@@ -71,6 +76,7 @@
       }
       .flex-row {
         display: flex;
+        flex-wrap: wrap;
         gap: 10px;
         align-items: center;
         margin-bottom: 10px;
@@ -89,24 +95,7 @@
 
     <section id="settings-section">
       <h2>Settings</h2>
-      <label for="api-key">OpenRouter API Key:</label>
-      <input type="password" id="api-key" placeholder="sk-or-v1-..." />
-
-      <div class="flex-row">
-        <div style="flex-grow: 1">
-          <label for="model-input">Model:</label>
-          <input
-            type="text"
-            id="model-input"
-            list="models-list"
-            placeholder="Select or type model ID..."
-          />
-          <datalist id="models-list"></datalist>
-        </div>
-        <button id="fetch-models-btn" style="margin-top: 24px">
-          Fetch Models
-        </button>
-      </div>
+      <div id="llm-settings-container"></div>
     </section>
 
     <section id="system-prompt-section">

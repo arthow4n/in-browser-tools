@@ -1,17 +1,12 @@
 import { ChatCore, ChatMessage } from './core.js';
+import { setupLLMSettings } from '../shared/llm-settings.js';
 
 const core = new ChatCore();
 
 // --- DOM Elements ---
-const apiKeyInput = document.getElementById('api-key') as HTMLInputElement;
-const modelInput = document.getElementById('model-input') as HTMLInputElement;
-const modelsList = document.getElementById(
-  'models-list',
-) as HTMLDataListElement;
-const fetchModelsBtn = document.getElementById(
-  'fetch-models-btn',
-) as HTMLButtonElement;
-
+const llmSettingsContainer = document.getElementById(
+  'llm-settings-container',
+) as HTMLDivElement;
 const systemPromptTextarea = document.getElementById(
   'system-prompt',
 ) as HTMLTextAreaElement;
@@ -40,10 +35,7 @@ const clearHistoryBtn = document.getElementById(
 ) as HTMLButtonElement;
 
 if (
-  !apiKeyInput ||
-  !modelInput ||
-  !modelsList ||
-  !fetchModelsBtn ||
+  !llmSettingsContainer ||
   !systemPromptTextarea ||
   !improvePromptBtn ||
   !savePromptBtn ||
@@ -59,44 +51,15 @@ if (
 
 // --- Initialization ---
 function init() {
-  apiKeyInput.value = core.apiKey;
-  modelInput.value = core.model;
+  setupLLMSettings(llmSettingsContainer, (settings) => {
+    core.apiKey = settings.apiKey;
+    core.model = settings.model;
+  });
+
   systemPromptTextarea.value = core.systemPrompt;
   renderSavedPrompts();
   renderHistory();
 }
-
-// --- Settings Events ---
-apiKeyInput.addEventListener('input', () => {
-  core.apiKey = apiKeyInput.value;
-  core.saveState();
-});
-
-modelInput.addEventListener('input', () => {
-  core.model = modelInput.value;
-  core.saveState();
-});
-
-fetchModelsBtn.addEventListener('click', async () => {
-  fetchModelsBtn.disabled = true;
-  fetchModelsBtn.textContent = 'Fetching...';
-  try {
-    const models = await core.fetchModels();
-    modelsList.innerHTML = '';
-    for (const m of models) {
-      const option = document.createElement('option');
-      option.value = m.id;
-      option.textContent = m.name;
-      modelsList.appendChild(option);
-    }
-    alert(`Fetched ${models.length} models successfully.`);
-  } catch (e: any) {
-    alert(`Error fetching models: ${e.message}`);
-  } finally {
-    fetchModelsBtn.disabled = false;
-    fetchModelsBtn.textContent = 'Fetch Models';
-  }
-});
 
 // --- System Prompt Events ---
 systemPromptTextarea.addEventListener('input', () => {
@@ -198,8 +161,12 @@ function createMessageElement(msg: ChatMessage): HTMLDivElement {
   const deleteBtn = document.createElement('button');
   deleteBtn.textContent = 'Delete';
 
+  const deleteBelowBtn = document.createElement('button');
+  deleteBelowBtn.textContent = 'Delete ↓';
+
   controls.appendChild(editBtn);
   controls.appendChild(deleteBtn);
+  controls.appendChild(deleteBelowBtn);
 
   div.appendChild(roleLabel);
   div.appendChild(contentDiv);
@@ -236,6 +203,17 @@ function createMessageElement(msg: ChatMessage): HTMLDivElement {
     }
   });
 
+  deleteBelowBtn.addEventListener('click', () => {
+    if (confirm('Delete this message and all messages below it?')) {
+      const idx = core.history.findIndex((m) => m.id === msg.id);
+      if (idx !== -1) {
+        core.history = core.history.slice(0, idx);
+        core.saveState();
+        renderHistory();
+      }
+    }
+  });
+
   return div;
 }
 
@@ -257,23 +235,25 @@ clearHistoryBtn.addEventListener('click', () => {
 
 sendBtn.addEventListener('click', async () => {
   const text = userInputTextarea.value.trim();
-  if (!text) return;
+  if (!text && core.history.length === 0) return;
 
   if (!core.apiKey || !core.model) {
     alert('API Key and Model are required.');
     return;
   }
 
-  const userMsg: ChatMessage = {
-    id: Date.now().toString(),
-    role: 'user',
-    content: text,
-  };
+  if (text) {
+    const userMsg: ChatMessage = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: text,
+    };
 
-  core.history.push(userMsg);
-  core.saveState();
-  renderHistory();
-  userInputTextarea.value = '';
+    core.history.push(userMsg);
+    core.saveState();
+    renderHistory();
+    userInputTextarea.value = '';
+  }
 
   sendBtn.disabled = true;
 

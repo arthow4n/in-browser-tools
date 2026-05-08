@@ -9,6 +9,7 @@ export default defineConfig({
       'google-drive-poc': './src/google-drive-poc/index.ts',
       'llm-chat': './src/llm-chat/index.ts',
       'prompt-improver': './src/prompt-improver/index.ts',
+      'text-inspector': './src/text-inspector/index.ts',
     },
   },
   html: {
