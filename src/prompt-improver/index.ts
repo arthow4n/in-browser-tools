@@ -4,6 +4,7 @@ import {
   IterationResult,
 } from './core.js';
 import { setupLLMSettings } from '../shared/llm-settings.js';
+import { LLMCore } from '../shared/llm-core.js';
 
 const els = {
   llmSettingsContainer: document.getElementById(
@@ -27,8 +28,7 @@ const els = {
   ) as HTMLTableSectionElement,
 };
 
-let currentApiKey = '';
-let currentModel = '';
+const llmCore = new LLMCore();
 
 // Ensure all required elements exist
 for (const [key, el] of Object.entries(els)) {
@@ -69,10 +69,7 @@ els.promptType.addEventListener('change', saveState);
 
 loadState();
 
-setupLLMSettings(els.llmSettingsContainer, (settings) => {
-  currentApiKey = settings.apiKey;
-  currentModel = settings.model;
-});
+setupLLMSettings(els.llmSettingsContainer, llmCore);
 
 function appendLog(type: string, message: string, data?: any) {
   const entry = document.createElement('div');
@@ -90,14 +87,12 @@ function appendLog(type: string, message: string, data?: any) {
 }
 
 els.startBtn.addEventListener('click', async () => {
-  if (!currentApiKey || !currentModel || !els.originalPrompt.value) {
+  if (!llmCore.apiKey || !llmCore.model || !els.originalPrompt.value) {
     alert('Please fill out API Key, Model, and Original Prompt.');
     return;
   }
 
   const config: PromptImproverConfig = {
-    apiKey: currentApiKey,
-    model: currentModel,
     originalPrompt: els.originalPrompt.value,
     intention: els.intention.value,
     howToImprove: els.howToImprove.value,
@@ -112,7 +107,7 @@ els.startBtn.addEventListener('click', async () => {
   els.resultsPanel.style.display = 'none';
   els.resultsTableBody.innerHTML = '';
 
-  const core = new PromptImproverCore(config);
+  const core = new PromptImproverCore(config, llmCore);
 
   try {
     const generator = core.run();

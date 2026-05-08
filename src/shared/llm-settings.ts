@@ -1,17 +1,6 @@
-export interface LLMSettings {
-  apiKey: string;
-  model: string;
-}
+import { LLMCore } from './llm-core.js';
 
-export interface Model {
-  id: string;
-  name: string;
-}
-
-export function setupLLMSettings(
-  container: HTMLElement,
-  onChange: (settings: LLMSettings) => void,
-) {
+export function setupLLMSettings(container: HTMLElement, core: LLMCore) {
   // Setup HTML structure
   container.innerHTML = `
     <label for="shared-api-key">OpenRouter API Key:</label>
@@ -52,29 +41,20 @@ export function setupLLMSettings(
   }
 
   // Load initial state
-  apiKeyInput.value = localStorage.getItem('shared-openrouter-apiKey') || '';
-  modelInput.value =
-    localStorage.getItem('shared-openrouter-model') ||
-    'google/gemini-2.5-flash';
+  apiKeyInput.value = core.apiKey;
+  modelInput.value = core.model;
 
   const notifyChange = () => {
-    localStorage.setItem('shared-openrouter-apiKey', apiKeyInput.value);
-    localStorage.setItem('shared-openrouter-model', modelInput.value);
-    onChange({
-      apiKey: apiKeyInput.value,
-      model: modelInput.value,
-    });
+    core.apiKey = apiKeyInput.value;
+    core.model = modelInput.value;
+    core.saveState();
   };
-
-  // Initial notification
-  notifyChange();
 
   apiKeyInput.addEventListener('input', notifyChange);
   modelInput.addEventListener('input', notifyChange);
 
   fetchModelsBtn.addEventListener('click', async () => {
-    const currentApiKey = apiKeyInput.value;
-    if (!currentApiKey) {
+    if (!core.apiKey) {
       alert('Please enter an OpenRouter API Key first.');
       return;
     }
@@ -83,25 +63,17 @@ export function setupLLMSettings(
     fetchModelsBtn.textContent = 'Fetching...';
 
     try {
-      const res = await fetch('https://openrouter.ai/api/v1/models', {
-        headers: {
-          Authorization: `Bearer ${currentApiKey}`,
-        },
-      });
-
-      if (!res.ok) throw new Error('Failed to fetch models');
-
-      const data = await res.json();
+      const models = await core.fetchModels();
       modelsList.innerHTML = '';
 
-      for (const m of data.data) {
+      for (const m of models) {
         const option = document.createElement('option');
         option.value = m.id;
         option.textContent = m.name;
         modelsList.appendChild(option);
       }
 
-      alert(`Fetched ${data.data.length} models successfully.`);
+      alert(`Fetched ${models.length} models successfully.`);
     } catch (e: any) {
       alert(`Error fetching models: ${e.message}`);
     } finally {

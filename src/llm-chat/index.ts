@@ -51,10 +51,7 @@ if (
 
 // --- Initialization ---
 function init() {
-  setupLLMSettings(llmSettingsContainer, (settings) => {
-    core.apiKey = settings.apiKey;
-    core.model = settings.model;
-  });
+  setupLLMSettings(llmSettingsContainer, core);
 
   systemPromptTextarea.value = core.systemPrompt;
   renderSavedPrompts();
@@ -64,7 +61,7 @@ function init() {
 // --- System Prompt Events ---
 systemPromptTextarea.addEventListener('input', () => {
   core.systemPrompt = systemPromptTextarea.value;
-  core.saveState();
+  core.saveChatState();
 });
 
 improvePromptBtn.addEventListener('click', async () => {
@@ -78,7 +75,7 @@ improvePromptBtn.addEventListener('click', async () => {
     const improved = await core.improveSystemPrompt();
     systemPromptTextarea.value = improved;
     core.systemPrompt = improved;
-    core.saveState();
+    core.saveChatState();
   } catch (e: any) {
     alert(`Error: ${e.message}`);
   } finally {
@@ -108,7 +105,7 @@ savePromptBtn.addEventListener('click', () => {
   if (!name) return;
   const id = Date.now().toString();
   core.savedPrompts.push({ id, name, content: core.systemPrompt });
-  core.saveState();
+  core.saveChatState();
   renderSavedPrompts();
   savedPromptsSelect.value = id;
   deletePromptBtn.style.display = 'inline-block';
@@ -122,7 +119,7 @@ savedPromptsSelect.addEventListener('change', () => {
   if (sp) {
     systemPromptTextarea.value = sp.content;
     core.systemPrompt = sp.content;
-    core.saveState();
+    core.saveChatState();
   }
 });
 
@@ -131,7 +128,7 @@ deletePromptBtn.addEventListener('click', () => {
   if (!id) return;
   if (confirm('Delete this saved prompt?')) {
     core.savedPrompts = core.savedPrompts.filter((p) => p.id !== id);
-    core.saveState();
+    core.saveChatState();
     savedPromptsSelect.value = '';
     renderSavedPrompts();
   }
@@ -191,14 +188,14 @@ function createMessageElement(msg: ChatMessage): HTMLDivElement {
       msg.content = editTextarea.value;
       contentDiv.textContent = msg.content;
       div.replaceChild(contentDiv, editTextarea);
-      core.saveState();
+      core.saveChatState();
     }
   });
 
   deleteBtn.addEventListener('click', () => {
     if (confirm('Delete this message?')) {
       core.history = core.history.filter((m) => m.id !== msg.id);
-      core.saveState();
+      core.saveChatState();
       renderHistory();
     }
   });
@@ -208,7 +205,7 @@ function createMessageElement(msg: ChatMessage): HTMLDivElement {
       const idx = core.history.findIndex((m) => m.id === msg.id);
       if (idx !== -1) {
         core.history = core.history.slice(0, idx);
-        core.saveState();
+        core.saveChatState();
         renderHistory();
       }
     }
@@ -228,7 +225,7 @@ function renderHistory() {
 clearHistoryBtn.addEventListener('click', () => {
   if (confirm('Clear entire chat history?')) {
     core.history = [];
-    core.saveState();
+    core.saveChatState();
     renderHistory();
   }
 });
@@ -250,7 +247,7 @@ sendBtn.addEventListener('click', async () => {
     };
 
     core.history.push(userMsg);
-    core.saveState();
+    core.saveChatState();
     renderHistory();
     userInputTextarea.value = '';
   }
@@ -269,7 +266,7 @@ sendBtn.addEventListener('click', async () => {
   const contentDiv = assistantEl.querySelector('.content') as HTMLDivElement;
 
   try {
-    const generator = core.streamCompletion([]); // Pass empty newMessages as userMsg is already in history
+    const generator = core.streamChatCompletion([]); // Pass empty newMessages as userMsg is already in history
     for await (const chunk of generator) {
       assistantMsg.content += chunk;
       contentDiv.textContent = assistantMsg.content;
@@ -282,7 +279,7 @@ sendBtn.addEventListener('click', async () => {
   } finally {
     assistantEl.classList.remove('streaming');
     core.history.push(assistantMsg);
-    core.saveState();
+    core.saveChatState();
     renderHistory(); // Re-render to ensure correct state and bindings
     sendBtn.disabled = false;
   }
