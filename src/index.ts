@@ -5,6 +5,7 @@ const tools = [
   { name: 'PDF Merger', path: 'pdf-merger.html' },
   { name: 'Google Drive POC', path: 'google-drive-poc.html' },
   { name: 'LLM Chat', path: 'llm-chat.html' },
+  { name: 'Prompt Improver', path: 'prompt-improver.html' },
 ];
 
 const list = document.getElementById('tools-list');

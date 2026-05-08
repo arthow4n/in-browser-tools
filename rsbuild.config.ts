@@ -8,6 +8,7 @@ export default defineConfig({
       'pdf-merger': './src/pdf-merger/index.ts',
       'google-drive-poc': './src/google-drive-poc/index.ts',
       'llm-chat': './src/llm-chat/index.ts',
+      'prompt-improver': './src/prompt-improver/index.ts',
     },
   },
   html: {
