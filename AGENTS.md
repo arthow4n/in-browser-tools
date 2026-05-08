@@ -16,6 +16,7 @@ The tool you are asked to make might not be well thought through or not really d
 - Prioritize using the available tools you are given access to, instead of writing scripts or running arbitrary commands, even if the action might be slower to do with the tools. This is mainly to ensure your actions such as read/write files will be approved by the user.
 - If you are about to run any `npx`/`npm exec` or similar commands, prioritise to `npm run` the scripts already listed in `package.json` instead.
 - The project is bundled using Rsbuild. You can start the dev server using `npm run dev` and build the project using `npm run build`.
+- When creating a new tool or updating an existing one, the 'Back to Tools' link to the app root MUST use exactly `<a href="./">← Back to Tools</a>`. Do not use `../index.html` or `/` because Rsbuild flattens the output directory and GitHub pages hosts it at `/in-browser-tools/`.
 
 ## Tech stack
 
