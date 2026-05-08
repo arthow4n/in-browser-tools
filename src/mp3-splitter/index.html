@@ -2,21 +2,57 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MP3 Splitter</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        line-height: 1.6;
+        margin: 0 auto;
+        padding: 20px;
+        max-width: 800px;
+        box-sizing: border-box;
+      }
+      *,
+      *:before,
+      *:after {
+        box-sizing: inherit;
+      }
+      .input-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 15px;
+      }
+      input {
+        max-width: 100%;
+      }
+      button {
+        padding: 8px 16px;
+      }
+    </style>
   </head>
   <body>
     <h1>MP3 Splitter</h1>
-    <div>
+    <a href="../index.html" style="display: inline-block; margin-bottom: 1em"
+      >← Back to Tools</a
+    >
+    <div class="input-group">
       <label for="mp3-file">Upload MP3 or M4A file:</label>
-      <input type="file" id="mp3-file" accept="audio/mpeg,audio/mp4,audio/x-m4a,.m4a" />
+      <input
+        type="file"
+        id="mp3-file"
+        accept="audio/mpeg,audio/mp4,audio/x-m4a,.m4a"
+      />
     </div>
-    <div>
+    <div class="input-group">
       <label for="minutes">Split every X minutes:</label>
       <input type="number" id="minutes" value="30" min="1" />
     </div>
     <button id="split-btn">Split MP3</button>
 
-    <div id="status" style="margin-top: 1em"></div>
+    <div id="status" style="margin-top: 1em; word-wrap: break-word"></div>
     <ul id="output-list" style="margin-top: 1em"></ul>
   </body>
 </html>

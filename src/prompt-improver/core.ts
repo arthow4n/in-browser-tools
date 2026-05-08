@@ -64,19 +64,22 @@ export class PromptImproverCore {
 
     while (attempt <= retries) {
       try {
-        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${this.config.apiKey}`,
-            'Content-Type': 'application/json',
-            'HTTP-Referer': window.location.href,
-            'X-Title': 'In-Browser Tools',
+        const res = await fetch(
+          'https://openrouter.ai/api/v1/chat/completions',
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${this.config.apiKey}`,
+              'Content-Type': 'application/json',
+              'HTTP-Referer': window.location.href,
+              'X-Title': 'In-Browser Tools',
+            },
+            body: JSON.stringify({
+              model: this.config.model,
+              messages,
+            }),
           },
-          body: JSON.stringify({
-            model: this.config.model,
-            messages,
-          }),
-        });
+        );
 
         if (!res.ok) {
           const errorText = await res.text();
@@ -115,13 +118,19 @@ Generate a JSON object with the following schema:
 Reply ONLY with valid JSON. Do not include any other text.
 `;
 
-    const setupResponse = await this.callLLM([{ role: 'user', content: setupPrompt }]);
+    const setupResponse = await this.callLLM([
+      { role: 'user', content: setupPrompt },
+    ]);
 
     let setupData: SetupData;
     try {
       setupData = extractJSON(setupResponse);
     } catch (e) {
-      yield { type: 'info', message: 'Error parsing setup response', data: setupResponse };
+      yield {
+        type: 'info',
+        message: 'Error parsing setup response',
+        data: setupResponse,
+      };
       throw e;
     }
 
@@ -139,7 +148,10 @@ Reply ONLY with valid JSON. Do not include any other text.
       };
 
       // 1. Implementer: Generate new prompt
-      yield { type: 'implementer', message: 'Implementer is drafting a new prompt...' };
+      yield {
+        type: 'implementer',
+        message: 'Implementer is drafting a new prompt...',
+      };
       const implementerMessages = [
         { role: 'system', content: setupData.implementerSystemPrompt },
         {
@@ -149,15 +161,22 @@ Reply ONLY with valid JSON. Do not include any other text.
       ];
       let newPrompt = await this.callLLM(implementerMessages);
       if (newPrompt.startsWith('\`\`\`') && newPrompt.endsWith('\`\`\`')) {
-        newPrompt = newPrompt.replace(/^\`\`\`[a-z]*\n/, '').replace(/\n\`\`\`$/, '');
+        newPrompt = newPrompt
+          .replace(/^\`\`\`[a-z]*\n/, '')
+          .replace(/\n\`\`\`$/, '');
       }
 
-      yield { type: 'implementer', message: `New prompt generated.`, data: newPrompt };
+      yield {
+        type: 'implementer',
+        message: `New prompt generated.`,
+        data: newPrompt,
+      };
 
       // 2. Test Subagent
       yield {
         type: 'tester',
-        message: 'Running test scenario with the new prompt (No context Ralph Wiggum style)...',
+        message:
+          'Running test scenario with the new prompt (No context Ralph Wiggum style)...',
       };
       const scenario = setupData.testScenarios[0] || 'Hello';
       let testerMessages: any[] = [];
@@ -168,14 +187,19 @@ Reply ONLY with valid JSON. Do not include any other text.
           { role: 'user', content: scenario },
         ];
       } else {
-        testerMessages = [{ role: 'user', content: `${newPrompt}\n\nInput: ${scenario}` }];
+        testerMessages = [
+          { role: 'user', content: `${newPrompt}\n\nInput: ${scenario}` },
+        ];
       }
 
       const testOutput = await this.callLLM(testerMessages);
       yield { type: 'tester', message: `Test run complete.`, data: testOutput };
 
       // 3. Evaluator
-      yield { type: 'evaluator', message: 'Evaluator is reviewing the test output...' };
+      yield {
+        type: 'evaluator',
+        message: 'Evaluator is reviewing the test output...',
+      };
       const evalPrompt = `
 Evaluation Criteria:
 ${setupData.evaluationCriteria}
@@ -208,7 +232,11 @@ Reply ONLY with valid JSON.
       try {
         evalData = extractJSON(evalResponse);
       } catch (e) {
-        yield { type: 'info', message: 'Error parsing evaluator response', data: evalResponse };
+        yield {
+          type: 'info',
+          message: 'Error parsing evaluator response',
+          data: evalResponse,
+        };
         throw e;
       }
 
@@ -236,7 +264,11 @@ Reply ONLY with valid JSON.
       feedback = evalData.feedback;
     }
 
-    yield { type: 'result', message: 'Multi-agent loop finished.', data: results };
+    yield {
+      type: 'result',
+      message: 'Multi-agent loop finished.',
+      data: results,
+    };
     return results;
   }
 }

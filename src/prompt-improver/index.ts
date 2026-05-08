@@ -1,20 +1,30 @@
-import { PromptImproverCore, PromptImproverConfig, IterationResult } from './core.js';
+import {
+  PromptImproverCore,
+  PromptImproverConfig,
+  IterationResult,
+} from './core.js';
 
 const els = {
   apiKey: document.getElementById('api-key') as HTMLInputElement,
   model: document.getElementById('model') as HTMLInputElement,
   fetchModelsBtn: document.getElementById('fetch-models') as HTMLButtonElement,
   modelSelect: document.getElementById('model-select') as HTMLSelectElement,
-  originalPrompt: document.getElementById('original-prompt') as HTMLTextAreaElement,
+  originalPrompt: document.getElementById(
+    'original-prompt',
+  ) as HTMLTextAreaElement,
   intention: document.getElementById('intention') as HTMLTextAreaElement,
-  howToImprove: document.getElementById('how-to-improve') as HTMLTextAreaElement,
+  howToImprove: document.getElementById(
+    'how-to-improve',
+  ) as HTMLTextAreaElement,
   maxRounds: document.getElementById('max-rounds') as HTMLInputElement,
   promptType: document.getElementById('prompt-type') as HTMLSelectElement,
   startBtn: document.getElementById('start-btn') as HTMLButtonElement,
   statusText: document.getElementById('status-text') as HTMLSpanElement,
   logArea: document.getElementById('log-area') as HTMLDivElement,
   resultsPanel: document.getElementById('results-panel') as HTMLDivElement,
-  resultsTableBody: document.querySelector('#results-table tbody') as HTMLTableSectionElement,
+  resultsTableBody: document.querySelector(
+    '#results-table tbody',
+  ) as HTMLTableSectionElement,
 };
 
 // Ensure all required elements exist
@@ -24,18 +34,29 @@ for (const [key, el] of Object.entries(els)) {
 
 function loadState() {
   els.apiKey.value = localStorage.getItem('prompt-improver-apiKey') || '';
-  els.model.value = localStorage.getItem('prompt-improver-model') || 'google/gemini-2.5-flash';
-  els.originalPrompt.value = localStorage.getItem('prompt-improver-originalPrompt') || '';
-  els.intention.value = localStorage.getItem('prompt-improver-intention') || 'Used for Gemini Deep Research';
-  els.howToImprove.value = localStorage.getItem('prompt-improver-howToImprove') || 'Ensure the LLM is considerate and fills in details the original vague prompt might not have thought about.';
-  els.maxRounds.value = localStorage.getItem('prompt-improver-maxRounds') || '3';
-  els.promptType.value = localStorage.getItem('prompt-improver-promptType') || 'system';
+  els.model.value =
+    localStorage.getItem('prompt-improver-model') || 'google/gemini-2.5-flash';
+  els.originalPrompt.value =
+    localStorage.getItem('prompt-improver-originalPrompt') || '';
+  els.intention.value =
+    localStorage.getItem('prompt-improver-intention') ||
+    'Used for Gemini Deep Research';
+  els.howToImprove.value =
+    localStorage.getItem('prompt-improver-howToImprove') ||
+    'Ensure the LLM is considerate and fills in details the original vague prompt might not have thought about.';
+  els.maxRounds.value =
+    localStorage.getItem('prompt-improver-maxRounds') || '3';
+  els.promptType.value =
+    localStorage.getItem('prompt-improver-promptType') || 'system';
 }
 
 function saveState() {
   localStorage.setItem('prompt-improver-apiKey', els.apiKey.value);
   localStorage.setItem('prompt-improver-model', els.model.value);
-  localStorage.setItem('prompt-improver-originalPrompt', els.originalPrompt.value);
+  localStorage.setItem(
+    'prompt-improver-originalPrompt',
+    els.originalPrompt.value,
+  );
   localStorage.setItem('prompt-improver-intention', els.intention.value);
   localStorage.setItem('prompt-improver-howToImprove', els.howToImprove.value);
   localStorage.setItem('prompt-improver-maxRounds', els.maxRounds.value);
@@ -64,7 +85,7 @@ els.fetchModelsBtn.addEventListener('click', async () => {
     els.fetchModelsBtn.textContent = 'Fetching...';
 
     const res = await fetch('https://openrouter.ai/api/v1/models', {
-      headers: { Authorization: `Bearer ${apiKey}` }
+      headers: { Authorization: `Bearer ${apiKey}` },
     });
 
     if (!res.ok) throw new Error('Failed to fetch models');
@@ -101,7 +122,8 @@ function appendLog(type: string, message: string, data?: any) {
 
   let content = `[${new Date().toLocaleTimeString()}] ${message}`;
   if (data) {
-    content += '\n' + (typeof data === 'string' ? data : JSON.stringify(data, null, 2));
+    content +=
+      '\n' + (typeof data === 'string' ? data : JSON.stringify(data, null, 2));
   }
 
   entry.textContent = content;
@@ -194,7 +216,8 @@ function renderResults(results: IterationResult[]) {
     tr.appendChild(tdPrompt);
 
     const tdFeedback = document.createElement('td');
-    tdFeedback.textContent = res.feedback + (res.stop ? '\n[STOP SIGNALED]' : '');
+    tdFeedback.textContent =
+      res.feedback + (res.stop ? '\n[STOP SIGNALED]' : '');
     tr.appendChild(tdFeedback);
 
     els.resultsTableBody.appendChild(tr);

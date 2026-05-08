@@ -29,6 +29,12 @@ Dependencies should be bundled with the bundler.
 ## Styling
 
 Keep everything simple, but leave some spacing between elements, so they are clickable in mobile.
+Adopt a mobile-first design:
+
+- Always include the `<meta name="viewport" content="width=device-width, initial-scale=1.0" />` tag in the `<head>` of HTML files.
+- Ensure layouts wrap properly on small screens (e.g. use `display: flex; flex-wrap: wrap;` or media queries for CSS grids). Input fields and buttons should wrap to the next line on mobile rather than overflowing.
+- Use `box-sizing: border-box` globally or for sizing elements to prevent padding/borders from breaking width limits.
+- Avoid hardcoded fixed widths (e.g. `width: 300px`); use `width: 100%; max-width: 300px;` instead.
 
 ## Pre-push checks
 
