@@ -76,6 +76,7 @@ const clearHistoryBtn = getRequiredElement(
   'clear-history-btn',
   HTMLButtonElement,
 );
+const chatStatus = getRequiredElement('chat-status', HTMLSpanElement);
 
 const workflowContainer = getRequiredElement(
   'workflow-container',
@@ -97,6 +98,7 @@ const evalOutputContainer = getRequiredElement(
   'eval-output-container',
   HTMLDivElement,
 );
+const testStatus = getRequiredElement('test-status', HTMLSpanElement);
 
 export interface WorkflowAgent {
   name: string;
@@ -224,6 +226,7 @@ function downloadFile(filename: string, content: string) {
 
 // Helper to copy to clipboard
 async function copyToClipboard(text: string, button: HTMLButtonElement) {
+  vizStatus.textContent = '';
   try {
     await navigator.clipboard.writeText(text);
     const originalText = button.textContent;
@@ -232,7 +235,8 @@ async function copyToClipboard(text: string, button: HTMLButtonElement) {
       button.textContent = originalText;
     }, 2000);
   } catch (err) {
-    alert('Failed to copy to clipboard');
+    vizStatus.textContent = 'Failed to copy to clipboard';
+    vizStatus.style.color = 'red';
   }
 }
 
@@ -251,14 +255,25 @@ const downloadAllBtn = getRequiredElement(
   'download-all-btn',
   HTMLButtonElement,
 );
+const vizStatus = getRequiredElement('viz-status', HTMLSpanElement);
 
 copyAllBtn.addEventListener('click', () => {
-  if (!currentWorkflow) return alert('No workflow to copy');
+  vizStatus.textContent = '';
+  if (!currentWorkflow) {
+    vizStatus.textContent = 'No workflow to copy';
+    vizStatus.style.color = 'red';
+    return;
+  }
   copyToClipboard(getConcatenatedMarkdown(), copyAllBtn);
 });
 
 downloadAllBtn.addEventListener('click', () => {
-  if (!currentWorkflow) return alert('No workflow to download');
+  vizStatus.textContent = '';
+  if (!currentWorkflow) {
+    vizStatus.textContent = 'No workflow to download';
+    vizStatus.style.color = 'red';
+    return;
+  }
   downloadFile('workflow.md', getConcatenatedMarkdown());
 });
 
@@ -308,11 +323,14 @@ function setupWorkflowCardButtons() {
 
 // --- Test Chat Events ---
 runTestBtn.addEventListener('click', async () => {
+  testStatus.textContent = '';
   const text = testUserInput.value.trim();
   if (!text) return;
 
   if (!core.apiKey || !core.model) {
-    alert('API Key and Model are required. Please set them in settings.');
+    testStatus.textContent =
+      'API Key and Model are required. Please set them in settings.';
+    testStatus.style.color = 'red';
     return;
   }
 
@@ -353,7 +371,8 @@ runTestBtn.addEventListener('click', async () => {
       testOutputContainer.scrollTop = testOutputContainer.scrollHeight;
     }
   } catch (e: any) {
-    alert(`Test Chat Error: ${e.message}`);
+    testStatus.textContent = `Test Chat Error: ${e.message}`;
+    testStatus.style.color = 'red';
     assistantMsg.content += `\n[Error: ${e.message}]`;
     contentDiv.textContent = assistantMsg.content;
   } finally {
@@ -365,8 +384,10 @@ runTestBtn.addEventListener('click', async () => {
 });
 
 evalTestBtn.addEventListener('click', async () => {
+  testStatus.textContent = '';
   if (!core.apiKey || !core.model) {
-    alert('API Key and Model are required.');
+    testStatus.textContent = 'API Key and Model are required.';
+    testStatus.style.color = 'red';
     return;
   }
 
@@ -427,7 +448,8 @@ ${JSON.stringify(testCore.history, null, 2)}`;
       evalOutputContainer.appendChild(btn);
     });
   } catch (e: any) {
-    alert(`Evaluation Error: ${e.message}`);
+    testStatus.textContent = `Evaluation Error: ${e.message}`;
+    testStatus.style.color = 'red';
   } finally {
     evalTestBtn.disabled = false;
     evalTestBtn.textContent = 'Evaluate Run & Suggest Improvements';
@@ -494,11 +516,14 @@ clearHistoryBtn.addEventListener('click', () => {
 });
 
 sendBtn.addEventListener('click', async () => {
+  chatStatus.textContent = '';
   const text = userInputTextarea.value.trim();
   if (!text) return;
 
   if (!core.apiKey || !core.model) {
-    alert('API Key and Model are required. Please set them in settings.');
+    chatStatus.textContent =
+      'API Key and Model are required. Please set them in settings.';
+    chatStatus.style.color = 'red';
     return;
   }
 
@@ -532,7 +557,8 @@ sendBtn.addEventListener('click', async () => {
       historyContainer.scrollTop = historyContainer.scrollHeight;
     }
   } catch (e: any) {
-    alert(`Chat Error: ${e.message}`);
+    chatStatus.textContent = `Chat Error: ${e.message}`;
+    chatStatus.style.color = 'red';
     assistantMsg.content += `\n[Error: ${e.message}]`;
     contentDiv.textContent = assistantMsg.content;
   } finally {
@@ -556,10 +582,16 @@ const importTextarea = getRequiredElement(
 );
 const importBtn = getRequiredElement('import-btn', HTMLButtonElement);
 const fixImportBtn = getRequiredElement('fix-import-btn', HTMLButtonElement);
+const importStatus = getRequiredElement('import-status', HTMLSpanElement);
 
 function handleImport() {
+  importStatus.textContent = '';
   const text = importTextarea.value.trim();
-  if (!text) return alert('Please paste markdown to import.');
+  if (!text) {
+    importStatus.textContent = 'Please paste markdown to import.';
+    importStatus.style.color = 'red';
+    return;
+  }
 
   const parsed = parseWorkflowMarkdown(text);
   if (parsed) {
@@ -577,11 +609,12 @@ function handleImport() {
     renderHistory();
 
     importTextarea.value = '';
-    alert('Workflow imported successfully!');
+    importStatus.textContent = 'Workflow imported successfully!';
+    importStatus.style.color = 'green';
   } else {
-    alert(
-      'Could not parse the markdown automatically. The headers might be malformed. Click "Fix Import with LLM" to use AI to fix the format.',
-    );
+    importStatus.textContent =
+      'Could not parse the markdown automatically. The headers might be malformed. Click "Fix Import with LLM" to use AI to fix the format.';
+    importStatus.style.color = 'red';
     fixImportBtn.style.display = 'inline-block';
   }
 }
@@ -589,11 +622,13 @@ function handleImport() {
 importBtn.addEventListener('click', handleImport);
 
 fixImportBtn.addEventListener('click', async () => {
+  importStatus.textContent = '';
   const text = importTextarea.value.trim();
   if (!text) return;
 
   if (!core.apiKey || !core.model) {
-    alert('API Key and Model are required for LLM fixing.');
+    importStatus.textContent = 'API Key and Model are required for LLM fixing.';
+    importStatus.style.color = 'red';
     return;
   }
 
@@ -640,7 +675,8 @@ ${text}`;
       handleImport(); // Attempt import again with the fixed text
     }
   } catch (e: any) {
-    alert(`Error fixing import: ${e.message}`);
+    importStatus.textContent = `Error fixing import: ${e.message}`;
+    importStatus.style.color = 'red';
   } finally {
     fixImportBtn.disabled = false;
     fixImportBtn.textContent = 'Fix Import with LLM';
