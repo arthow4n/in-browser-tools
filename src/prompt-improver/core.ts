@@ -4,6 +4,7 @@ export interface PromptImproverConfig {
   originalPrompt: string;
   intention: string;
   howToImprove: string;
+  evaluationFocus?: string;
   maxLoopRound: number;
   promptType: 'system' | 'user';
 }
@@ -73,7 +74,7 @@ Generate a JSON object with the following schema:
   "implementerSystemPrompt": "The system prompt for the Implementer agent whose job is to iteratively rewrite the prompt based on feedback.",
   "evaluatorSystemPrompt": "The system prompt for the Evaluator agent whose job is to review the output of a test subagent using the new prompt and score it.",
   "testScenarios": ["A string representing a complex or tricky test input to feed the test subagent to rigorously verify the prompt."],
-  "evaluationCriteria": "Detailed criteria for how to score the prompt output objectively (1-100 scale)."
+  "evaluationCriteria": "Detailed criteria for how to score the prompt output objectively on a 1 to 5 scale. Define distinctly what each score from 1 to 5 means (e.g. 1 = completely misses the mark, 5 = perfect). ${this.config.evaluationFocus ? `Please ensure the criteria strictly focuses on the following: ${this.config.evaluationFocus}` : ''}"
 }
 
 Reply ONLY with valid JSON. Do not include any other text.
@@ -179,7 +180,7 @@ ${testOutput}
 
 Provide your evaluation in JSON format:
 {
-  "score": <number 1-100>,
+  "score": <number 1-5>,
   "feedback": "<Detailed feedback on what is good, what is bad, and exactly how to improve in the next iteration>",
   "stop": <boolean, true if the prompt is perfect or cannot be reasonably improved further, false to continue loop>
 }

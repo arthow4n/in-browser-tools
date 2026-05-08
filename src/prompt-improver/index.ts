@@ -17,6 +17,9 @@ const els = {
   howToImprove: document.getElementById(
     'how-to-improve',
   ) as HTMLTextAreaElement,
+  evaluationFocus: document.getElementById(
+    'evaluation-focus',
+  ) as HTMLTextAreaElement,
   maxRounds: document.getElementById('max-rounds') as HTMLInputElement,
   promptType: document.getElementById('prompt-type') as HTMLSelectElement,
   startBtn: document.getElementById('start-btn') as HTMLButtonElement,
@@ -44,6 +47,8 @@ function loadState() {
   els.howToImprove.value =
     localStorage.getItem('prompt-improver-howToImprove') ||
     'Ensure the LLM is considerate and fills in details the original vague prompt might not have thought about.';
+  els.evaluationFocus.value =
+    localStorage.getItem('prompt-improver-evaluationFocus') || '';
   els.maxRounds.value =
     localStorage.getItem('prompt-improver-maxRounds') || '3';
   els.promptType.value =
@@ -57,6 +62,7 @@ function saveState() {
   );
   localStorage.setItem('prompt-improver-intention', els.intention.value);
   localStorage.setItem('prompt-improver-howToImprove', els.howToImprove.value);
+  localStorage.setItem('prompt-improver-evaluationFocus', els.evaluationFocus.value);
   localStorage.setItem('prompt-improver-maxRounds', els.maxRounds.value);
   localStorage.setItem('prompt-improver-promptType', els.promptType.value);
 }
@@ -64,6 +70,7 @@ function saveState() {
 els.originalPrompt.addEventListener('input', saveState);
 els.intention.addEventListener('input', saveState);
 els.howToImprove.addEventListener('input', saveState);
+els.evaluationFocus.addEventListener('input', saveState);
 els.maxRounds.addEventListener('input', saveState);
 els.promptType.addEventListener('change', saveState);
 
@@ -96,6 +103,7 @@ els.startBtn.addEventListener('click', async () => {
     originalPrompt: els.originalPrompt.value,
     intention: els.intention.value,
     howToImprove: els.howToImprove.value,
+    evaluationFocus: els.evaluationFocus.value,
     maxLoopRound: parseInt(els.maxRounds.value, 10),
     promptType: els.promptType.value as 'system' | 'user',
   };
