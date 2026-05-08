@@ -156,29 +156,7 @@
         <div class="panel">
           <h2>Configuration</h2>
 
-          <label for="api-key">OpenRouter API Key:</label>
-          <input type="password" id="api-key" placeholder="sk-or-v1-..." />
-
-          <label for="model">Model ID:</label>
-          <div
-            style="
-              display: flex;
-              flex-wrap: wrap;
-              gap: 10px;
-              margin-bottom: 15px;
-            "
-          >
-            <input
-              type="text"
-              id="model"
-              value="google/gemini-2.5-flash"
-              style="margin-bottom: 0; flex: 1; min-width: 200px"
-            />
-            <button id="fetch-models" type="button" style="padding: 8px">
-              Fetch Models
-            </button>
-          </div>
-          <select id="model-select" style="display: none"></select>
+          <div id="llm-settings-container"></div>
 
           <label for="original-prompt">Original Prompt:</label>
           <textarea

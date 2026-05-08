@@ -1,17 +1,12 @@
 import { ChatCore, ChatMessage } from './core.js';
+import { setupLLMSettings } from '../shared/llm-settings.js';
 
 const core = new ChatCore();
 
 // --- DOM Elements ---
-const apiKeyInput = document.getElementById('api-key') as HTMLInputElement;
-const modelInput = document.getElementById('model-input') as HTMLInputElement;
-const modelsList = document.getElementById(
-  'models-list',
-) as HTMLDataListElement;
-const fetchModelsBtn = document.getElementById(
-  'fetch-models-btn',
-) as HTMLButtonElement;
-
+const llmSettingsContainer = document.getElementById(
+  'llm-settings-container',
+) as HTMLDivElement;
 const systemPromptTextarea = document.getElementById(
   'system-prompt',
 ) as HTMLTextAreaElement;
@@ -40,10 +35,7 @@ const clearHistoryBtn = document.getElementById(
 ) as HTMLButtonElement;
 
 if (
-  !apiKeyInput ||
-  !modelInput ||
-  !modelsList ||
-  !fetchModelsBtn ||
+  !llmSettingsContainer ||
   !systemPromptTextarea ||
   !improvePromptBtn ||
   !savePromptBtn ||
@@ -59,44 +51,15 @@ if (
 
 // --- Initialization ---
 function init() {
-  apiKeyInput.value = core.apiKey;
-  modelInput.value = core.model;
+  setupLLMSettings(llmSettingsContainer, (settings) => {
+    core.apiKey = settings.apiKey;
+    core.model = settings.model;
+  });
+
   systemPromptTextarea.value = core.systemPrompt;
   renderSavedPrompts();
   renderHistory();
 }
-
-// --- Settings Events ---
-apiKeyInput.addEventListener('input', () => {
-  core.apiKey = apiKeyInput.value;
-  core.saveState();
-});
-
-modelInput.addEventListener('input', () => {
-  core.model = modelInput.value;
-  core.saveState();
-});
-
-fetchModelsBtn.addEventListener('click', async () => {
-  fetchModelsBtn.disabled = true;
-  fetchModelsBtn.textContent = 'Fetching...';
-  try {
-    const models = await core.fetchModels();
-    modelsList.innerHTML = '';
-    for (const m of models) {
-      const option = document.createElement('option');
-      option.value = m.id;
-      option.textContent = m.name;
-      modelsList.appendChild(option);
-    }
-    alert(`Fetched ${models.length} models successfully.`);
-  } catch (e: any) {
-    alert(`Error fetching models: ${e.message}`);
-  } finally {
-    fetchModelsBtn.disabled = false;
-    fetchModelsBtn.textContent = 'Fetch Models';
-  }
-});
 
 // --- System Prompt Events ---
 systemPromptTextarea.addEventListener('input', () => {
