@@ -2,7 +2,15 @@
 
 ## To find improvements in this repo
 
-If you are findng improvements in this repo, try focus more on finding concrete new tool ideas instead of improving the existing tool.
+There are two types of coding agents expected to work in this repo: **Feature Agents** and **Maintenance Agents**.
+
+### Feature Agents
+
+If you are a Feature Agent looking for improvements, try to focus more on finding concrete new tool ideas instead of incrementally improving existing tools. Read the codebase to understand the context and available utilities.
+
+### Maintenance Agents
+
+If you are a Maintenance Agent tasked with cleaning up and refactoring the codebase, you should strictly follow the instructions in `MAINTENANCE_PROMPT.md`. This prompt is designed to be run routinely to analyze, clean up, extract shared code, and untangle monolithic scripts.
 
 ## To intepret the task
 
