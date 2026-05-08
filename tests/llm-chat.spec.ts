@@ -135,11 +135,124 @@ test.describe('LLM Chat Tool', () => {
     // Test deleting a message
     page.on('dialog', (dialog) => dialog.accept()); // Accept the delete confirmation
     const userMsgDeleteBtn = history.locator(
-      '.message.user button:has-text("Delete")',
+      '.message.user button:text-is("Delete")',
     );
     await userMsgDeleteBtn.click();
 
     // Verify it's gone
     await expect(history.locator('.message.user')).toHaveCount(0);
+  });
+
+  test('should support delete below functionality', async ({ page }) => {
+    await page.route(
+      'https://openrouter.ai/api/v1/chat/completions',
+      async (route) => {
+        const streamBody =
+          'data: {"choices":[{"delta":{"content":"Response"}}]}\n\ndata: [DONE]\n\n';
+        await route.fulfill({
+          status: 200,
+          contentType: 'text/event-stream',
+          body: streamBody,
+        });
+      },
+    );
+
+    await page.goto('/llm-chat.html');
+    await page.fill('#api-key', 'test-key');
+    await page.fill('#model-input', 'test-model');
+
+    // Send first message
+    await page.fill('#user-input', 'Message 1');
+    await page.click('#send-btn');
+
+    // Wait for the first response to finish rendering
+    const history = page.locator('#history-container');
+    await expect(
+      history.locator('.message.assistant .content').first(),
+    ).toHaveText('Response');
+
+    // Send second message
+    await page.fill('#user-input', 'Message 2');
+    await page.click('#send-btn');
+
+    // Wait for the second response to finish rendering
+    await expect(
+      history.locator('.message.assistant .content').nth(1),
+    ).toHaveText('Response');
+
+    // Currently we have 4 messages: User 1, Assistant 1, User 2, Assistant 2
+    await expect(history.locator('.message')).toHaveCount(4);
+
+    page.on('dialog', (dialog) => dialog.accept());
+
+    // Click "Delete ↓" on Assistant 1
+    const assistant1DeleteBelowBtn = history
+      .locator('.message.assistant')
+      .first()
+      .locator('button:text-is("Delete ↓")');
+    await assistant1DeleteBelowBtn.click();
+
+    // After deleting Assistant 1 and everything below, only User 1 should remain
+    await expect(history.locator('.message')).toHaveCount(1);
+    await expect(history.locator('.message').first()).toHaveClass(/user/);
+    await expect(history.locator('.message .content').first()).toHaveText(
+      'Message 1',
+    );
+  });
+
+  test('should trigger regeneration when sending empty text if history is not empty', async ({
+    page,
+  }) => {
+    let callCount = 0;
+    await page.route(
+      'https://openrouter.ai/api/v1/chat/completions',
+      async (route) => {
+        callCount++;
+        const streamBody = `data: {"choices":[{"delta":{"content":"Resp ${callCount}"}}]}\n\ndata: [DONE]\n\n`;
+        await route.fulfill({
+          status: 200,
+          contentType: 'text/event-stream',
+          body: streamBody,
+        });
+      },
+    );
+
+    await page.goto('/llm-chat.html');
+    await page.fill('#api-key', 'test-key');
+    await page.fill('#model-input', 'test-model');
+
+    // Try sending empty text with empty history - should do nothing
+    await page.click('#send-btn');
+    const history = page.locator('#history-container');
+    await expect(history.locator('.message')).toHaveCount(0);
+    expect(callCount).toBe(0);
+
+    // Send normal message
+    await page.fill('#user-input', 'Hello');
+    await page.click('#send-btn');
+
+    // Wait for response
+    await expect(
+      history.locator('.message.assistant .content').first(),
+    ).toHaveText('Resp 1');
+    await expect(history.locator('.message')).toHaveCount(2);
+
+    // Ensure input is empty
+    await page.fill('#user-input', '');
+
+    // Click send again
+    await page.click('#send-btn');
+
+    // Wait for new response
+    await expect(
+      history.locator('.message.assistant .content').nth(1),
+    ).toHaveText('Resp 2');
+
+    // Should now have 3 messages: User, Assistant (Resp 1), Assistant (Resp 2)
+    // No new user message should have been added
+    await expect(history.locator('.message')).toHaveCount(3);
+    await expect(history.locator('.message').nth(0)).toHaveClass(/user/);
+    await expect(history.locator('.message').nth(1)).toHaveClass(/assistant/);
+    await expect(history.locator('.message').nth(2)).toHaveClass(/assistant/);
   });
 });
