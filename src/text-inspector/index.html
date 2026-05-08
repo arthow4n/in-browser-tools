@@ -40,10 +40,33 @@
         border: 1px solid #ccc;
         background-color: #f9f9f9;
         font-family: Consolas, 'Courier New', monospace;
-        font-size: 1.2em;
-        white-space: pre-wrap;
-        word-wrap: break-word;
         border-radius: 4px;
+        display: flex;
+        flex-wrap: wrap;
+        align-content: flex-start;
+        gap: 5px;
+      }
+      .char-box {
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        border: 1px solid #ccc;
+        padding: 4px 6px;
+        border-radius: 4px;
+        background: #fff;
+        min-width: 3em;
+      }
+      .char-box.whitespace {
+        background: #e0e0e0;
+        color: #555;
+      }
+      .char-val {
+        font-size: 1.2em;
+        font-weight: bold;
+      }
+      .char-code {
+        font-size: 0.7em;
+        color: #888;
       }
     </style>
   </head>
@@ -62,7 +85,7 @@
     </div>
 
     <div class="output-group">
-      <label>Inspected Text (monospace font):</label>
+      <label>Inspected Text:</label>
       <div id="output-text"></div>
     </div>
   </body>
