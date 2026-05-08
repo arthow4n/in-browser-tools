@@ -40,6 +40,7 @@ You MUST run the pre-push checks and fix any issues raised during the pre-push c
 
 ## Coding conventions
 
+- If you are creating a new tool or updating an existing one, the "Back to Tools" button/link that takes the user to the app root MUST use exactly `<a href="../index.html">← Back to Tools</a>`. Because all tools are exactly one sub-directory deep, using this relative URL natively resolves to the correct location locally and on GitHub Pages.
 - Prefer object parameters (named arguments) to positional arguments for functions to improve readability.
 - Disallow optional arguments with default values. All arguments should be explicitly declared and passed to functions.
 - If an element or variable is expected to exist (for example, an element queried from the DOM via `querySelector`), do not suppress missing element errors using optional chaining (`?.`) or type casting (`as HTMLElement`, `as HTMLButtonElement`, etc.). Instead, verify the element's existence and correct type using `instanceof` and throw an explicit error if the check fails (e.g., `if (!(button instanceof HTMLButtonElement)) throw new Error("Button not found");`).
