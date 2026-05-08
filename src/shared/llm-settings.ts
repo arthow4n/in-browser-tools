@@ -20,6 +20,7 @@ export function setupLLMSettings(container: HTMLElement, core: LLMCore) {
       <button id="shared-fetch-models-btn" type="button" style="margin-top: 24px;">
         Fetch Models
       </button>
+      <span id="shared-status-text" style="font-weight: bold; margin-left: 10px; margin-top: 24px;"></span>
     </div>
   `;
 
@@ -35,8 +36,17 @@ export function setupLLMSettings(container: HTMLElement, core: LLMCore) {
   const fetchModelsBtn = document.getElementById(
     'shared-fetch-models-btn',
   ) as HTMLButtonElement;
+  const statusText = document.getElementById(
+    'shared-status-text',
+  ) as HTMLSpanElement;
 
-  if (!apiKeyInput || !modelInput || !modelsList || !fetchModelsBtn) {
+  if (
+    !apiKeyInput ||
+    !modelInput ||
+    !modelsList ||
+    !fetchModelsBtn ||
+    !statusText
+  ) {
     throw new Error('Failed to create shared LLM settings HTML elements');
   }
 
@@ -54,8 +64,10 @@ export function setupLLMSettings(container: HTMLElement, core: LLMCore) {
   modelInput.addEventListener('input', notifyChange);
 
   fetchModelsBtn.addEventListener('click', async () => {
+    statusText.textContent = '';
     if (!core.apiKey) {
-      alert('Please enter an OpenRouter API Key first.');
+      statusText.textContent = 'Please enter an OpenRouter API Key first.';
+      statusText.style.color = 'red';
       return;
     }
 
@@ -73,9 +85,11 @@ export function setupLLMSettings(container: HTMLElement, core: LLMCore) {
         modelsList.appendChild(option);
       }
 
-      alert(`Fetched ${models.length} models successfully.`);
+      statusText.textContent = `Fetched ${models.length} models successfully.`;
+      statusText.style.color = 'green';
     } catch (e: any) {
-      alert(`Error fetching models: ${e.message}`);
+      statusText.textContent = `Error fetching models: ${e.message}`;
+      statusText.style.color = 'red';
     } finally {
       fetchModelsBtn.disabled = false;
       fetchModelsBtn.textContent = 'Fetch Models';

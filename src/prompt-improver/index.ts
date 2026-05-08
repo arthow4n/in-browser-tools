@@ -62,7 +62,10 @@ function saveState() {
   );
   localStorage.setItem('prompt-improver-intention', els.intention.value);
   localStorage.setItem('prompt-improver-howToImprove', els.howToImprove.value);
-  localStorage.setItem('prompt-improver-evaluationFocus', els.evaluationFocus.value);
+  localStorage.setItem(
+    'prompt-improver-evaluationFocus',
+    els.evaluationFocus.value,
+  );
   localStorage.setItem('prompt-improver-maxRounds', els.maxRounds.value);
   localStorage.setItem('prompt-improver-promptType', els.promptType.value);
 }
@@ -95,7 +98,9 @@ function appendLog(type: string, message: string, data?: any) {
 
 els.startBtn.addEventListener('click', async () => {
   if (!llmCore.apiKey || !llmCore.model || !els.originalPrompt.value) {
-    alert('Please fill out API Key, Model, and Original Prompt.');
+    els.statusText.textContent =
+      'Please fill out API Key, Model, and Original Prompt.';
+    els.statusText.style.color = 'red';
     return;
   }
 

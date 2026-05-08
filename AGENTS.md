@@ -45,6 +45,7 @@ Adopt a mobile-first design:
 - Ensure layouts wrap properly on small screens (e.g. use `display: flex; flex-wrap: wrap;` or media queries for CSS grids). Input fields and buttons should wrap to the next line on mobile rather than overflowing.
 - Use `box-sizing: border-box` globally or for sizing elements to prevent padding/borders from breaking width limits.
 - Avoid hardcoded fixed widths (e.g. `width: 300px`); use `width: 100%; max-width: 300px;` instead.
+- Avoid using browser `alert()` for errors or notifications because it force disturbs the user. Always display loading, streaming, and error states gracefully using inline UI elements (e.g., status spans or specific UI containers).
 
 ## Pre-push checks
 

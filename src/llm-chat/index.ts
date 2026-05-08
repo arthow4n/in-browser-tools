@@ -15,6 +15,9 @@ const systemPromptTextarea = document.getElementById(
 const improvePromptBtn = document.getElementById(
   'improve-prompt-btn',
 ) as HTMLButtonElement;
+const improvePromptStatus = document.getElementById(
+  'improve-prompt-status',
+) as HTMLSpanElement;
 const savePromptBtn = document.getElementById(
   'save-prompt-btn',
 ) as HTMLButtonElement;
@@ -35,6 +38,7 @@ const sendBtn = document.getElementById('send-btn') as HTMLButtonElement;
 const clearHistoryBtn = document.getElementById(
   'clear-history-btn',
 ) as HTMLButtonElement;
+const chatStatus = document.getElementById('chat-status') as HTMLSpanElement;
 const enableToolsCheckbox = document.getElementById(
   'enable-tools-checkbox',
 ) as HTMLInputElement;
@@ -43,6 +47,7 @@ if (
   !llmSettingsContainer ||
   !systemPromptTextarea ||
   !improvePromptBtn ||
+  !improvePromptStatus ||
   !savePromptBtn ||
   !savedPromptsSelect ||
   !deletePromptBtn ||
@@ -50,6 +55,7 @@ if (
   !userInputTextarea ||
   !sendBtn ||
   !clearHistoryBtn ||
+  !chatStatus ||
   !enableToolsCheckbox
 ) {
   throw new Error('Required DOM elements missing');
@@ -76,8 +82,11 @@ systemPromptTextarea.addEventListener('input', () => {
 });
 
 improvePromptBtn.addEventListener('click', async () => {
+  improvePromptStatus.textContent = '';
   if (!core.apiKey || !core.model) {
-    alert('API Key and Model are required to improve prompt.');
+    improvePromptStatus.textContent =
+      'API Key and Model are required to improve prompt.';
+    improvePromptStatus.style.color = 'red';
     return;
   }
   improvePromptBtn.disabled = true;
@@ -88,7 +97,8 @@ improvePromptBtn.addEventListener('click', async () => {
     core.systemPrompt = improved;
     core.saveChatState();
   } catch (e: any) {
-    alert(`Error: ${e.message}`);
+    improvePromptStatus.textContent = `Error: ${e.message}`;
+    improvePromptStatus.style.color = 'red';
   } finally {
     improvePromptBtn.disabled = false;
     improvePromptBtn.textContent = 'Improve Prompt with LLM';
@@ -254,11 +264,13 @@ clearHistoryBtn.addEventListener('click', () => {
 });
 
 sendBtn.addEventListener('click', async () => {
+  chatStatus.textContent = '';
   const text = userInputTextarea.value.trim();
   if (!text && core.history.length === 0) return;
 
   if (!core.apiKey || !core.model) {
-    alert('API Key and Model are required.');
+    chatStatus.textContent = 'API Key and Model are required.';
+    chatStatus.style.color = 'red';
     return;
   }
 
@@ -327,12 +339,17 @@ sendBtn.addEventListener('click', async () => {
         historyContainer.scrollTop = historyContainer.scrollHeight;
       }
     } catch (e: any) {
-      alert(`Chat Error: ${e.message}`);
+      chatStatus.textContent = `Chat Error: ${e.message}`;
+      chatStatus.style.color = 'red';
       currentAssistantMsg.content += `\n[Error: ${e.message}]`;
       currentContentDiv.textContent = currentAssistantMsg.content;
     } finally {
       currentAssistantEl.classList.remove('streaming');
-      if (currentAssistantMsg.content || (currentAssistantMsg.tool_calls && currentAssistantMsg.tool_calls.length > 0)) {
+      if (
+        currentAssistantMsg.content ||
+        (currentAssistantMsg.tool_calls &&
+          currentAssistantMsg.tool_calls.length > 0)
+      ) {
         core.history.push(currentAssistantMsg);
       }
       core.saveChatState();
