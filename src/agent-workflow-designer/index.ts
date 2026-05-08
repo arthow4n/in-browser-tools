@@ -76,7 +76,44 @@ const clearHistoryBtn = getRequiredElement(
   'clear-history-btn',
   HTMLButtonElement,
 );
+const undoBtn = getRequiredElement('undo-btn', HTMLButtonElement);
+const redoBtn = getRequiredElement('redo-btn', HTMLButtonElement);
 const chatStatus = getRequiredElement('chat-status', HTMLSpanElement);
+
+// --- Undo/Redo State ---
+const undoStack: ChatMessage[][] = [];
+const redoStack: ChatMessage[][] = [];
+
+function updateUndoRedoButtons() {
+  undoBtn.disabled = undoStack.length === 0;
+  redoBtn.disabled = redoStack.length === 0;
+}
+
+undoBtn.addEventListener('click', () => {
+  if (undoStack.length > 0) {
+    const prevState = undoStack.pop()!;
+    redoStack.push([...core.history]);
+    core.history = prevState;
+    core.saveState();
+    renderHistory();
+    const lastAssis = [...core.history].reverse().find((m) => m.role === 'assistant');
+    parseAndRenderWorkflow(lastAssis ? lastAssis.content : '');
+    updateUndoRedoButtons();
+  }
+});
+
+redoBtn.addEventListener('click', () => {
+  if (redoStack.length > 0) {
+    const nextState = redoStack.pop()!;
+    undoStack.push([...core.history]);
+    core.history = nextState;
+    core.saveState();
+    renderHistory();
+    const lastAssis = [...core.history].reverse().find((m) => m.role === 'assistant');
+    parseAndRenderWorkflow(lastAssis ? lastAssis.content : '');
+    updateUndoRedoButtons();
+  }
+});
 
 const workflowContainer = getRequiredElement(
   'workflow-container',
@@ -458,12 +495,10 @@ ${JSON.stringify(testCore.history, null, 2)}`;
 
 // --- Initialization ---
 function init() {
-  setupLLMSettings(llmSettingsContainer, (settings) => {
-    core.apiKey = settings.apiKey;
-    core.model = settings.model;
-  });
+  setupLLMSettings(llmSettingsContainer, core);
 
   renderHistory();
+  updateUndoRedoButtons();
 
   // If there's history, try to parse the last assistant message
   if (core.history.length > 0) {
@@ -508,6 +543,9 @@ function renderHistory() {
 
 clearHistoryBtn.addEventListener('click', () => {
   if (confirm('Clear entire chat history?')) {
+    undoStack.push([...core.history]);
+    redoStack.length = 0;
+    updateUndoRedoButtons();
     core.history = [];
     core.saveState();
     renderHistory();
@@ -533,6 +571,9 @@ sendBtn.addEventListener('click', async () => {
     content: text,
   };
 
+  undoStack.push([...core.history]);
+  redoStack.length = 0;
+  updateUndoRedoButtons();
   core.history.push(userMsg);
   core.saveState();
   renderHistory();
@@ -548,6 +589,9 @@ sendBtn.addEventListener('click', async () => {
   assistantEl.classList.add('streaming');
   historyContainer.appendChild(assistantEl);
   const contentDiv = assistantEl.querySelector('.content') as HTMLDivElement;
+
+  undoBtn.disabled = true;
+  redoBtn.disabled = true;
 
   try {
     const generator = core.streamCompletion([]);
@@ -567,6 +611,7 @@ sendBtn.addEventListener('click', async () => {
     core.saveState();
     renderHistory();
     sendBtn.disabled = false;
+    updateUndoRedoButtons();
 
     // Parse workflow after done streaming
     parseAndRenderWorkflow(assistantMsg.content);
@@ -604,6 +649,9 @@ function handleImport() {
       role: 'user',
       content: `I am importing an existing workflow:\n\n\`\`\`markdown\n${text}\n\`\`\``,
     };
+    undoStack.push([...core.history]);
+    redoStack.length = 0;
+    updateUndoRedoButtons();
     core.history.push(importMsg);
     core.saveState();
     renderHistory();
