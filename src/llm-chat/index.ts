@@ -1,7 +1,9 @@
 import { ChatCore, ChatMessage } from './core.js';
 import { setupLLMSettings } from '../shared/llm-settings.js';
+import { browserAlertTool } from './tools/browser-alert.js';
 
 const core = new ChatCore();
+core.registerTool(browserAlertTool);
 
 // --- DOM Elements ---
 const llmSettingsContainer = document.getElementById(
@@ -33,6 +35,9 @@ const sendBtn = document.getElementById('send-btn') as HTMLButtonElement;
 const clearHistoryBtn = document.getElementById(
   'clear-history-btn',
 ) as HTMLButtonElement;
+const enableToolsCheckbox = document.getElementById(
+  'enable-tools-checkbox',
+) as HTMLInputElement;
 
 if (
   !llmSettingsContainer ||
@@ -44,10 +49,16 @@ if (
   !historyContainer ||
   !userInputTextarea ||
   !sendBtn ||
-  !clearHistoryBtn
+  !clearHistoryBtn ||
+  !enableToolsCheckbox
 ) {
   throw new Error('Required DOM elements missing');
 }
+
+enableToolsCheckbox.checked = core.toolsEnabled;
+enableToolsCheckbox.addEventListener('change', () => {
+  core.toolsEnabled = enableToolsCheckbox.checked;
+});
 
 // --- Initialization ---
 function init() {
@@ -138,11 +149,23 @@ deletePromptBtn.addEventListener('click', () => {
 function createMessageElement(msg: ChatMessage): HTMLDivElement {
   const div = document.createElement('div');
   div.className = `message ${msg.role}`;
-  div.dataset.id = msg.id;
+  if (msg.id) {
+    div.dataset.id = msg.id;
+  }
 
   const contentDiv = document.createElement('div');
   contentDiv.className = 'content';
-  contentDiv.textContent = msg.content;
+
+  let displayContent = msg.content;
+
+  if (msg.tool_calls && msg.tool_calls.length > 0) {
+    displayContent += '\n\n**Tool Calls:**\n';
+    for (const tc of msg.tool_calls) {
+      displayContent += `- ${tc.function.name}(${tc.function.arguments})\n`;
+    }
+  }
+
+  contentDiv.textContent = displayContent;
 
   const roleLabel = document.createElement('div');
   roleLabel.style.fontWeight = 'bold';
@@ -265,24 +288,109 @@ sendBtn.addEventListener('click', async () => {
   historyContainer.appendChild(assistantEl);
   const contentDiv = assistantEl.querySelector('.content') as HTMLDivElement;
 
-  try {
-    const generator = core.streamChatCompletion([]); // Pass empty newMessages as userMsg is already in history
-    for await (const chunk of generator) {
-      assistantMsg.content += chunk;
-      contentDiv.textContent = assistantMsg.content;
-      historyContainer.scrollTop = historyContainer.scrollHeight;
+  const doStream = async (
+    currentAssistantMsg: ChatMessage,
+    currentAssistantEl: HTMLDivElement,
+    currentContentDiv: HTMLDivElement,
+  ) => {
+    try {
+      const generator = core.streamChatCompletionWithTools([]);
+      for await (const chunk of generator) {
+        if (chunk.type === 'text' && chunk.text) {
+          currentAssistantMsg.content += chunk.text;
+        } else if (chunk.type === 'tool_call' && chunk.toolCall) {
+          if (!currentAssistantMsg.tool_calls) {
+            currentAssistantMsg.tool_calls = [];
+          }
+          currentAssistantMsg.tool_calls.push({
+            id: chunk.toolCall.id,
+            type: 'function',
+            function: {
+              name: chunk.toolCall.name,
+              arguments: chunk.toolCall.arguments,
+            },
+          });
+        }
+
+        // Re-render the content text to show ongoing chunks and tool calls
+        let displayContent = currentAssistantMsg.content;
+        if (
+          currentAssistantMsg.tool_calls &&
+          currentAssistantMsg.tool_calls.length > 0
+        ) {
+          displayContent += '\n\n**Tool Calls:**\n';
+          for (const tc of currentAssistantMsg.tool_calls) {
+            displayContent += `- ${tc.function.name}(${tc.function.arguments})\n`;
+          }
+        }
+        currentContentDiv.textContent = displayContent;
+        historyContainer.scrollTop = historyContainer.scrollHeight;
+      }
+    } catch (e: any) {
+      alert(`Chat Error: ${e.message}`);
+      currentAssistantMsg.content += `\n[Error: ${e.message}]`;
+      currentContentDiv.textContent = currentAssistantMsg.content;
+    } finally {
+      currentAssistantEl.classList.remove('streaming');
+      if (currentAssistantMsg.content || (currentAssistantMsg.tool_calls && currentAssistantMsg.tool_calls.length > 0)) {
+        core.history.push(currentAssistantMsg);
+      }
+      core.saveChatState();
+      renderHistory();
+
+      // If there were tool calls, execute them and trigger follow up
+      if (
+        currentAssistantMsg.tool_calls &&
+        currentAssistantMsg.tool_calls.length > 0
+      ) {
+        for (const tc of currentAssistantMsg.tool_calls) {
+          const tool = core.tools.find((t) => t.name === tc.function.name);
+          let resultStr = '';
+          if (!tool) {
+            resultStr = `Error: Tool ${tc.function.name} not found.`;
+          } else {
+            try {
+              const args = JSON.parse(tc.function.arguments);
+              const result = await tool.execute(args);
+              resultStr =
+                typeof result === 'string' ? result : JSON.stringify(result);
+            } catch (e: any) {
+              resultStr = `Error executing tool: ${e.message}`;
+            }
+          }
+
+          const toolMsg: ChatMessage = {
+            id: Date.now().toString() + Math.random().toString(),
+            role: 'tool',
+            content: resultStr,
+            tool_call_id: tc.id,
+          };
+          core.history.push(toolMsg);
+          core.saveChatState();
+          renderHistory();
+        }
+
+        // Recursively call for follow up, creating a new assistant message
+        const nextAssistantMsg: ChatMessage = {
+          id: (Date.now() + 2).toString(),
+          role: 'assistant',
+          content: '',
+        };
+        const nextAssistantEl = createMessageElement(nextAssistantMsg);
+        nextAssistantEl.classList.add('streaming');
+        historyContainer.appendChild(nextAssistantEl);
+        const nextContentDiv = nextAssistantEl.querySelector(
+          '.content',
+        ) as HTMLDivElement;
+
+        await doStream(nextAssistantMsg, nextAssistantEl, nextContentDiv);
+      } else {
+        sendBtn.disabled = false;
+      }
     }
-  } catch (e: any) {
-    alert(`Chat Error: ${e.message}`);
-    assistantMsg.content += `\n[Error: ${e.message}]`;
-    contentDiv.textContent = assistantMsg.content;
-  } finally {
-    assistantEl.classList.remove('streaming');
-    core.history.push(assistantMsg);
-    core.saveChatState();
-    renderHistory(); // Re-render to ensure correct state and bindings
-    sendBtn.disabled = false;
-  }
+  };
+
+  await doStream(assistantMsg, assistantEl, contentDiv);
 });
 
 // Run init

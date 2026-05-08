@@ -1,7 +1,28 @@
+export interface ToolCall {
+  id: string;
+  type: 'function';
+  function: {
+    name: string;
+    arguments: string;
+  };
+}
+
 export interface ChatMessage {
   id?: string;
-  role: 'user' | 'assistant' | 'system';
+  role: 'user' | 'assistant' | 'system' | 'tool';
   content: string;
+  tool_calls?: ToolCall[];
+  tool_call_id?: string; // For role='tool'
+}
+
+export interface StreamChunk {
+  type: 'text' | 'tool_call';
+  text?: string;
+  toolCall?: {
+    id: string;
+    name: string;
+    arguments: string;
+  };
 }
 
 export interface Model {
@@ -141,6 +162,114 @@ export class LLMCore {
           }
         }
       }
+    }
+  }
+
+  public async *streamCompletionWithTools(
+    messages: ChatMessage[],
+    tools?: any[],
+  ): AsyncGenerator<StreamChunk, void, unknown> {
+    if (!this.apiKey) throw new Error('API Key is required');
+    if (!this.model) throw new Error('Model is required');
+
+    const body: any = {
+      model: this.model,
+      messages: messages,
+      stream: true,
+    };
+
+    if (tools && tools.length > 0) {
+      body.tools = tools.map((t) => ({
+        type: 'function',
+        function: {
+          name: t.name,
+          description: t.description,
+          parameters: t.parameters,
+        },
+      }));
+    }
+
+    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(
+        `Failed to fetch completion: ${res.status} ${res.statusText} - ${errorText}`,
+      );
+    }
+
+    if (!res.body) throw new Error('Response body is null');
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    // Track ongoing tool calls across chunks
+    const toolCallsMap = new Map<number, any>();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+          const dataStr = line.slice(6);
+          try {
+            const data = JSON.parse(dataStr);
+            const delta = data.choices[0]?.delta;
+
+            if (delta?.content) {
+              yield { type: 'text', text: delta.content };
+            }
+
+            if (delta?.tool_calls) {
+              for (const tc of delta.tool_calls) {
+                const index = tc.index;
+                if (!toolCallsMap.has(index)) {
+                  toolCallsMap.set(index, {
+                    id: tc.id,
+                    type: 'function',
+                    function: {
+                      name: tc.function.name,
+                      arguments: tc.function.arguments || '',
+                    },
+                  });
+                } else {
+                  const existing = toolCallsMap.get(index);
+                  if (tc.function?.arguments) {
+                    existing.function.arguments += tc.function.arguments;
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            console.error('Failed to parse streaming data', e, line);
+          }
+        }
+      }
+    }
+
+    // Yield final aggregated tool calls
+    for (const [_, tc] of toolCallsMap.entries()) {
+      yield {
+        type: 'tool_call',
+        toolCall: {
+          id: tc.id,
+          name: tc.function.name,
+          arguments: tc.function.arguments,
+        },
+      };
     }
   }
 }
