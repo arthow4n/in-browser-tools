@@ -198,8 +198,12 @@ function createMessageElement(msg: ChatMessage): HTMLDivElement {
   const deleteBtn = document.createElement('button');
   deleteBtn.textContent = 'Delete';
 
+  const deleteBelowBtn = document.createElement('button');
+  deleteBelowBtn.textContent = 'Delete ↓';
+
   controls.appendChild(editBtn);
   controls.appendChild(deleteBtn);
+  controls.appendChild(deleteBelowBtn);
 
   div.appendChild(roleLabel);
   div.appendChild(contentDiv);
@@ -236,6 +240,17 @@ function createMessageElement(msg: ChatMessage): HTMLDivElement {
     }
   });
 
+  deleteBelowBtn.addEventListener('click', () => {
+    if (confirm('Delete this message and all messages below it?')) {
+      const idx = core.history.findIndex((m) => m.id === msg.id);
+      if (idx !== -1) {
+        core.history = core.history.slice(0, idx);
+        core.saveState();
+        renderHistory();
+      }
+    }
+  });
+
   return div;
 }
 
@@ -257,23 +272,25 @@ clearHistoryBtn.addEventListener('click', () => {
 
 sendBtn.addEventListener('click', async () => {
   const text = userInputTextarea.value.trim();
-  if (!text) return;
+  if (!text && core.history.length === 0) return;
 
   if (!core.apiKey || !core.model) {
     alert('API Key and Model are required.');
     return;
   }
 
-  const userMsg: ChatMessage = {
-    id: Date.now().toString(),
-    role: 'user',
-    content: text,
-  };
+  if (text) {
+    const userMsg: ChatMessage = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: text,
+    };
 
-  core.history.push(userMsg);
-  core.saveState();
-  renderHistory();
-  userInputTextarea.value = '';
+    core.history.push(userMsg);
+    core.saveState();
+    renderHistory();
+    userInputTextarea.value = '';
+  }
 
   sendBtn.disabled = true;
 
