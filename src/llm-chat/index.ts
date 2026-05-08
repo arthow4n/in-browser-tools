@@ -1,12 +1,17 @@
 import { ChatCore, ChatMessage } from './core.js';
 import { setupLLMSettings } from '../shared/llm-settings.js';
+import { windowAlertTool } from './tools/window-alert.js';
 
 const core = new ChatCore();
+const toolsList = [windowAlertTool];
 
 // --- DOM Elements ---
 const llmSettingsContainer = document.getElementById(
   'llm-settings-container',
 ) as HTMLDivElement;
+const enableToolsCheckbox = document.getElementById(
+  'enable-tools-checkbox',
+) as HTMLInputElement;
 const systemPromptTextarea = document.getElementById(
   'system-prompt',
 ) as HTMLTextAreaElement;
@@ -36,6 +41,7 @@ const clearHistoryBtn = document.getElementById(
 
 if (
   !llmSettingsContainer ||
+  !enableToolsCheckbox ||
   !systemPromptTextarea ||
   !improvePromptBtn ||
   !savePromptBtn ||
@@ -54,6 +60,12 @@ function init() {
   setupLLMSettings(llmSettingsContainer, (settings) => {
     core.apiKey = settings.apiKey;
     core.model = settings.model;
+  });
+
+  enableToolsCheckbox.checked = core.enableTools;
+  enableToolsCheckbox.addEventListener('change', () => {
+    core.enableTools = enableToolsCheckbox.checked;
+    core.saveState();
   });
 
   systemPromptTextarea.value = core.systemPrompt;
@@ -146,6 +158,22 @@ function createMessageElement(msg: ChatMessage): HTMLDivElement {
   const contentDiv = document.createElement('div');
   contentDiv.className = 'content';
   contentDiv.textContent = msg.content;
+
+  if (msg.tool_calls && msg.tool_calls.length > 0) {
+    for (const tc of msg.tool_calls) {
+      const tcDiv = document.createElement('div');
+      tcDiv.className = 'tool-call';
+      tcDiv.textContent = `Tool Call: ${tc.function.name}\nArgs: ${tc.function.arguments}`;
+      contentDiv.appendChild(tcDiv);
+    }
+  }
+
+  if (msg.role === 'tool' && msg.name) {
+    const nameDiv = document.createElement('div');
+    nameDiv.style.fontWeight = 'bold';
+    nameDiv.textContent = `[Result from ${msg.name}]`;
+    contentDiv.prepend(nameDiv);
+  }
 
   const roleLabel = document.createElement('div');
   roleLabel.style.fontWeight = 'bold';
@@ -257,9 +285,16 @@ sendBtn.addEventListener('click', async () => {
 
   sendBtn.disabled = true;
 
-  // Create a placeholder for streaming assistant response
+  try {
+    await processChatTurn([]);
+  } finally {
+    sendBtn.disabled = false;
+  }
+});
+
+async function processChatTurn(newMessages: ChatMessage[] = []) {
   const assistantMsg: ChatMessage = {
-    id: (Date.now() + 1).toString(),
+    id: Date.now().toString(),
     role: 'assistant',
     content: '',
   };
@@ -268,11 +303,26 @@ sendBtn.addEventListener('click', async () => {
   historyContainer.appendChild(assistantEl);
   const contentDiv = assistantEl.querySelector('.content') as HTMLDivElement;
 
+  let hadToolCalls = false;
+
   try {
-    const generator = core.streamCompletion([]); // Pass empty newMessages as userMsg is already in history
+    const generator = core.streamCompletion(newMessages, toolsList);
     for await (const chunk of generator) {
-      assistantMsg.content += chunk;
-      contentDiv.textContent = assistantMsg.content;
+      if (chunk.type === 'content') {
+        assistantMsg.content += chunk.content;
+        contentDiv.textContent = assistantMsg.content;
+      } else if (chunk.type === 'tool_calls') {
+        assistantMsg.tool_calls = chunk.tool_calls;
+        hadToolCalls = true;
+
+        // Render tool calls in UI temporarily before full re-render
+        for (const tc of chunk.tool_calls) {
+          const tcDiv = document.createElement('div');
+          tcDiv.className = 'tool-call';
+          tcDiv.textContent = `Tool Call: ${tc.function.name}\nArgs: ${tc.function.arguments}`;
+          contentDiv.appendChild(tcDiv);
+        }
+      }
       historyContainer.scrollTop = historyContainer.scrollHeight;
     }
   } catch (e: any) {
@@ -283,10 +333,43 @@ sendBtn.addEventListener('click', async () => {
     assistantEl.classList.remove('streaming');
     core.history.push(assistantMsg);
     core.saveState();
-    renderHistory(); // Re-render to ensure correct state and bindings
-    sendBtn.disabled = false;
+    renderHistory();
   }
-});
+
+  if (hadToolCalls && assistantMsg.tool_calls) {
+    const newToolMsgs: ChatMessage[] = [];
+    for (const tc of assistantMsg.tool_calls) {
+      const tool = toolsList.find((t) => t.name === tc.function.name);
+      let resultStr = '';
+      if (tool) {
+        try {
+          const args = JSON.parse(tc.function.arguments || '{}');
+          resultStr = await tool.execute(args);
+        } catch (err: any) {
+          resultStr = `Error executing tool: ${err.message}`;
+        }
+      } else {
+        resultStr = `Error: Tool ${tc.function.name} not found.`;
+      }
+
+      newToolMsgs.push({
+        id: Date.now().toString() + Math.random().toString(),
+        role: 'tool',
+        content: resultStr,
+        tool_call_id: tc.id,
+        name: tc.function.name,
+      });
+    }
+
+    if (newToolMsgs.length > 0) {
+      core.history.push(...newToolMsgs);
+      core.saveState();
+      renderHistory();
+      // Recurse to let assistant process tool results
+      await processChatTurn([]);
+    }
+  }
+}
 
 // Run init
 init();

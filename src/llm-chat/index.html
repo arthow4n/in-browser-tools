@@ -60,6 +60,18 @@
       .message.assistant {
         background-color: #f5f5f5;
       }
+      .message.tool {
+        background-color: #e8f5e9;
+        font-family: monospace;
+      }
+      .tool-call {
+        background-color: #fff3e0;
+        border: 1px solid #ffe0b2;
+        padding: 5px;
+        margin-top: 5px;
+        border-radius: 3px;
+        font-family: monospace;
+      }
       .message-controls {
         margin-top: 10px;
         text-align: right;
@@ -96,6 +108,12 @@
     <section id="settings-section">
       <h2>Settings</h2>
       <div id="llm-settings-container"></div>
+      <div class="flex-row" style="margin-top: 10px">
+        <label
+          ><input type="checkbox" id="enable-tools-checkbox" /> Enable Agent
+          Tools</label
+        >
+      </div>
     </section>
 
     <section id="system-prompt-section">

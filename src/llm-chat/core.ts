@@ -1,8 +1,13 @@
 export interface ChatMessage {
   id: string; // Used for identifying in history for edit/delete
-  role: 'user' | 'assistant' | 'system';
+  role: 'user' | 'assistant' | 'system' | 'tool';
   content: string;
+  tool_calls?: any[];
+  tool_call_id?: string;
+  name?: string;
 }
+
+import { AgentTool } from './tools/index.js';
 
 export interface Model {
   id: string;
@@ -21,6 +26,7 @@ export class ChatCore {
   public systemPrompt: string = 'You are a helpful assistant.';
   public savedPrompts: SavedPrompt[] = [];
   public history: ChatMessage[] = [];
+  public enableTools: boolean = false;
 
   constructor() {
     this.loadState();
@@ -33,6 +39,9 @@ export class ChatCore {
     this.systemPrompt =
       localStorage.getItem('llm-chat-systemPrompt') ||
       'You are a helpful assistant.';
+
+    this.enableTools =
+      localStorage.getItem('llm-chat-enableTools') === 'true' || false;
 
     try {
       this.savedPrompts = JSON.parse(
@@ -55,6 +64,10 @@ export class ChatCore {
     // API key and model are managed by the shared component.
     localStorage.setItem('llm-chat-systemPrompt', this.systemPrompt);
     localStorage.setItem(
+      'llm-chat-enableTools',
+      this.enableTools ? 'true' : 'false',
+    );
+    localStorage.setItem(
       'llm-chat-savedPrompts',
       JSON.stringify(this.savedPrompts),
     );
@@ -63,15 +76,46 @@ export class ChatCore {
 
   async *streamCompletion(
     newMessages: ChatMessage[],
-  ): AsyncGenerator<string, void, unknown> {
+    tools?: AgentTool[],
+  ): AsyncGenerator<
+    | { type: 'content'; content: string }
+    | { type: 'tool_calls'; tool_calls: any[] },
+    void,
+    unknown
+  > {
     if (!this.apiKey) throw new Error('API Key is required');
     if (!this.model) throw new Error('Model is required');
 
+    const mapMessage = (m: ChatMessage) => {
+      const msg: any = { role: m.role, content: m.content };
+      if (m.tool_calls) msg.tool_calls = m.tool_calls;
+      if (m.tool_call_id) msg.tool_call_id = m.tool_call_id;
+      if (m.name) msg.name = m.name;
+      return msg;
+    };
+
     const messages = [
       { role: 'system', content: this.systemPrompt },
-      ...this.history.map((m) => ({ role: m.role, content: m.content })),
-      ...newMessages.map((m) => ({ role: m.role, content: m.content })),
+      ...this.history.map(mapMessage),
+      ...newMessages.map(mapMessage),
     ];
+
+    const payload: any = {
+      model: this.model,
+      messages: messages,
+      stream: true,
+    };
+
+    if (this.enableTools && tools && tools.length > 0) {
+      payload.tools = tools.map((t) => ({
+        type: 'function',
+        function: {
+          name: t.name,
+          description: t.description,
+          parameters: t.parameters,
+        },
+      }));
+    }
 
     const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
@@ -79,11 +123,7 @@ export class ChatCore {
         Authorization: `Bearer ${this.apiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: this.model,
-        messages: messages,
-        stream: true,
-      }),
+      body: JSON.stringify(payload),
     });
 
     if (!res.ok) {
@@ -98,6 +138,7 @@ export class ChatCore {
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
+    const toolCallsMap: Record<number, any> = {};
 
     while (true) {
       const { done, value } = await reader.read();
@@ -112,15 +153,39 @@ export class ChatCore {
           const dataStr = line.slice(6);
           try {
             const data = JSON.parse(dataStr);
-            const content = data.choices[0]?.delta?.content;
+            const delta = data.choices[0]?.delta;
+            if (!delta) continue;
+
+            const content = delta.content;
             if (content) {
-              yield content;
+              yield { type: 'content', content };
+            }
+
+            if (delta.tool_calls) {
+              for (const tc of delta.tool_calls) {
+                if (!toolCallsMap[tc.index]) {
+                  toolCallsMap[tc.index] = {
+                    id: tc.id,
+                    type: tc.type,
+                    function: { name: tc.function?.name || '', arguments: '' },
+                  };
+                }
+                if (tc.function?.arguments) {
+                  toolCallsMap[tc.index].function.arguments +=
+                    tc.function.arguments;
+                }
+              }
             }
           } catch (e) {
             console.error('Failed to parse streaming data', e, line);
           }
         }
       }
+    }
+
+    const accumulatedToolCalls = Object.values(toolCallsMap);
+    if (accumulatedToolCalls.length > 0) {
+      yield { type: 'tool_calls', tool_calls: accumulatedToolCalls };
     }
   }
 

@@ -29,6 +29,11 @@ test.describe('LLM Chat Tool', () => {
     await expect(page.locator('#system-prompt')).toHaveValue(
       'Custom system prompt',
     );
+
+    // Check enable tools persistence
+    await page.check('#enable-tools-checkbox');
+    await page.reload();
+    await expect(page.locator('#enable-tools-checkbox')).toBeChecked();
   });
 
   test('should allow fetching models from OpenRouter', async ({ page }) => {
@@ -198,6 +203,91 @@ test.describe('LLM Chat Tool', () => {
     await expect(history.locator('.message .content').first()).toHaveText(
       'Message 1',
     );
+  });
+
+  test('should enable tools and execute window_alert', async ({ page }) => {
+    let callCount = 0;
+    await page.route(
+      'https://openrouter.ai/api/v1/chat/completions',
+      async (route) => {
+        callCount++;
+
+        if (callCount === 1) {
+          // First response: tool call
+          const chunks = [
+            'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_123","type":"function","function":{"name":"window_alert","arguments":"{\\"message\\":\\"Hello from AI\\"}"}}]}}]}\n\n',
+            'data: [DONE]\n\n',
+          ];
+          await route.fulfill({
+            status: 200,
+            contentType: 'text/event-stream',
+            body: chunks.join(''),
+          });
+        } else {
+          // Second response: final content after tool result
+          const chunks = [
+            'data: {"choices":[{"delta":{"content":"Alert was triggered successfully."}}]}\n\n',
+            'data: [DONE]\n\n',
+          ];
+          await route.fulfill({
+            status: 200,
+            contentType: 'text/event-stream',
+            body: chunks.join(''),
+          });
+        }
+      },
+    );
+
+    await page.goto('/llm-chat.html');
+    await page.fill('#shared-api-key', 'test-key');
+    await page.fill('#shared-model-input', 'test-model');
+
+    // Enable tools
+    await page.check('#enable-tools-checkbox');
+
+    // Intercept the alert
+    let dialogMessage = '';
+    page.on('dialog', async (dialog) => {
+      dialogMessage = dialog.message();
+      await dialog.accept();
+    });
+
+    // Send message
+    await page.fill('#user-input', 'Show an alert');
+    await page.click('#send-btn');
+
+    const history = page.locator('#history-container');
+
+    // Wait for the final assistant message (third message after user, assistant(tool call), tool(result), assistant(final))
+    // Actually the history state:
+    // 1. User
+    // 2. Assistant (with tool_calls)
+    // 3. Tool (result)
+    // 4. Assistant (final response)
+
+    await expect(history.locator('.message')).toHaveCount(4);
+
+    // Check tool call was rendered
+    await expect(
+      history.locator('.message').nth(1).locator('.tool-call'),
+    ).toBeVisible();
+    await expect(
+      history.locator('.message').nth(1).locator('.tool-call'),
+    ).toContainText('window_alert');
+
+    // Check tool result was rendered
+    await expect(history.locator('.message.tool')).toBeVisible();
+    await expect(history.locator('.message.tool .content')).toContainText(
+      'Alert shown with message: Hello from AI',
+    );
+
+    // Check final message
+    await expect(
+      history.locator('.message').nth(3).locator('.content'),
+    ).toHaveText('Alert was triggered successfully.');
+
+    // Verify the actual window.alert was triggered with correct text
+    expect(dialogMessage).toBe('Hello from AI');
   });
 
   test('should trigger regeneration when sending empty text if history is not empty', async ({
