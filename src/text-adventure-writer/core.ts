@@ -4,6 +4,7 @@ import { StreamChunk } from '../shared/llm-core.js';
 export class TextAdventureCore extends ChatCore {
   public characterName: string = '';
   public characterDescription: string = '';
+  public scenarioRequest: string = '';
 
   constructor() {
     super();
@@ -54,6 +55,8 @@ export class TextAdventureCore extends ChatCore {
       localStorage.getItem('text-adventure-characterName') || '';
     this.characterDescription =
       localStorage.getItem('text-adventure-characterDescription') || '';
+    this.scenarioRequest =
+      localStorage.getItem('text-adventure-scenarioRequest') || '';
   }
 
   override saveChatState() {
@@ -66,6 +69,10 @@ export class TextAdventureCore extends ChatCore {
     localStorage.setItem(
       'text-adventure-characterDescription',
       this.characterDescription,
+    );
+    localStorage.setItem(
+      'text-adventure-scenarioRequest',
+      this.scenarioRequest,
     );
   }
 }
