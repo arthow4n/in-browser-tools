@@ -76,6 +76,42 @@ export class TextAdventureCore extends ChatCore {
     );
   }
 
+  public async *generateNextAction(
+    guidance: string,
+  ): AsyncGenerator<string, void, unknown> {
+    const messages: ChatMessage[] = [
+      {
+        id: 'sys-next-action',
+        role: 'system',
+        content: `You are an assistant helping the player decide what to say or do next in their text adventure.
+Analyze the story history. Provide a brief, single action or dialogue for the player character to take next.
+Do NOT narrate the outcome or speak for other characters. Output ONLY the text that should go into the user's input box.`,
+      },
+      ...this.history
+    ];
+
+    let userPrompt = 'Based on the story so far, what should I do next?';
+    if (guidance) {
+      userPrompt += `\n\nGuidance: ${guidance}`;
+    }
+
+    messages.push({
+      id: 'user-next-action',
+      role: 'user',
+      content: userPrompt,
+    });
+
+    // Temporarily disable tools so the LLM responds in plain text
+    const originalToolsEnabled = this.toolsEnabled;
+    this.toolsEnabled = false;
+
+    try {
+      yield* this.streamChatCompletion(messages);
+    } finally {
+      this.toolsEnabled = originalToolsEnabled;
+    }
+  }
+
   public async *generateCharacter(params: {
     scenarioRequest: string;
     guidance: string;

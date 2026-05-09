@@ -44,6 +44,15 @@ const generateIntroBtn = getRequiredElement(
   HTMLButtonElement,
 );
 
+const actionGuidanceInput = getRequiredElement(
+  'action-guidance',
+  HTMLInputElement,
+);
+const generateActionBtn = getRequiredElement(
+  'generate-action-btn',
+  HTMLButtonElement,
+);
+
 const historyContainer = getRequiredElement(
   'history-container',
   HTMLDivElement,
@@ -144,6 +153,8 @@ function init() {
     inputElement: introGuidanceInput,
     callback: handleGenerateIntro,
   });
+
+  generateActionBtn.addEventListener('click', handleGenerateAction);
 
   clearHistoryBtn.addEventListener('click', () => {
     core.history = [];
@@ -294,6 +305,33 @@ async function handleGenerateCharacter(params: { guidance: string }) {
     chatStatus.style.color = 'red';
   } finally {
     generateCharacterBtn.disabled = false;
+  }
+}
+
+async function handleGenerateAction() {
+  const guidance = actionGuidanceInput.value.trim();
+
+  chatStatus.textContent = 'Generating next action...';
+  chatStatus.style.color = 'black';
+  generateActionBtn.disabled = true;
+
+  try {
+    const generator = core.generateNextAction(guidance);
+    let fullText = '';
+
+    for await (const chunk of generator) {
+      fullText += chunk;
+      userInput.value = fullText;
+    }
+
+    chatStatus.textContent = 'Action suggested.';
+    chatStatus.style.color = 'green';
+  } catch (err: any) {
+    console.error(err);
+    chatStatus.textContent = 'Error: ' + err.message;
+    chatStatus.style.color = 'red';
+  } finally {
+    generateActionBtn.disabled = false;
   }
 }
 
