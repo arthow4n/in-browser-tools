@@ -30,7 +30,8 @@ class WorkflowDesignerCore extends ChatCore {
   }
 
   // Override loadState to use different local storage keys to not conflict with regular llm-chat
-  loadState() {
+  loadChatState() {
+    super.loadChatState();
     try {
       this.history = JSON.parse(
         localStorage.getItem('agent-workflow-designer-history') || '[]',
@@ -40,7 +41,8 @@ class WorkflowDesignerCore extends ChatCore {
     }
   }
 
-  saveState() {
+  saveChatState() {
+    super.saveChatState();
     localStorage.setItem(
       'agent-workflow-designer-history',
       JSON.stringify(this.history),
@@ -49,11 +51,13 @@ class WorkflowDesignerCore extends ChatCore {
 }
 
 class TestWorkflowCore extends ChatCore {
-  loadState() {
+  loadChatState() {
+    super.loadChatState();
     // Ephemeral, do nothing
   }
 
-  saveState() {
+  saveChatState() {
+    super.saveChatState();
     // Ephemeral, do nothing
   }
 }
@@ -458,10 +462,7 @@ ${JSON.stringify(testCore.history, null, 2)}`;
 
 // --- Initialization ---
 function init() {
-  setupLLMSettings(llmSettingsContainer, (settings) => {
-    core.apiKey = settings.apiKey;
-    core.model = settings.model;
-  });
+  setupLLMSettings(llmSettingsContainer, core);
 
   renderHistory();
 
@@ -509,7 +510,7 @@ function renderHistory() {
 clearHistoryBtn.addEventListener('click', () => {
   if (confirm('Clear entire chat history?')) {
     core.history = [];
-    core.saveState();
+    core.saveChatState();
     renderHistory();
     parseAndRenderWorkflow(''); // Clear workflow UI
   }
@@ -534,7 +535,7 @@ sendBtn.addEventListener('click', async () => {
   };
 
   core.history.push(userMsg);
-  core.saveState();
+  core.saveChatState();
   renderHistory();
   userInputTextarea.value = '';
   sendBtn.disabled = true;
@@ -564,7 +565,7 @@ sendBtn.addEventListener('click', async () => {
   } finally {
     assistantEl.classList.remove('streaming');
     core.history.push(assistantMsg);
-    core.saveState();
+    core.saveChatState();
     renderHistory();
     sendBtn.disabled = false;
 
@@ -605,7 +606,7 @@ function handleImport() {
       content: `I am importing an existing workflow:\n\n\`\`\`markdown\n${text}\n\`\`\``,
     };
     core.history.push(importMsg);
-    core.saveState();
+    core.saveChatState();
     renderHistory();
 
     importTextarea.value = '';

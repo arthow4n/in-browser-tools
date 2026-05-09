@@ -6,16 +6,44 @@ export function setupLLMSettings(container: HTMLElement, core: LLMCore) {
     <label for="shared-api-key">OpenRouter API Key:</label>
     <input type="password" id="shared-api-key" placeholder="sk-or-v1-..." />
 
+    <style>
+      .custom-dropdown-container {
+        position: relative;
+        width: 100%;
+      }
+      .custom-dropdown-list {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        max-height: 200px;
+        overflow-y: auto;
+        background: white;
+        border: 1px solid #ccc;
+        z-index: 1000;
+        display: none;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      .custom-dropdown-list li {
+        padding: 8px;
+        cursor: pointer;
+      }
+      .custom-dropdown-list li:hover {
+        background-color: #f0f0f0;
+      }
+    </style>
     <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 10px;">
-      <div style="flex-grow: 1;">
+      <div style="flex-grow: 1;" class="custom-dropdown-container">
         <label for="shared-model-input">Model:</label>
         <input
           type="text"
           id="shared-model-input"
-          list="shared-models-list"
+          autocomplete="off"
           placeholder="Select or type model ID..."
         />
-        <datalist id="shared-models-list"></datalist>
+        <ul id="shared-models-list" class="custom-dropdown-list"></ul>
       </div>
       <button id="shared-fetch-models-btn" type="button" style="margin-top: 24px;">
         Fetch Models
@@ -32,7 +60,7 @@ export function setupLLMSettings(container: HTMLElement, core: LLMCore) {
   ) as HTMLInputElement;
   const modelsList = document.getElementById(
     'shared-models-list',
-  ) as HTMLDataListElement;
+  ) as HTMLUListElement;
   const fetchModelsBtn = document.getElementById(
     'shared-fetch-models-btn',
   ) as HTMLButtonElement;
@@ -63,6 +91,41 @@ export function setupLLMSettings(container: HTMLElement, core: LLMCore) {
   apiKeyInput.addEventListener('input', notifyChange);
   modelInput.addEventListener('input', notifyChange);
 
+  let availableModels: { id: string; name: string }[] = [];
+
+  const renderDropdown = () => {
+    const filterText = modelInput.value.toLowerCase();
+    modelsList.innerHTML = '';
+    const filtered = availableModels.filter(
+      (m) =>
+        m.id.toLowerCase().includes(filterText) ||
+        m.name.toLowerCase().includes(filterText),
+    );
+
+    if (filtered.length > 0) {
+      modelsList.style.display = 'block';
+      filtered.forEach((m) => {
+        const li = document.createElement('li');
+        li.textContent = `${m.name} (${m.id})`;
+        li.addEventListener('mousedown', (e) => {
+          e.preventDefault(); // Prevent blur from firing before click
+          modelInput.value = m.id;
+          notifyChange();
+          modelsList.style.display = 'none';
+        });
+        modelsList.appendChild(li);
+      });
+    } else {
+      modelsList.style.display = 'none';
+    }
+  };
+
+  modelInput.addEventListener('focus', renderDropdown);
+  modelInput.addEventListener('input', renderDropdown);
+  modelInput.addEventListener('blur', () => {
+    modelsList.style.display = 'none';
+  });
+
   fetchModelsBtn.addEventListener('click', async () => {
     statusText.textContent = '';
     if (!core.apiKey) {
@@ -76,14 +139,9 @@ export function setupLLMSettings(container: HTMLElement, core: LLMCore) {
 
     try {
       const models = await core.fetchModels();
+      availableModels = models;
       modelsList.innerHTML = '';
-
-      for (const m of models) {
-        const option = document.createElement('option');
-        option.value = m.id;
-        option.textContent = m.name;
-        modelsList.appendChild(option);
-      }
+      renderDropdown();
 
       statusText.textContent = `Fetched ${models.length} models successfully.`;
       statusText.style.color = 'green';

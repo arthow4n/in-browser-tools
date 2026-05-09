@@ -54,16 +54,26 @@ test.describe('LLM Chat Tool', () => {
 
     // Click fetch
     await page.click('#shared-fetch-models-btn');
+    await page.waitForFunction(() => {
+      const status = document.getElementById('shared-status-text');
+      return (
+        status && status.textContent && status.textContent.includes('Fetched')
+      );
+    });
 
     // Wait for models to populate in the datalist
-    const datalist = page.locator('#shared-models-list');
-    await expect(datalist.locator('option').first()).toHaveAttribute(
-      'value',
-      'model-a',
+
+    // Wait for the dropdown and verify options appear when focused
+
+    await page.fill('#shared-model-input', '');
+    await page.focus('#shared-model-input');
+
+    const dropdownList = page.locator('#shared-models-list');
+    await expect(dropdownList.locator('li').first()).toHaveText(
+      'Model A (model-a)',
     );
-    await expect(datalist.locator('option').nth(1)).toHaveAttribute(
-      'value',
-      'model-b',
+    await expect(dropdownList.locator('li').nth(1)).toHaveText(
+      'Model B (model-b)',
     );
   });
 
