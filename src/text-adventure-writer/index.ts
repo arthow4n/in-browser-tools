@@ -21,6 +21,12 @@ const characterDescriptionInput = getRequiredElement(
   HTMLTextAreaElement,
 );
 
+const scenarioRequestInput = getRequiredElement(
+  'scenario-request',
+  HTMLTextAreaElement,
+);
+const initStoryBtn = getRequiredElement('init-story-btn', HTMLButtonElement);
+
 const historyContainer = getRequiredElement(
   'history-container',
   HTMLDivElement,
@@ -42,6 +48,14 @@ function init() {
   modelInput.value = core.model;
   characterNameInput.value = core.characterName;
   characterDescriptionInput.value = core.characterDescription;
+  scenarioRequestInput.value = core.scenarioRequest;
+
+  scenarioRequestInput.addEventListener('input', (e) => {
+    if (e.currentTarget instanceof HTMLTextAreaElement) {
+      core.scenarioRequest = e.currentTarget.value;
+      core.saveChatState();
+    }
+  });
 
   apiKeyInput.addEventListener('change', (e) => {
     if (e.currentTarget instanceof HTMLInputElement) {
@@ -101,6 +115,7 @@ function init() {
   });
 
   sendBtn.addEventListener('click', handleSend);
+  initStoryBtn.addEventListener('click', handleInitStory);
   clearHistoryBtn.addEventListener('click', () => {
     core.history = [];
     core.saveChatState();
@@ -190,9 +205,47 @@ async function handleSend() {
 
   userInput.value = '';
   storyDirectionInput.value = '';
+
+  await generateResponse();
+}
+
+async function handleInitStory() {
+  const scenarioText = core.scenarioRequest.trim();
+  if (!scenarioText) {
+    chatStatus.textContent = 'Please enter a scenario request first.';
+    chatStatus.style.color = 'red';
+    return;
+  }
+
+  core.history = [];
+
+  const initialMessages: ChatMessage[] = [];
+  if (core.characterDescription) {
+    initialMessages.push({
+      id: Date.now().toString() + '-sys',
+      role: 'system',
+      content: `[OOC - Character Update]: The user is playing as ${core.characterName || 'an unknown character'}. Description: ${core.characterDescription}`,
+    });
+  }
+
+  initialMessages.push({
+    id: Date.now().toString(),
+    role: 'user',
+    content: `[OOC - Initial Scenario]: The user requested the following scenario to begin: ${scenarioText}`,
+  });
+
+  core.history.push(...initialMessages);
+  core.saveChatState();
+  renderHistory();
+
+  await generateResponse();
+}
+
+async function generateResponse() {
   chatStatus.textContent = 'Generating...';
   chatStatus.style.color = 'black';
   sendBtn.disabled = true;
+  initStoryBtn.disabled = true;
 
   try {
     let assistantMessage: ChatMessage = {
@@ -283,6 +336,7 @@ async function handleSend() {
     chatStatus.style.color = 'red';
   } finally {
     sendBtn.disabled = false;
+    initStoryBtn.disabled = false;
   }
 }
 
