@@ -104,6 +104,16 @@
       </div>
     </section>
 
+    <section id="scenario-setup-section">
+      <h2>Scenario Setup</h2>
+      <label for="scenario-request">Initial Scenario Request:</label>
+      <textarea
+        id="scenario-request"
+        rows="3"
+        placeholder="Describe the scenario you want the LLM to start with..."
+      ></textarea>
+    </section>
+
     <section id="character-setup-section">
       <h2>Character Setup</h2>
       <label for="character-name">Your Character's Name:</label>
@@ -115,18 +125,22 @@
         rows="3"
         placeholder="Describe your character's appearance, background, and personality..."
       ></textarea>
+
+      <div style="margin-top: 10px; border-top: 1px dashed #ccc; padding-top: 10px;">
+        <label for="character-guidance">Optional: Suggest how to generate/regenerate the character:</label>
+        <input type="text" id="character-guidance" placeholder="e.g., Make them a grumpy wizard..." />
+        <button id="generate-character-btn" style="width: 100%; padding: 10px; font-weight: bold; background-color: #ff9800; color: white; border: none;">
+          Generate/Regenerate Character
+        </button>
+      </div>
     </section>
 
-    <section id="scenario-setup-section">
-      <h2>Scenario Setup</h2>
-      <label for="scenario-request">Initial Scenario Request:</label>
-      <textarea
-        id="scenario-request"
-        rows="3"
-        placeholder="Describe the scenario you want the LLM to start with..."
-      ></textarea>
-      <button id="init-story-btn" style="width: 100%; padding: 10px; font-weight: bold; background-color: #2196f3; color: white; border: none; margin-bottom: 10px;">
-        Initialize Story
+    <section id="intro-setup-section">
+      <h2>Story Intro</h2>
+      <label for="intro-guidance">Optional: Suggest how to generate/regenerate the intro scenario:</label>
+      <input type="text" id="intro-guidance" placeholder="e.g., Start with a loud explosion..." />
+      <button id="generate-intro-btn" style="width: 100%; padding: 10px; font-weight: bold; background-color: #2196f3; color: white; border: none; margin-bottom: 10px;">
+        Generate/Regenerate Intro
       </button>
     </section>
 
