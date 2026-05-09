@@ -16,6 +16,10 @@ If you are a Maintenance Agent tasked with cleaning up and refactoring the codeb
 
 The tool you are asked to make might not be well thought through or not really doable in purely in-browser. If the tool can't really be made purely in-browser, you should tell the user that the tool can't be made in browser and why.
 
+## Work autonomously
+
+Work autonomously until you think the task is done, don't stop to ask questions unless the user actively requested so.
+
 ## How to work in this repo
 
 - This web app is very small and everything fits into the context window. Prefer to aggressively read everything and build a full understanding of the repo before you make any plan or edit.
@@ -51,6 +55,7 @@ Adopt a mobile-first design:
 
 You MUST run the pre-push checks and fix any issues raised during the pre-push checks, since any failure is directly caused by your changes.
 
+- Check if there are leftover files unremoved that's not related to your changes, remove them. For example one-off debug log or screenshots that shouldn't be persisted in the git history.
 - `npm run build` to confirm the build works and type check passes.
 - `npm run format` to format the code. This formats all the files including Markdown and YAML.
 - `npm run test` and ensure they pass. These tests act as living documents of the expected features, you should add tests or update the existing tests if you are making changes. Double check if the tests cover your changes.
