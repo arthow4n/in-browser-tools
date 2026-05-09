@@ -5,6 +5,7 @@ import {
 } from './core.js';
 import { setupLLMSettings } from '../shared/llm-settings.js';
 import { LLMCore } from '../shared/llm-core.js';
+import { UndoRedoManager } from '../shared/undo-redo.js';
 import { getRequiredElement } from '../shared/dom-utils.js';
 
 const els = {
@@ -19,6 +20,8 @@ const els = {
   maxRounds: getRequiredElement('max-rounds', HTMLInputElement),
   promptType: getRequiredElement('prompt-type', HTMLSelectElement),
   startBtn: getRequiredElement('start-btn', HTMLButtonElement),
+  undoBtn: getRequiredElement('undo-btn', HTMLButtonElement),
+  redoBtn: getRequiredElement('redo-btn', HTMLButtonElement),
   statusText: getRequiredElement('status-text', HTMLSpanElement),
   logArea: getRequiredElement('log-area', HTMLDivElement),
   resultsPanel: getRequiredElement('results-panel', HTMLDivElement),
@@ -29,6 +32,45 @@ const els = {
 };
 
 const llmCore = new LLMCore();
+interface PromptState {
+  originalPrompt: string;
+  intention: string;
+  howToImprove: string;
+  evaluationFocus: string;
+  maxRounds: string;
+  promptType: string;
+}
+
+let undoManager: UndoRedoManager<PromptState>;
+
+function updateUndoRedoButtons() {
+  if (undoManager) {
+    els.undoBtn.disabled = !undoManager.canUndo;
+    els.redoBtn.disabled = !undoManager.canRedo;
+  }
+}
+
+function getStateFromUI(): PromptState {
+  return {
+    originalPrompt: els.originalPrompt.value,
+    intention: els.intention.value,
+    howToImprove: els.howToImprove.value,
+    evaluationFocus: els.evaluationFocus.value,
+    maxRounds: els.maxRounds.value,
+    promptType: els.promptType.value,
+  };
+}
+
+function applyStateToUI(state: PromptState) {
+  if (!state) return;
+  els.originalPrompt.value = state.originalPrompt;
+  els.intention.value = state.intention;
+  els.howToImprove.value = state.howToImprove;
+  els.evaluationFocus.value = state.evaluationFocus;
+  els.maxRounds.value = state.maxRounds;
+  els.promptType.value = state.promptType;
+  updateUndoRedoButtons();
+}
 
 function loadState() {
   els.originalPrompt.value =
@@ -45,6 +87,12 @@ function loadState() {
     localStorage.getItem('prompt-improver-maxRounds') || '3';
   els.promptType.value =
     localStorage.getItem('prompt-improver-promptType') || 'system';
+
+  undoManager = new UndoRedoManager(
+    getStateFromUI(),
+    (a, b) => JSON.stringify(a) === JSON.stringify(b),
+  );
+  updateUndoRedoButtons();
 }
 
 function saveState() {
@@ -60,6 +108,11 @@ function saveState() {
   );
   localStorage.setItem('prompt-improver-maxRounds', els.maxRounds.value);
   localStorage.setItem('prompt-improver-promptType', els.promptType.value);
+
+  if (undoManager) {
+    undoManager.save(getStateFromUI());
+    updateUndoRedoButtons();
+  }
 }
 
 els.originalPrompt.addEventListener('input', saveState);
@@ -72,6 +125,46 @@ els.promptType.addEventListener('change', saveState);
 loadState();
 
 setupLLMSettings(els.llmSettingsContainer, llmCore);
+
+els.undoBtn.addEventListener('click', () => {
+  const state = undoManager.undo();
+  if (state) {
+    applyStateToUI(state);
+    // save to localStorage without adding to undo history
+    localStorage.setItem(
+      'prompt-improver-originalPrompt',
+      state.originalPrompt,
+    );
+    localStorage.setItem('prompt-improver-intention', state.intention);
+    localStorage.setItem('prompt-improver-howToImprove', state.howToImprove);
+    localStorage.setItem(
+      'prompt-improver-evaluationFocus',
+      state.evaluationFocus,
+    );
+    localStorage.setItem('prompt-improver-maxRounds', state.maxRounds);
+    localStorage.setItem('prompt-improver-promptType', state.promptType);
+  }
+});
+
+els.redoBtn.addEventListener('click', () => {
+  const state = undoManager.redo();
+  if (state) {
+    applyStateToUI(state);
+    // save to localStorage without adding to undo history
+    localStorage.setItem(
+      'prompt-improver-originalPrompt',
+      state.originalPrompt,
+    );
+    localStorage.setItem('prompt-improver-intention', state.intention);
+    localStorage.setItem('prompt-improver-howToImprove', state.howToImprove);
+    localStorage.setItem(
+      'prompt-improver-evaluationFocus',
+      state.evaluationFocus,
+    );
+    localStorage.setItem('prompt-improver-maxRounds', state.maxRounds);
+    localStorage.setItem('prompt-improver-promptType', state.promptType);
+  }
+});
 
 function appendLog(type: string, message: string, data?: any) {
   const entry = document.createElement('div');
