@@ -1,4 +1,5 @@
 import { LLMCore } from './llm-core.js';
+import { getRequiredElement } from './dom-utils.js';
 
 export function setupLLMSettings(container: HTMLElement, core: LLMCore) {
   // Setup HTML structure
@@ -52,31 +53,14 @@ export function setupLLMSettings(container: HTMLElement, core: LLMCore) {
     </div>
   `;
 
-  const apiKeyInput = document.getElementById(
-    'shared-api-key',
-  ) as HTMLInputElement;
-  const modelInput = document.getElementById(
-    'shared-model-input',
-  ) as HTMLInputElement;
-  const modelsList = document.getElementById(
-    'shared-models-list',
-  ) as HTMLUListElement;
-  const fetchModelsBtn = document.getElementById(
+  const apiKeyInput = getRequiredElement('shared-api-key', HTMLInputElement);
+  const modelInput = getRequiredElement('shared-model-input', HTMLInputElement);
+  const modelsList = getRequiredElement('shared-models-list', HTMLUListElement);
+  const fetchModelsBtn = getRequiredElement(
     'shared-fetch-models-btn',
-  ) as HTMLButtonElement;
-  const statusText = document.getElementById(
-    'shared-status-text',
-  ) as HTMLSpanElement;
-
-  if (
-    !apiKeyInput ||
-    !modelInput ||
-    !modelsList ||
-    !fetchModelsBtn ||
-    !statusText
-  ) {
-    throw new Error('Failed to create shared LLM settings HTML elements');
-  }
+    HTMLButtonElement,
+  );
+  const statusText = getRequiredElement('shared-status-text', HTMLSpanElement);
 
   // Load initial state
   apiKeyInput.value = core.apiKey;
