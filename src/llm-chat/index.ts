@@ -1,65 +1,53 @@
 import { ChatCore, ChatMessage } from './core.js';
 import { setupLLMSettings } from '../shared/llm-settings.js';
 import { browserAlertTool } from './tools/browser-alert.js';
+import { getRequiredElement } from '../shared/dom-utils.js';
 
 const core = new ChatCore();
 core.registerTool(browserAlertTool);
 
 // --- DOM Elements ---
-const llmSettingsContainer = document.getElementById(
+const llmSettingsContainer = getRequiredElement(
   'llm-settings-container',
-) as HTMLDivElement;
-const systemPromptTextarea = document.getElementById(
+  HTMLDivElement,
+);
+const systemPromptTextarea = getRequiredElement(
   'system-prompt',
-) as HTMLTextAreaElement;
-const improvePromptBtn = document.getElementById(
+  HTMLTextAreaElement,
+);
+const improvePromptBtn = getRequiredElement(
   'improve-prompt-btn',
-) as HTMLButtonElement;
-const improvePromptStatus = document.getElementById(
+  HTMLButtonElement,
+);
+const improvePromptStatus = getRequiredElement(
   'improve-prompt-status',
-) as HTMLSpanElement;
-const savePromptBtn = document.getElementById(
-  'save-prompt-btn',
-) as HTMLButtonElement;
-const savedPromptsSelect = document.getElementById(
+  HTMLSpanElement,
+);
+const savePromptBtn = getRequiredElement('save-prompt-btn', HTMLButtonElement);
+const savedPromptsSelect = getRequiredElement(
   'saved-prompts-select',
-) as HTMLSelectElement;
-const deletePromptBtn = document.getElementById(
+  HTMLSelectElement,
+);
+const deletePromptBtn = getRequiredElement(
   'delete-prompt-btn',
-) as HTMLButtonElement;
+  HTMLButtonElement,
+);
 
-const historyContainer = document.getElementById(
+const historyContainer = getRequiredElement(
   'history-container',
-) as HTMLDivElement;
-const userInputTextarea = document.getElementById(
-  'user-input',
-) as HTMLTextAreaElement;
-const sendBtn = document.getElementById('send-btn') as HTMLButtonElement;
-const clearHistoryBtn = document.getElementById(
+  HTMLDivElement,
+);
+const userInputTextarea = getRequiredElement('user-input', HTMLTextAreaElement);
+const sendBtn = getRequiredElement('send-btn', HTMLButtonElement);
+const clearHistoryBtn = getRequiredElement(
   'clear-history-btn',
-) as HTMLButtonElement;
-const chatStatus = document.getElementById('chat-status') as HTMLSpanElement;
-const enableToolsCheckbox = document.getElementById(
+  HTMLButtonElement,
+);
+const chatStatus = getRequiredElement('chat-status', HTMLSpanElement);
+const enableToolsCheckbox = getRequiredElement(
   'enable-tools-checkbox',
-) as HTMLInputElement;
-
-if (
-  !llmSettingsContainer ||
-  !systemPromptTextarea ||
-  !improvePromptBtn ||
-  !improvePromptStatus ||
-  !savePromptBtn ||
-  !savedPromptsSelect ||
-  !deletePromptBtn ||
-  !historyContainer ||
-  !userInputTextarea ||
-  !sendBtn ||
-  !clearHistoryBtn ||
-  !chatStatus ||
-  !enableToolsCheckbox
-) {
-  throw new Error('Required DOM elements missing');
-}
+  HTMLInputElement,
+);
 
 enableToolsCheckbox.checked = core.toolsEnabled;
 enableToolsCheckbox.addEventListener('change', () => {
@@ -298,7 +286,10 @@ sendBtn.addEventListener('click', async () => {
   const assistantEl = createMessageElement(assistantMsg);
   assistantEl.classList.add('streaming');
   historyContainer.appendChild(assistantEl);
-  const contentDiv = assistantEl.querySelector('.content') as HTMLDivElement;
+  const contentDiv = assistantEl.querySelector('.content');
+  if (!(contentDiv instanceof HTMLDivElement)) {
+    throw new Error('Content div not found in assistant message element');
+  }
 
   const doStream = async (
     currentAssistantMsg: ChatMessage,
@@ -396,9 +387,12 @@ sendBtn.addEventListener('click', async () => {
         const nextAssistantEl = createMessageElement(nextAssistantMsg);
         nextAssistantEl.classList.add('streaming');
         historyContainer.appendChild(nextAssistantEl);
-        const nextContentDiv = nextAssistantEl.querySelector(
-          '.content',
-        ) as HTMLDivElement;
+        const nextContentDiv = nextAssistantEl.querySelector('.content');
+        if (!(nextContentDiv instanceof HTMLDivElement)) {
+          throw new Error(
+            'Content div not found in next assistant message element',
+          );
+        }
 
         await doStream(nextAssistantMsg, nextAssistantEl, nextContentDiv);
       } else {

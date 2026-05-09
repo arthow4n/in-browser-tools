@@ -288,7 +288,10 @@ function setupWorkflowCardButtons() {
   copyBtns.forEach((btn) => {
     btn.addEventListener('click', (e) => {
       if (!currentWorkflow) return;
-      const target = e.target as HTMLButtonElement;
+      const target = e.currentTarget;
+      if (!(target instanceof HTMLButtonElement)) {
+        throw new Error('Event currentTarget is not an HTMLButtonElement');
+      }
       const type = target.dataset.type;
       const index = target.dataset.index
         ? parseInt(target.dataset.index, 10)
@@ -305,7 +308,10 @@ function setupWorkflowCardButtons() {
   downloadBtns.forEach((btn) => {
     btn.addEventListener('click', (e) => {
       if (!currentWorkflow) return;
-      const target = e.target as HTMLButtonElement;
+      const target = e.currentTarget;
+      if (!(target instanceof HTMLButtonElement)) {
+        throw new Error('Event currentTarget is not an HTMLButtonElement');
+      }
       const type = target.dataset.type;
       const index = target.dataset.index
         ? parseInt(target.dataset.index, 10)
@@ -365,7 +371,10 @@ runTestBtn.addEventListener('click', async () => {
   const assistantEl = createMessageElement(assistantMsg);
   assistantEl.classList.add('streaming');
   testOutputContainer.appendChild(assistantEl);
-  const contentDiv = assistantEl.querySelector('.content') as HTMLDivElement;
+  const contentDiv = assistantEl.querySelector('.content');
+  if (!(contentDiv instanceof HTMLDivElement)) {
+    throw new Error('Content div not found in assistant message element');
+  }
 
   try {
     const generator = testCore.streamCompletion([]);
@@ -548,7 +557,10 @@ sendBtn.addEventListener('click', async () => {
   const assistantEl = createMessageElement(assistantMsg);
   assistantEl.classList.add('streaming');
   historyContainer.appendChild(assistantEl);
-  const contentDiv = assistantEl.querySelector('.content') as HTMLDivElement;
+  const contentDiv = assistantEl.querySelector('.content');
+  if (!(contentDiv instanceof HTMLDivElement)) {
+    throw new Error('Content div not found in assistant message element');
+  }
 
   try {
     const generator = core.streamCompletion([]);

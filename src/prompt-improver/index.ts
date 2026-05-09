@@ -5,38 +5,30 @@ import {
 } from './core.js';
 import { setupLLMSettings } from '../shared/llm-settings.js';
 import { LLMCore } from '../shared/llm-core.js';
+import { getRequiredElement } from '../shared/dom-utils.js';
 
 const els = {
-  llmSettingsContainer: document.getElementById(
+  llmSettingsContainer: getRequiredElement(
     'llm-settings-container',
-  ) as HTMLDivElement,
-  originalPrompt: document.getElementById(
-    'original-prompt',
-  ) as HTMLTextAreaElement,
-  intention: document.getElementById('intention') as HTMLTextAreaElement,
-  howToImprove: document.getElementById(
-    'how-to-improve',
-  ) as HTMLTextAreaElement,
-  evaluationFocus: document.getElementById(
-    'evaluation-focus',
-  ) as HTMLTextAreaElement,
-  maxRounds: document.getElementById('max-rounds') as HTMLInputElement,
-  promptType: document.getElementById('prompt-type') as HTMLSelectElement,
-  startBtn: document.getElementById('start-btn') as HTMLButtonElement,
-  statusText: document.getElementById('status-text') as HTMLSpanElement,
-  logArea: document.getElementById('log-area') as HTMLDivElement,
-  resultsPanel: document.getElementById('results-panel') as HTMLDivElement,
-  resultsTableBody: document.querySelector(
-    '#results-table tbody',
-  ) as HTMLTableSectionElement,
+    HTMLDivElement,
+  ),
+  originalPrompt: getRequiredElement('original-prompt', HTMLTextAreaElement),
+  intention: getRequiredElement('intention', HTMLTextAreaElement),
+  howToImprove: getRequiredElement('how-to-improve', HTMLTextAreaElement),
+  evaluationFocus: getRequiredElement('evaluation-focus', HTMLTextAreaElement),
+  maxRounds: getRequiredElement('max-rounds', HTMLInputElement),
+  promptType: getRequiredElement('prompt-type', HTMLSelectElement),
+  startBtn: getRequiredElement('start-btn', HTMLButtonElement),
+  statusText: getRequiredElement('status-text', HTMLSpanElement),
+  logArea: getRequiredElement('log-area', HTMLDivElement),
+  resultsPanel: getRequiredElement('results-panel', HTMLDivElement),
+  resultsTableBody: getRequiredElement(
+    'results-table-body',
+    HTMLTableSectionElement,
+  ),
 };
 
 const llmCore = new LLMCore();
-
-// Ensure all required elements exist
-for (const [key, el] of Object.entries(els)) {
-  if (!el) throw new Error(`Missing required element: ${key}`);
-}
 
 function loadState() {
   els.originalPrompt.value =
