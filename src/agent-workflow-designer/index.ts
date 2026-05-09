@@ -26,6 +26,9 @@ You can have as many agents as needed. Make sure the headers exactly match the f
 
 let undoManager: UndoRedoManager<ChatMessage[]> | null = null;
 
+const undoChatBtn = getRequiredElement('undo-chat-btn', HTMLButtonElement);
+const redoChatBtn = getRequiredElement('redo-chat-btn', HTMLButtonElement);
+
 function updateUndoRedoButtons() {
   if (undoManager) {
     undoChatBtn.disabled = !undoManager.canUndo;
@@ -107,8 +110,6 @@ const clearHistoryBtn = getRequiredElement(
   'clear-history-btn',
   HTMLButtonElement,
 );
-const undoChatBtn = getRequiredElement('undo-chat-btn', HTMLButtonElement);
-const redoChatBtn = getRequiredElement('redo-chat-btn', HTMLButtonElement);
 const chatStatus = getRequiredElement('chat-status', HTMLSpanElement);
 
 const workflowContainer = getRequiredElement(
