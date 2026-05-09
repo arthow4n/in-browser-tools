@@ -1,3 +1,4 @@
+import { UndoRedoManager } from '../shared/undo-redo.js';
 import { ChatCore, ChatMessage } from '../llm-chat/core.js';
 import { setupLLMSettings } from '../shared/llm-settings.js';
 import { getRequiredElement } from '../shared/dom-utils.js';
@@ -23,10 +24,26 @@ IMPORTANT: At the end of EVERY response, you MUST append a markdown block contai
 
 You can have as many agents as needed. Make sure the headers exactly match the format above. Keep your chat response concise and place the markdown block at the very end.`;
 
+let undoManager: UndoRedoManager<ChatMessage[]> | null = null;
+
+function updateUndoRedoButtons() {
+  if (undoManager) {
+    undoChatBtn.disabled = !undoManager.canUndo;
+    redoChatBtn.disabled = !undoManager.canRedo;
+  }
+}
+
 class WorkflowDesignerCore extends ChatCore {
   constructor() {
     super();
     this.systemPrompt = SYSTEM_PROMPT; // Override default
+
+    // Initialize undoManager here after super() loads the initial state
+    undoManager = new UndoRedoManager(
+      [...this.history],
+      (a, b) => JSON.stringify(a) === JSON.stringify(b),
+    );
+    updateUndoRedoButtons();
   }
 
   // Override loadState to use different local storage keys to not conflict with regular llm-chat
@@ -39,6 +56,12 @@ class WorkflowDesignerCore extends ChatCore {
     } catch {
       this.history = [];
     }
+
+    if (undoManager) {
+      // If loadChatState is called later (e.g. not from constructor)
+      undoManager.save([...this.history]);
+      updateUndoRedoButtons();
+    }
   }
 
   saveChatState() {
@@ -47,6 +70,10 @@ class WorkflowDesignerCore extends ChatCore {
       'agent-workflow-designer-history',
       JSON.stringify(this.history),
     );
+    if (undoManager) {
+      undoManager.save([...this.history]);
+      updateUndoRedoButtons();
+    }
   }
 }
 
@@ -80,6 +107,8 @@ const clearHistoryBtn = getRequiredElement(
   'clear-history-btn',
   HTMLButtonElement,
 );
+const undoChatBtn = getRequiredElement('undo-chat-btn', HTMLButtonElement);
+const redoChatBtn = getRequiredElement('redo-chat-btn', HTMLButtonElement);
 const chatStatus = getRequiredElement('chat-status', HTMLSpanElement);
 
 const workflowContainer = getRequiredElement(
@@ -515,6 +544,48 @@ function renderHistory() {
   }
   historyContainer.scrollTop = historyContainer.scrollHeight;
 }
+
+undoChatBtn.addEventListener('click', () => {
+  if (undoManager) {
+    const state = undoManager.undo();
+    if (state) {
+      core.history = [...state];
+      // Save directly to localStorage to avoid adding back to undo stack
+      localStorage.setItem(
+        'agent-workflow-designer-history',
+        JSON.stringify(core.history),
+      );
+      renderHistory();
+
+      const lastAssis = [...core.history]
+        .reverse()
+        .find((m) => m.role === 'assistant');
+      parseAndRenderWorkflow(lastAssis ? lastAssis.content : '');
+      updateUndoRedoButtons();
+    }
+  }
+});
+
+redoChatBtn.addEventListener('click', () => {
+  if (undoManager) {
+    const state = undoManager.redo();
+    if (state) {
+      core.history = [...state];
+      // Save directly to localStorage to avoid adding back to undo stack
+      localStorage.setItem(
+        'agent-workflow-designer-history',
+        JSON.stringify(core.history),
+      );
+      renderHistory();
+
+      const lastAssis = [...core.history]
+        .reverse()
+        .find((m) => m.role === 'assistant');
+      parseAndRenderWorkflow(lastAssis ? lastAssis.content : '');
+      updateUndoRedoButtons();
+    }
+  }
+});
 
 clearHistoryBtn.addEventListener('click', () => {
   if (confirm('Clear entire chat history?')) {
