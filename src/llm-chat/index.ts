@@ -23,6 +23,18 @@ const improvePromptStatus = getRequiredElement(
   'improve-prompt-status',
   HTMLSpanElement,
 );
+const promptIntentionTextarea = getRequiredElement(
+  'prompt-intention',
+  HTMLTextAreaElement,
+);
+const promptHowToImproveTextarea = getRequiredElement(
+  'prompt-how-to-improve',
+  HTMLTextAreaElement,
+);
+const promptEvaluationFocusTextarea = getRequiredElement(
+  'prompt-evaluation-focus',
+  HTMLTextAreaElement,
+);
 const savePromptBtn = getRequiredElement('save-prompt-btn', HTMLButtonElement);
 const savedPromptsSelect = getRequiredElement(
   'saved-prompts-select',
@@ -80,7 +92,11 @@ improvePromptBtn.addEventListener('click', async () => {
   improvePromptBtn.disabled = true;
   improvePromptBtn.textContent = 'Improving...';
   try {
-    const improved = await core.improveSystemPrompt();
+    const intention = promptIntentionTextarea.value.trim();
+    const howToImprove = promptHowToImproveTextarea.value.trim();
+    const evaluationFocus = promptEvaluationFocusTextarea.value.trim();
+
+    const improved = await core.improveSystemPrompt(intention, howToImprove, evaluationFocus);
     systemPromptTextarea.value = improved;
     core.systemPrompt = improved;
     core.saveChatState();
