@@ -75,4 +75,45 @@ export class TextAdventureCore extends ChatCore {
       this.scenarioRequest,
     );
   }
+
+  public async *generateCharacter(params: {
+    scenarioRequest: string;
+    guidance: string;
+  }): AsyncGenerator<StreamChunk, void, unknown> {
+    const messages: ChatMessage[] = [
+      {
+        id: 'sys-char-gen',
+        role: 'system',
+        content:
+          'You are a creative assistant helping a player set up a character for a text adventure. Output the character details using the provided tool.',
+      },
+      {
+        id: 'user-char-gen',
+        role: 'user',
+        content: `Initial Scenario Request: ${params.scenarioRequest}\n\nAdditional Guidance: ${params.guidance}`,
+      },
+    ];
+
+    const characterTool = {
+      name: 'setup_character',
+      description: 'Set up the character name and description.',
+      parameters: {
+        type: 'object',
+        properties: {
+          characterName: {
+            type: 'string',
+            description: 'The name of the character.',
+          },
+          characterDescription: {
+            type: 'string',
+            description:
+              "A brief description of the character's appearance, background, and personality.",
+          },
+        },
+        required: ['characterName', 'characterDescription'],
+      },
+    };
+
+    yield* this.streamCompletionWithTools(messages, [characterTool]);
+  }
 }

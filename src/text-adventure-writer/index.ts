@@ -25,7 +25,24 @@ const scenarioRequestInput = getRequiredElement(
   'scenario-request',
   HTMLTextAreaElement,
 );
-const initStoryBtn = getRequiredElement('init-story-btn', HTMLButtonElement);
+
+const characterGuidanceInput = getRequiredElement(
+  'character-guidance',
+  HTMLInputElement,
+);
+const generateCharacterBtn = getRequiredElement(
+  'generate-character-btn',
+  HTMLButtonElement,
+);
+
+const introGuidanceInput = getRequiredElement(
+  'intro-guidance',
+  HTMLInputElement,
+);
+const generateIntroBtn = getRequiredElement(
+  'generate-intro-btn',
+  HTMLButtonElement,
+);
 
 const historyContainer = getRequiredElement(
   'history-container',
@@ -115,7 +132,19 @@ function init() {
   });
 
   sendBtn.addEventListener('click', handleSend);
-  initStoryBtn.addEventListener('click', handleInitStory);
+
+  setupRegenerationUI({
+    btnElement: generateCharacterBtn,
+    inputElement: characterGuidanceInput,
+    callback: handleGenerateCharacter,
+  });
+
+  setupRegenerationUI({
+    btnElement: generateIntroBtn,
+    inputElement: introGuidanceInput,
+    callback: handleGenerateIntro,
+  });
+
   clearHistoryBtn.addEventListener('click', () => {
     core.history = [];
     core.saveChatState();
@@ -209,7 +238,17 @@ async function handleSend() {
   await generateResponse();
 }
 
-async function handleInitStory() {
+function setupRegenerationUI(params: {
+  btnElement: HTMLButtonElement;
+  inputElement: HTMLInputElement;
+  callback: (cbParams: { guidance: string }) => Promise<void>;
+}) {
+  params.btnElement.addEventListener('click', () => {
+    params.callback({ guidance: params.inputElement.value.trim() });
+  });
+}
+
+async function handleGenerateCharacter(params: { guidance: string }) {
   const scenarioText = core.scenarioRequest.trim();
   if (!scenarioText) {
     chatStatus.textContent = 'Please enter a scenario request first.';
@@ -217,6 +256,56 @@ async function handleInitStory() {
     return;
   }
 
+  chatStatus.textContent = 'Generating character...';
+  chatStatus.style.color = 'black';
+  generateCharacterBtn.disabled = true;
+
+  try {
+    const generator = core.generateCharacter({
+      scenarioRequest: scenarioText,
+      guidance: params.guidance,
+    });
+
+    let toolArgs = '';
+
+    for await (const chunk of generator) {
+      if (chunk.type === 'tool_call' && chunk.toolCall) {
+        toolArgs = chunk.toolCall.arguments; // streamCompletionWithTools aggregates tool calls and yields the final string at the end.
+      }
+    }
+
+    if (toolArgs) {
+      const parsed = JSON.parse(toolArgs);
+      if (parsed.characterName) {
+        core.characterName = parsed.characterName;
+        characterNameInput.value = core.characterName;
+      }
+      if (parsed.characterDescription) {
+        core.characterDescription = parsed.characterDescription;
+        characterDescriptionInput.value = core.characterDescription;
+      }
+      core.saveChatState();
+    }
+    chatStatus.textContent = 'Character generated.';
+    chatStatus.style.color = 'green';
+  } catch (err: any) {
+    console.error(err);
+    chatStatus.textContent = 'Error: ' + err.message;
+    chatStatus.style.color = 'red';
+  } finally {
+    generateCharacterBtn.disabled = false;
+  }
+}
+
+async function handleGenerateIntro(params: { guidance: string }) {
+  const scenarioText = core.scenarioRequest.trim();
+  if (!scenarioText) {
+    chatStatus.textContent = 'Please enter a scenario request first.';
+    chatStatus.style.color = 'red';
+    return;
+  }
+
+  // Clear previous history since we are restarting/regenerating the intro scenario
   core.history = [];
 
   const initialMessages: ChatMessage[] = [];
@@ -228,10 +317,15 @@ async function handleInitStory() {
     });
   }
 
+  let introPrompt = `[OOC - Initial Scenario]: The user requested the following scenario to begin: ${scenarioText}`;
+  if (params.guidance) {
+    introPrompt += `\n\n[OOC - Guidance for Intro]: ${params.guidance}`;
+  }
+
   initialMessages.push({
     id: Date.now().toString(),
     role: 'user',
-    content: `[OOC - Initial Scenario]: The user requested the following scenario to begin: ${scenarioText}`,
+    content: introPrompt,
   });
 
   core.history.push(...initialMessages);
@@ -245,7 +339,7 @@ async function generateResponse() {
   chatStatus.textContent = 'Generating...';
   chatStatus.style.color = 'black';
   sendBtn.disabled = true;
-  initStoryBtn.disabled = true;
+  generateIntroBtn.disabled = true;
 
   try {
     let assistantMessage: ChatMessage = {
@@ -336,7 +430,7 @@ async function generateResponse() {
     chatStatus.style.color = 'red';
   } finally {
     sendBtn.disabled = false;
-    initStoryBtn.disabled = false;
+    generateIntroBtn.disabled = false;
   }
 }
 
