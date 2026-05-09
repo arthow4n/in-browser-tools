@@ -1,0 +1,71 @@
+import { ChatCore, ChatMessage } from '../llm-chat/core.js';
+import { StreamChunk } from '../shared/llm-core.js';
+
+export class TextAdventureCore extends ChatCore {
+  public characterName: string = '';
+  public characterDescription: string = '';
+
+  constructor() {
+    super();
+    this.toolsEnabled = true;
+
+    // Explicitly call loadChatState here again because super() calls the parent's loadChatState
+    // which won't initialize characterName and characterDescription yet.
+    this.loadChatState();
+    this.registerTool({
+      name: 'speak',
+      description:
+        'Speak as a character or the narrator. You MUST use this tool to communicate anything to the user. Your regular text response is hidden.',
+      parameters: {
+        type: 'object',
+        properties: {
+          character: {
+            type: 'string',
+            description: "The name of the character speaking, or 'Narrator'.",
+          },
+          message: {
+            type: 'string',
+            description: 'The message they say or the narration.',
+          },
+        },
+        required: ['character', 'message'],
+      },
+      execute: () => {
+        // This is a UI-driven tool, execution is handled at the index.ts level.
+        return { success: true };
+      },
+    });
+  }
+
+  override loadChatState() {
+    this.systemPrompt =
+      localStorage.getItem('text-adventure-systemPrompt') ||
+      'You are a text adventure writer agent. You must drive the story forward and act as the narrator and any characters involved in the story. Keep the story engaging. Your thoughts are hidden from the user. You MUST use the `speak` tool to narrate the story or have characters speak to the user.';
+
+    try {
+      this.history = JSON.parse(
+        localStorage.getItem('text-adventure-history') || '[]',
+      );
+    } catch {
+      this.history = [];
+    }
+
+    this.characterName =
+      localStorage.getItem('text-adventure-characterName') || '';
+    this.characterDescription =
+      localStorage.getItem('text-adventure-characterDescription') || '';
+  }
+
+  override saveChatState() {
+    localStorage.setItem('text-adventure-systemPrompt', this.systemPrompt);
+    localStorage.setItem(
+      'text-adventure-history',
+      JSON.stringify(this.history),
+    );
+    localStorage.setItem('text-adventure-characterName', this.characterName);
+    localStorage.setItem(
+      'text-adventure-characterDescription',
+      this.characterDescription,
+    );
+  }
+}

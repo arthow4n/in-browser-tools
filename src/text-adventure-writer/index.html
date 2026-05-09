@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Text Adventure Writer</title>
+    <style>
+      *,
+      *:before,
+      *:after {
+        box-sizing: border-box;
+      }
+      body {
+        font-family: sans-serif;
+        line-height: 1.6;
+        margin: 0;
+        padding: 20px;
+        max-width: 800px;
+        margin: 0 auto;
+      }
+      section {
+        margin-bottom: 20px;
+        padding: 15px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+      }
+      h2 {
+        margin-top: 0;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+      input[type='text'],
+      input[type='password'],
+      textarea,
+      select {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 10px;
+        box-sizing: border-box;
+      }
+      button {
+        padding: 8px 15px;
+        cursor: pointer;
+        margin-right: 5px;
+        margin-bottom: 5px;
+      }
+      .message {
+        padding: 10px;
+        margin-bottom: 10px;
+        border-radius: 5px;
+        border: 1px solid #eee;
+        white-space: pre-wrap;
+      }
+      .message.user {
+        background-color: #e3f2fd;
+      }
+      .message.narrator {
+        background-color: #f5f5f5;
+        font-style: italic;
+      }
+      .message.character {
+        background-color: #fff3e0;
+      }
+      .character-name {
+        font-weight: bold;
+        margin-bottom: 5px;
+        display: block;
+      }
+      .history-container {
+        max-height: 500px;
+        overflow-y: auto;
+        margin-bottom: 10px;
+        padding-right: 10px;
+      }
+      .streaming {
+        border-left: 3px solid #2196f3;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Text Adventure Writer</h1>
+    <a href="./">← Back to Tools</a>
+
+    <section id="settings-section">
+      <h2>Settings</h2>
+      <div id="llm-settings-container">
+        <label for="shared-api-key">OpenRouter API Key:</label>
+        <input type="password" id="shared-api-key" placeholder="sk-or-v1-..." />
+
+        <label for="shared-model-input">Model:</label>
+        <input
+          type="text"
+          id="shared-model-input"
+          list="shared-models-list"
+          placeholder="e.g. google/gemini-2.5-flash"
+        />
+        <ul id="shared-models-list" style="display: none"></ul>
+        <button id="fetch-models-btn" style="margin-top: 5px">
+          Fetch Models
+        </button>
+      </div>
+    </section>
+
+    <section id="character-setup-section">
+      <h2>Character Setup</h2>
+      <label for="character-name">Your Character's Name:</label>
+      <input type="text" id="character-name" placeholder="e.g., Arthur Dent" />
+
+      <label for="character-description">Character Description:</label>
+      <textarea
+        id="character-description"
+        rows="3"
+        placeholder="Describe your character's appearance, background, and personality..."
+      ></textarea>
+    </section>
+
+    <section id="chat-section">
+      <h2>Story</h2>
+      <div class="history-container" id="history-container">
+        <!-- Messages will be rendered here -->
+      </div>
+
+      <label for="user-input">Your Action/Dialogue:</label>
+      <textarea
+        id="user-input"
+        rows="3"
+        placeholder="What do you do or say?"
+      ></textarea>
+
+      <label for="story-direction"
+        >Story Progression Direction (Optional):</label
+      >
+      <textarea
+        id="story-direction"
+        rows="2"
+        placeholder="Any extra instructions for the narrator on where the story should go..."
+      ></textarea>
+
+      <button
+        id="send-btn"
+        style="
+          width: 100%;
+          padding: 10px;
+          font-weight: bold;
+          background-color: #4caf50;
+          color: white;
+          border: none;
+        "
+      >
+        Send
+      </button>
+      <span
+        id="chat-status"
+        style="font-weight: bold; display: block; margin-top: 10px"
+      ></span>
+      <button id="clear-history-btn" style="width: 100%; margin-top: 10px">
+        Restart Story
+      </button>
+    </section>
+
+    <script type="module" src="./index.ts"></script>
+  </body>
+</html>
