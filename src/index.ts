@@ -9,6 +9,7 @@ const tools = [
   { name: 'Prompt Improver', path: 'prompt-improver.html' },
   { name: 'Text Inspector', path: 'text-inspector.html' },
   { name: 'Agent Workflow Designer', path: 'agent-workflow-designer.html' },
+  { name: 'Text Adventure Writer', path: 'text-adventure-writer.html' },
 ];
 
 const list = document.getElementById('tools-list');

@@ -12,6 +12,7 @@ export default defineConfig({
       'prompt-improver': './src/prompt-improver/index.ts',
       'text-inspector': './src/text-inspector/index.ts',
       'agent-workflow-designer': './src/agent-workflow-designer/index.ts',
+      'text-adventure-writer': './src/text-adventure-writer/index.ts',
     },
   },
   html: {
