@@ -226,7 +226,7 @@ async function handleChatSend() {
   const contentDiv = assistantEl.querySelector('.content') as HTMLDivElement;
 
   try {
-    const generator = core.streamCompletion([]);
+    const generator = core.streamChatCompletion([]);
     for await (const chunk of generator) {
       assistantMsg.content += chunk;
       contentDiv.textContent = assistantMsg.content;
@@ -614,7 +614,7 @@ runTestBtn.addEventListener('click', async () => {
   const contentDiv = assistantEl.querySelector('.content') as HTMLDivElement;
 
   try {
-    const generator = testCore.streamCompletion([]);
+    const generator = testCore.streamChatCompletion([]);
     for await (const chunk of generator) {
       assistantMsg.content += chunk;
       contentDiv.textContent = assistantMsg.content;
