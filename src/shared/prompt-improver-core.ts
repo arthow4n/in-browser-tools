@@ -1,4 +1,4 @@
-import { LLMCore } from '../shared/llm-core.js';
+import { LLMCore } from './llm-core.js';
 
 export interface PromptImproverConfig {
   originalPrompt: string;

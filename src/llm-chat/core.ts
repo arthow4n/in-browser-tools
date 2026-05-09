@@ -3,6 +3,7 @@ import {
   ChatMessage as SharedChatMessage,
   StreamChunk,
 } from '../shared/llm-core.js';
+import { PromptImproverCore, PromptImproverConfig } from '../shared/prompt-improver-core.js';
 import { AgentTool } from './tools/index.js';
 
 export interface ChatMessage extends SharedChatMessage {
@@ -97,36 +98,36 @@ export class ChatCore extends LLMCore {
     yield* this.streamCompletionWithTools(messages, toolsToPass);
   }
 
-  async improveSystemPrompt(): Promise<string> {
+  async improveSystemPrompt(intention: string = '', howToImprove: string = '', evaluationFocus: string = ''): Promise<string> {
     if (!this.apiKey) throw new Error('API Key is required');
     if (!this.model) throw new Error('Model is required');
 
-    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: this.model,
-        messages: [
-          {
-            role: 'system',
-            content:
-              'You are an expert prompt engineer. Please rewrite and improve the following system prompt to be more effective and clear. Reply ONLY with the rewritten prompt.',
-          },
-          { role: 'user', content: this.systemPrompt },
-        ],
-      }),
-    });
+    const config: PromptImproverConfig = {
+      originalPrompt: this.systemPrompt,
+      intention: intention || 'Improve the clarity and effectiveness of this system prompt.',
+      howToImprove: howToImprove || 'Ensure the LLM understands its role and fills in missing details from the vague prompt.',
+      evaluationFocus: evaluationFocus || '',
+      maxLoopRound: 1,
+      promptType: 'system',
+    };
 
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(
-        `Failed to improve system prompt: ${res.status} ${res.statusText} - ${text}`,
-      );
+    const improverCore = new PromptImproverCore(config, this);
+    const generator = improverCore.run();
+
+    let finalResults = null;
+    while (true) {
+      const { value, done } = await generator.next();
+      if (done) {
+        if (value) finalResults = value;
+        break;
+      }
     }
-    const data = await res.json();
-    return data.choices[0]?.message?.content || this.systemPrompt;
+
+    if (finalResults && finalResults.length > 0) {
+      // Return the prompt from the last round
+      return finalResults[finalResults.length - 1].prompt;
+    }
+
+    return this.systemPrompt;
   }
 }

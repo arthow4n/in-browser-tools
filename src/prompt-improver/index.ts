@@ -2,7 +2,7 @@ import {
   PromptImproverCore,
   PromptImproverConfig,
   IterationResult,
-} from './core.js';
+} from '../shared/prompt-improver-core.js';
 import { setupLLMSettings } from '../shared/llm-settings.js';
 import { LLMCore } from '../shared/llm-core.js';
 import { UndoRedoManager } from '../shared/undo-redo.js';

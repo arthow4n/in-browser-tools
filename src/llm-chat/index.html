@@ -115,6 +115,20 @@
       <h2>System Prompt</h2>
       <textarea id="system-prompt" rows="3"></textarea>
 
+      <details style="margin-bottom: 10px; margin-top: 10px;">
+        <summary style="cursor: pointer; font-weight: bold;">Improvement Settings</summary>
+        <div style="margin-top: 10px; padding: 10px; border: 1px solid #eee; border-radius: 5px;">
+          <label for="prompt-intention">Intention (Optional):</label>
+          <textarea id="prompt-intention" rows="2" placeholder="What is the purpose of this prompt?"></textarea>
+
+          <label for="prompt-how-to-improve">How to Improve (Optional):</label>
+          <textarea id="prompt-how-to-improve" rows="2" placeholder="How should it be improved?"></textarea>
+
+          <label for="prompt-evaluation-focus">Evaluation Focus (Optional):</label>
+          <textarea id="prompt-evaluation-focus" rows="2" placeholder="What to focus on during evaluation?"></textarea>
+        </div>
+      </details>
+
       <div class="flex-row">
         <button id="improve-prompt-btn">Improve Prompt with LLM</button>
         <span
