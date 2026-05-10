@@ -33,6 +33,9 @@
     "@ffmpeg/core-mt": "^0.12.10",
     "@ffmpeg/ffmpeg": "^0.12.15",
     "@ffmpeg/util": "^0.12.2",
+    "@rsbuild/plugin-node-polyfill": "^1.4.4",
+    "isomorphic-git": "^1.37.6",
+    "memfs": "^4.57.2",
     "pdf-lib": "^1.17.1"
   }
 }
