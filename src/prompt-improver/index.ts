@@ -19,6 +19,7 @@ const els = {
   howToImprove: getRequiredElement('how-to-improve', HTMLTextAreaElement),
   evaluationFocus: getRequiredElement('evaluation-focus', HTMLTextAreaElement),
   maxRounds: getRequiredElement('max-rounds', HTMLInputElement),
+  branchFactor: getRequiredElement('branch-factor', HTMLInputElement),
   promptType: getRequiredElement('prompt-type', HTMLSelectElement),
   startBtn: getRequiredElement('start-btn', HTMLButtonElement),
   undoBtn: getRequiredElement('undo-btn', HTMLButtonElement),
@@ -30,6 +31,9 @@ const els = {
     'results-table-body',
     HTMLTableSectionElement,
   ),
+  apiCallsEst: getRequiredElement('api-calls-est', HTMLSpanElement),
+  wordsEst: getRequiredElement('words-est', HTMLSpanElement),
+  progressText: getRequiredElement('progress-text', HTMLSpanElement),
 };
 
 const llmCore = new LLMCore();
@@ -39,6 +43,7 @@ interface PromptState {
   howToImprove: string;
   evaluationFocus: string;
   maxRounds: string;
+  branchFactor: string;
   promptType: string;
 }
 
@@ -58,8 +63,21 @@ function getStateFromUI(): PromptState {
     howToImprove: els.howToImprove.value,
     evaluationFocus: els.evaluationFocus.value,
     maxRounds: els.maxRounds.value,
+    branchFactor: els.branchFactor.value,
     promptType: els.promptType.value,
   };
+}
+
+function updateEstimation() {
+  const maxRounds = parseInt(els.maxRounds.value, 10) || 1;
+  const branchFactor = parseInt(els.branchFactor.value, 10) || 1;
+  const apiCalls = 1 + maxRounds * (1 + branchFactor * 2);
+  els.apiCallsEst.textContent = apiCalls.toString();
+
+  // Very rough words estimation just to give users an idea
+  const baseWords = (els.originalPrompt.value.split(' ').length + els.intention.value.split(' ').length + els.howToImprove.value.split(' ').length);
+  const roughWordsEst = 500 + (maxRounds * (baseWords * branchFactor * 5));
+  els.wordsEst.textContent = `~${roughWordsEst}`;
 }
 
 function applyStateToUI(state: PromptState) {
@@ -69,8 +87,10 @@ function applyStateToUI(state: PromptState) {
   els.howToImprove.value = state.howToImprove;
   els.evaluationFocus.value = state.evaluationFocus;
   els.maxRounds.value = state.maxRounds;
+  els.branchFactor.value = state.branchFactor || '3';
   els.promptType.value = state.promptType;
   updateUndoRedoButtons();
+  updateEstimation();
 }
 
 function loadState() {
@@ -86,6 +106,8 @@ function loadState() {
     localStorage.getItem('prompt-improver-evaluationFocus') || '';
   els.maxRounds.value =
     localStorage.getItem('prompt-improver-maxRounds') || '3';
+  els.branchFactor.value =
+    localStorage.getItem('prompt-improver-branchFactor') || '3';
   els.promptType.value =
     localStorage.getItem('prompt-improver-promptType') || 'system';
 
@@ -94,6 +116,7 @@ function loadState() {
     (a, b) => JSON.stringify(a) === JSON.stringify(b),
   );
   updateUndoRedoButtons();
+  updateEstimation();
 }
 
 function saveState() {
@@ -108,12 +131,14 @@ function saveState() {
     els.evaluationFocus.value,
   );
   localStorage.setItem('prompt-improver-maxRounds', els.maxRounds.value);
+  localStorage.setItem('prompt-improver-branchFactor', els.branchFactor.value);
   localStorage.setItem('prompt-improver-promptType', els.promptType.value);
 
   if (undoManager) {
     undoManager.save(getStateFromUI());
     updateUndoRedoButtons();
   }
+  updateEstimation();
 }
 
 els.originalPrompt.addEventListener('input', saveState);
@@ -121,6 +146,7 @@ els.intention.addEventListener('input', saveState);
 els.howToImprove.addEventListener('input', saveState);
 els.evaluationFocus.addEventListener('input', saveState);
 els.maxRounds.addEventListener('input', saveState);
+els.branchFactor.addEventListener('input', saveState);
 els.promptType.addEventListener('change', saveState);
 
 loadState();
@@ -143,6 +169,7 @@ els.undoBtn.addEventListener('click', () => {
       state.evaluationFocus,
     );
     localStorage.setItem('prompt-improver-maxRounds', state.maxRounds);
+    localStorage.setItem('prompt-improver-branchFactor', state.branchFactor);
     localStorage.setItem('prompt-improver-promptType', state.promptType);
   }
 });
@@ -163,6 +190,7 @@ els.redoBtn.addEventListener('click', () => {
       state.evaluationFocus,
     );
     localStorage.setItem('prompt-improver-maxRounds', state.maxRounds);
+    localStorage.setItem('prompt-improver-branchFactor', state.branchFactor);
     localStorage.setItem('prompt-improver-promptType', state.promptType);
   }
 });
@@ -195,13 +223,15 @@ els.startBtn.addEventListener('click', async () => {
     intention: els.intention.value,
     howToImprove: els.howToImprove.value,
     evaluationFocus: els.evaluationFocus.value,
-    maxLoopRound: parseInt(els.maxRounds.value, 10),
+    maxLoopRound: parseInt(els.maxRounds.value, 10) || 1,
+    branchFactor: parseInt(els.branchFactor.value, 10) || 1,
     promptType: els.promptType.value as 'system' | 'user',
   };
 
   els.logArea.innerHTML = '';
   els.resultsPanel.style.display = 'none';
   els.resultsTableBody.innerHTML = '';
+  els.progressText.textContent = '0%';
 
   await runWithUIState(
     els.startBtn,
@@ -222,7 +252,17 @@ els.startBtn.addEventListener('click', async () => {
           }
 
           const event = value;
-          appendLog(event.type, event.message, event.data);
+
+          if (event.type === 'cost_estimation') {
+             els.apiCallsEst.textContent = event.data.apiCalls.toString();
+          } else if (event.type === 'progress') {
+             const { completed, total, words } = event.data;
+             const pct = Math.round((completed / total) * 100);
+             els.progressText.textContent = `${pct}%`;
+             els.wordsEst.textContent = words.toString();
+          } else {
+             appendLog(event.type, event.message, event.data);
+          }
         }
 
         if (finalResults && finalResults.length > 0) {
@@ -253,6 +293,10 @@ function renderResults(results: IterationResult[]) {
     const tdRound = document.createElement('td');
     tdRound.textContent = res.round.toString();
     tr.appendChild(tdRound);
+
+    const tdBranch = document.createElement('td');
+    tdBranch.textContent = res.branch.toString();
+    tr.appendChild(tdBranch);
 
     const tdScore = document.createElement('td');
     tdScore.textContent = res.score.toString();

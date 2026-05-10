@@ -108,6 +108,60 @@ export class LLMCore {
     throw lastError;
   }
 
+  public async callLLMWithTools(messages: ChatMessage[], tools: any[], retries = 2): Promise<any> {
+    let attempt = 0;
+    let lastError: any;
+
+    while (attempt <= retries) {
+      try {
+        const body: any = {
+          model: this.model,
+          messages,
+        };
+
+        if (tools && tools.length > 0) {
+          body.tools = tools.map((t) => ({
+            type: 'function',
+            function: {
+              name: t.name,
+              description: t.description,
+              parameters: t.parameters,
+            },
+          }));
+        }
+
+        const res = await fetch(
+          'https://openrouter.ai/api/v1/chat/completions',
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${this.apiKey}`,
+              'Content-Type': 'application/json',
+              'HTTP-Referer': window.location.href,
+              'X-Title': 'In-Browser Tools',
+            },
+            body: JSON.stringify(body),
+          },
+        );
+
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(`API Error: ${res.status} - ${errorText}`);
+        }
+
+        const data = await res.json();
+        return data.choices[0]?.message;
+      } catch (err) {
+        lastError = err;
+        attempt++;
+        if (attempt <= retries) {
+          await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
+        }
+      }
+    }
+    throw lastError;
+  }
+
   public async *streamCompletion(
     messages: ChatMessage[],
   ): AsyncGenerator<string, void, unknown> {
