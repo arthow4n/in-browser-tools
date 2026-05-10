@@ -9,20 +9,9 @@ Based on the chat, you must design a workflow consisting of:
 1. One "Workflow Driving Prompt" (the orchestrator prompt that dispatches sub-agents).
 2. Several system prompts, one for each sub-agent in the workflow.
 
-IMPORTANT: At the end of EVERY response, you MUST append a markdown block containing the *current state* of the workflow prompts. It must be formatted exactly as follows:
+IMPORTANT: Whenever the workflow is created or updated, you MUST call the "update_workflow" tool with the full current state of the workflow prompts.
 
-\`\`\`markdown
-# Workflow Driving Prompt
-[Content of the orchestrator prompt]
-
-# Agent: [Agent Name 1]
-[Content of the prompt for Agent 1]
-
-# Agent: [Agent Name 2]
-[Content of the prompt for Agent 2]
-\`\`\`
-
-You can have as many agents as needed. Make sure the headers exactly match the format above. Keep your chat response concise and place the markdown block at the very end.`;
+Keep your chat responses concise and always rely on the tool to update the workflow.`;
 
 export interface WorkflowAgent {
   name: string;
@@ -41,6 +30,44 @@ class DesignerChat extends ChatCore {
   constructor() {
     super();
     this.systemPrompt = SYSTEM_PROMPT;
+    this.toolsEnabled = true;
+    this.registerTool({
+      name: 'update_workflow',
+      description: 'Updates the multi-agent workflow state with the orchestrator prompt and sub-agent prompts.',
+      parameters: {
+        type: 'object',
+        properties: {
+          orchestrator: {
+            type: 'string',
+            description: 'The Workflow Driving Prompt (orchestrator prompt) content.',
+          },
+          agents: {
+            type: 'array',
+            description: 'The list of sub-agents in the workflow.',
+            items: {
+              type: 'object',
+              properties: {
+                name: {
+                  type: 'string',
+                  description: 'The name of the sub-agent.',
+                },
+                content: {
+                  type: 'string',
+                  description: 'The prompt content for the sub-agent.',
+                },
+              },
+              required: ['name', 'content'],
+            },
+          },
+        },
+        required: ['orchestrator', 'agents'],
+      },
+      execute: (args: any) => {
+        // Will be handled as a side-effect via streaming chunks
+        return { success: true };
+      },
+    });
+
     undoManager = new UndoRedoManager(
       [...this.history],
       (a, b) => JSON.stringify(a) === JSON.stringify(b),
@@ -146,11 +173,15 @@ function init() {
   updateUndoRedoButtons();
 
   if (core.history.length > 0) {
-    const lastAssis = [...core.history]
+    const lastAssisWithTool = [...core.history]
       .reverse()
-      .find((m) => m.role === 'assistant');
-    if (lastAssis) {
-      parseAndRenderWorkflow(lastAssis.content);
+      .find((m) => m.role === 'assistant' && m.tool_calls && m.tool_calls.length > 0);
+
+    if (lastAssisWithTool && lastAssisWithTool.tool_calls) {
+      const tc = lastAssisWithTool.tool_calls.find(t => t.function.name === 'update_workflow');
+      if (tc) {
+        parseAndRenderWorkflow(tc.function.arguments);
+      }
     }
   }
 }
@@ -225,12 +256,38 @@ async function handleChatSend() {
   historyContainer.appendChild(assistantEl);
   const contentDiv = assistantEl.querySelector('.content') as HTMLDivElement;
 
+  let updatedWorkflow = false;
+
   try {
-    const generator = core.streamChatCompletion([]);
+    const generator = core.streamChatCompletionWithTools([]);
     for await (const chunk of generator) {
-      assistantMsg.content += chunk;
-      contentDiv.textContent = assistantMsg.content;
-      historyContainer.scrollTop = historyContainer.scrollHeight;
+      if (chunk.type === 'text' && chunk.text) {
+        assistantMsg.content += chunk.text;
+        contentDiv.textContent = assistantMsg.content;
+        historyContainer.scrollTop = historyContainer.scrollHeight;
+      } else if (chunk.type === 'tool_call' && chunk.toolCall) {
+        if (!assistantMsg.tool_calls) {
+          assistantMsg.tool_calls = [];
+        }
+        assistantMsg.tool_calls.push({
+          id: chunk.toolCall.id,
+          type: 'function',
+          function: {
+            name: chunk.toolCall.name,
+            arguments: chunk.toolCall.arguments,
+          },
+        });
+
+        if (chunk.toolCall.name === 'update_workflow') {
+          try {
+            const parsedArgs = JSON.parse(chunk.toolCall.arguments) as ParsedWorkflow;
+            renderWorkflow(parsedArgs);
+            updatedWorkflow = true;
+          } catch (e) {
+            console.error('Failed to parse update_workflow arguments', e);
+          }
+        }
+      }
     }
   } catch (e: any) {
     chatStatus.textContent = `Chat Error: ${e.message}`;
@@ -240,11 +297,24 @@ async function handleChatSend() {
   } finally {
     assistantEl.classList.remove('streaming');
     core.history.push(assistantMsg);
+
+    if (updatedWorkflow && assistantMsg.tool_calls?.length) {
+      const toolCallId = assistantMsg.tool_calls.find(tc => tc.function.name === 'update_workflow')?.id;
+      if (toolCallId) {
+        const toolMsg: ChatMessage = {
+          id: Date.now().toString(),
+          role: 'tool',
+          content: JSON.stringify({ success: true }),
+          tool_call_id: toolCallId,
+        };
+        core.history.push(toolMsg);
+      }
+    }
+
     core.saveChatState();
     renderHistory();
     sendBtn.disabled = false;
     updateUndoRedoButtons();
-    parseAndRenderWorkflow(assistantMsg.content);
   }
 }
 
@@ -260,10 +330,16 @@ undoChatBtn.addEventListener('click', () => {
         JSON.stringify(core.history),
       );
       renderHistory();
-      const lastAssis = [...core.history]
+      const lastAssisWithTool = [...core.history]
         .reverse()
-        .find((m) => m.role === 'assistant');
-      parseAndRenderWorkflow(lastAssis ? lastAssis.content : '');
+        .find((m) => m.role === 'assistant' && m.tool_calls && m.tool_calls.length > 0);
+
+      let foundArgs = '';
+      if (lastAssisWithTool && lastAssisWithTool.tool_calls) {
+        const tc = lastAssisWithTool.tool_calls.find(t => t.function.name === 'update_workflow');
+        if (tc) foundArgs = tc.function.arguments;
+      }
+      parseAndRenderWorkflow(foundArgs);
       updateUndoRedoButtons();
     }
   }
@@ -279,10 +355,16 @@ redoChatBtn.addEventListener('click', () => {
         JSON.stringify(core.history),
       );
       renderHistory();
-      const lastAssis = [...core.history]
+      const lastAssisWithTool = [...core.history]
         .reverse()
-        .find((m) => m.role === 'assistant');
-      parseAndRenderWorkflow(lastAssis ? lastAssis.content : '');
+        .find((m) => m.role === 'assistant' && m.tool_calls && m.tool_calls.length > 0);
+
+      let foundArgs = '';
+      if (lastAssisWithTool && lastAssisWithTool.tool_calls) {
+        const tc = lastAssisWithTool.tool_calls.find(t => t.function.name === 'update_workflow');
+        if (tc) foundArgs = tc.function.arguments;
+      }
+      parseAndRenderWorkflow(foundArgs);
       updateUndoRedoButtons();
     }
   }
@@ -299,29 +381,13 @@ clearHistoryBtn.addEventListener('click', () => {
 });
 
 // --- Workflow Parsing & Visualization ---
-export function parseWorkflowMarkdown(text: string): ParsedWorkflow | null {
-  const markdownMatch = text.match(/```markdown\s*([\s\S]*?)\s*```/);
-  const markdownContent = markdownMatch ? markdownMatch[1] : text;
-
-  const orchestratorRegex =
-    /#\s*Workflow Driving Prompt\s+([\s\S]*?)(?=#\s*Agent:|$)/i;
-  const orchestratorMatch = markdownContent.match(orchestratorRegex);
-
-  if (!orchestratorMatch) return null;
-
-  const orchestrator = orchestratorMatch[1].trim();
-  const agentRegex = /#\s*Agent:\s*(.+?)\s+([\s\S]*?)(?=#\s*Agent:|$)/gi;
-  const agents: WorkflowAgent[] = [];
-
-  let match;
-  while ((match = agentRegex.exec(markdownContent)) !== null) {
-    agents.push({
-      name: match[1].trim(),
-      content: match[2].trim(),
-    });
+// Helper to parse workflow purely from tool call JSON
+export function parseWorkflowFromJson(jsonStr: string): ParsedWorkflow | null {
+  try {
+    return JSON.parse(jsonStr) as ParsedWorkflow;
+  } catch {
+    return null;
   }
-
-  return { orchestrator, agents };
 }
 
 export function renderWorkflow(workflow: ParsedWorkflow | null) {
@@ -374,12 +440,12 @@ export function renderWorkflow(workflow: ParsedWorkflow | null) {
   setupWorkflowCardButtons();
 }
 
-let parseAndRenderWorkflow = (text: string) => {
-  if (!text) {
+let parseAndRenderWorkflow = (jsonStr: string) => {
+  if (!jsonStr) {
     renderWorkflow(null);
     return;
   }
-  const parsed = parseWorkflowMarkdown(text);
+  const parsed = parseWorkflowFromJson(jsonStr);
   renderWorkflow(parsed);
 };
 
@@ -485,8 +551,9 @@ function handleImport() {
     importStatus.style.color = 'red';
     return;
   }
-  const parsed = parseWorkflowMarkdown(text);
-  if (parsed) {
+  // Try parsing as JSON first, if it fails, show the fix button
+  const parsed = parseWorkflowFromJson(text);
+  if (parsed && parsed.orchestrator && parsed.agents) {
     renderWorkflow(parsed);
     fixImportBtn.style.display = 'none';
 
@@ -526,18 +593,17 @@ fixImportBtn.addEventListener('click', async () => {
   fixImportBtn.disabled = true;
   fixImportBtn.textContent = 'Fixing...';
 
-  const fixPrompt = `Please fix the following malformed workflow markdown so it strictly adheres to this format:
+  const fixPrompt = `Please parse the following malformed workflow markdown and return a JSON object with the exact following structure.
+Do not wrap it in markdown. Do not include any other text. Output raw JSON only.
 
-\`\`\`markdown
-# Workflow Driving Prompt
-[Content]
-
-# Agent: [Agent Name 1]
-[Content]
-
-# Agent: [Agent Name 2]
-[Content]
-\`\`\`
+Structure:
+{
+  "orchestrator": "The orchestrator prompt content",
+  "agents": [
+    { "name": "Agent Name 1", "content": "Prompt for Agent 1" },
+    { "name": "Agent Name 2", "content": "Prompt for Agent 2" }
+  ]
+}
 
 Here is the malformed workflow:
 
@@ -553,6 +619,7 @@ ${text}`;
       body: JSON.stringify({
         model: core.model,
         messages: [{ role: 'user', content: fixPrompt }],
+        response_format: { type: 'json_object' },
       }),
     });
 
@@ -560,8 +627,55 @@ ${text}`;
     const data = await res.json();
     const fixedText = data.choices[0]?.message?.content;
     if (fixedText) {
-      importTextarea.value = fixedText;
-      handleImport();
+      try {
+        const parsedWorkflow = JSON.parse(fixedText);
+        renderWorkflow(parsedWorkflow);
+        fixImportBtn.style.display = 'none';
+
+        const importMsg: ChatMessage = {
+          id: Date.now().toString(),
+          role: 'user',
+          content: `I am importing an existing workflow from the malformed text.`,
+        };
+        core.history.push(importMsg);
+
+        // Add a fake assistant message with tool call to simulate proper import
+        const fakeAssistantId = (Date.now() + 1).toString();
+        const fakeToolCallId = 'call_' + Date.now();
+        const assistantMsg: ChatMessage = {
+          id: fakeAssistantId,
+          role: 'assistant',
+          content: '',
+          tool_calls: [{
+            id: fakeToolCallId,
+            type: 'function',
+            function: {
+              name: 'update_workflow',
+              arguments: JSON.stringify(parsedWorkflow),
+            }
+          }]
+        };
+        const toolMsg: ChatMessage = {
+          id: (Date.now() + 2).toString(),
+          role: 'tool',
+          content: JSON.stringify({ success: true }),
+          tool_call_id: fakeToolCallId
+        };
+
+        core.history.push(assistantMsg);
+        core.history.push(toolMsg);
+
+        core.saveChatState();
+        renderHistory();
+        updateUndoRedoButtons();
+
+        importTextarea.value = '';
+        importStatus.textContent = 'Workflow fixed and imported successfully!';
+        importStatus.style.color = 'green';
+      } catch (parseError) {
+         importStatus.textContent = 'LLM did not return valid JSON.';
+         importStatus.style.color = 'red';
+      }
     }
   } catch (e: any) {
     importStatus.textContent = `Error fixing import: ${e.message}`;
