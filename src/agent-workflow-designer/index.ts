@@ -33,13 +33,15 @@ class DesignerChat extends ChatCore {
     this.toolsEnabled = true;
     this.registerTool({
       name: 'update_workflow',
-      description: 'Updates the multi-agent workflow state with the orchestrator prompt and sub-agent prompts.',
+      description:
+        'Updates the multi-agent workflow state with the orchestrator prompt and sub-agent prompts.',
       parameters: {
         type: 'object',
         properties: {
           orchestrator: {
             type: 'string',
-            description: 'The Workflow Driving Prompt (orchestrator prompt) content.',
+            description:
+              'The Workflow Driving Prompt (orchestrator prompt) content.',
           },
           agents: {
             type: 'array',
@@ -175,10 +177,15 @@ function init() {
   if (core.history.length > 0) {
     const lastAssisWithTool = [...core.history]
       .reverse()
-      .find((m) => m.role === 'assistant' && m.tool_calls && m.tool_calls.length > 0);
+      .find(
+        (m) =>
+          m.role === 'assistant' && m.tool_calls && m.tool_calls.length > 0,
+      );
 
     if (lastAssisWithTool && lastAssisWithTool.tool_calls) {
-      const tc = lastAssisWithTool.tool_calls.find(t => t.function.name === 'update_workflow');
+      const tc = lastAssisWithTool.tool_calls.find(
+        (t) => t.function.name === 'update_workflow',
+      );
       if (tc) {
         parseAndRenderWorkflow(tc.function.arguments);
       }
@@ -223,7 +230,6 @@ export function renderHistory() {
 }
 
 async function handleChatSend() {
-  chatStatus.textContent = '';
   const text = userInputTextarea.value.trim();
   if (!text) return;
 
@@ -234,88 +240,91 @@ async function handleChatSend() {
     return;
   }
 
-  const userMsg: ChatMessage = {
-    id: Date.now().toString(),
-    role: 'user',
-    content: text,
-  };
+  await runWithUIState(sendBtn, chatStatus, 'Sending...', async () => {
+    const userMsg: ChatMessage = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: text,
+    };
 
-  core.history.push(userMsg);
-  core.saveChatState();
-  renderHistory();
-  userInputTextarea.value = '';
-  sendBtn.disabled = true;
+    core.history.push(userMsg);
+    core.saveChatState();
+    renderHistory();
+    userInputTextarea.value = '';
 
-  const assistantMsg: ChatMessage = {
-    id: (Date.now() + 1).toString(),
-    role: 'assistant',
-    content: '',
-  };
-  const assistantEl = createMessageElement(assistantMsg);
-  assistantEl.classList.add('streaming');
-  historyContainer.appendChild(assistantEl);
-  const contentDiv = assistantEl.querySelector('.content') as HTMLDivElement;
+    const assistantMsg: ChatMessage = {
+      id: (Date.now() + 1).toString(),
+      role: 'assistant',
+      content: '',
+    };
+    const assistantEl = createMessageElement(assistantMsg);
+    assistantEl.classList.add('streaming');
+    historyContainer.appendChild(assistantEl);
+    const contentDiv = assistantEl.querySelector('.content') as HTMLDivElement;
 
-  let updatedWorkflow = false;
+    let updatedWorkflow = false;
 
-  try {
-    const generator = core.streamChatCompletionWithTools([]);
-    for await (const chunk of generator) {
-      if (chunk.type === 'text' && chunk.text) {
-        assistantMsg.content += chunk.text;
-        contentDiv.textContent = assistantMsg.content;
-        historyContainer.scrollTop = historyContainer.scrollHeight;
-      } else if (chunk.type === 'tool_call' && chunk.toolCall) {
-        if (!assistantMsg.tool_calls) {
-          assistantMsg.tool_calls = [];
-        }
-        assistantMsg.tool_calls.push({
-          id: chunk.toolCall.id,
-          type: 'function',
-          function: {
-            name: chunk.toolCall.name,
-            arguments: chunk.toolCall.arguments,
-          },
-        });
+    try {
+      const generator = core.streamChatCompletionWithTools([]);
+      for await (const chunk of generator) {
+        if (chunk.type === 'text' && chunk.text) {
+          assistantMsg.content += chunk.text;
+          contentDiv.textContent = assistantMsg.content;
+          historyContainer.scrollTop = historyContainer.scrollHeight;
+        } else if (chunk.type === 'tool_call' && chunk.toolCall) {
+          if (!assistantMsg.tool_calls) {
+            assistantMsg.tool_calls = [];
+          }
+          assistantMsg.tool_calls.push({
+            id: chunk.toolCall.id,
+            type: 'function',
+            function: {
+              name: chunk.toolCall.name,
+              arguments: chunk.toolCall.arguments,
+            },
+          });
 
-        if (chunk.toolCall.name === 'update_workflow') {
-          try {
-            const parsedArgs = JSON.parse(chunk.toolCall.arguments) as ParsedWorkflow;
-            renderWorkflow(parsedArgs);
-            updatedWorkflow = true;
-          } catch (e) {
-            console.error('Failed to parse update_workflow arguments', e);
+          if (chunk.toolCall.name === 'update_workflow') {
+            try {
+              const parsedArgs = JSON.parse(
+                chunk.toolCall.arguments,
+              ) as ParsedWorkflow;
+              renderWorkflow(parsedArgs);
+              updatedWorkflow = true;
+            } catch (e) {
+              console.error('Failed to parse update_workflow arguments', e);
+            }
           }
         }
       }
-    }
-  } catch (e: any) {
-    chatStatus.textContent = `Chat Error: ${e.message}`;
-    chatStatus.style.color = 'red';
-    assistantMsg.content += `\n[Error: ${e.message}]`;
-    contentDiv.textContent = assistantMsg.content;
-  } finally {
-    assistantEl.classList.remove('streaming');
-    core.history.push(assistantMsg);
+    } catch (e: any) {
+      assistantMsg.content += `\n[Error: ${e.message}]`;
+      contentDiv.textContent = assistantMsg.content;
+      throw e;
+    } finally {
+      assistantEl.classList.remove('streaming');
+      core.history.push(assistantMsg);
 
-    if (updatedWorkflow && assistantMsg.tool_calls?.length) {
-      const toolCallId = assistantMsg.tool_calls.find(tc => tc.function.name === 'update_workflow')?.id;
-      if (toolCallId) {
-        const toolMsg: ChatMessage = {
-          id: Date.now().toString(),
-          role: 'tool',
-          content: JSON.stringify({ success: true }),
-          tool_call_id: toolCallId,
-        };
-        core.history.push(toolMsg);
+      if (updatedWorkflow && assistantMsg.tool_calls?.length) {
+        const toolCallId = assistantMsg.tool_calls.find(
+          (tc) => tc.function.name === 'update_workflow',
+        )?.id;
+        if (toolCallId) {
+          const toolMsg: ChatMessage = {
+            id: Date.now().toString(),
+            role: 'tool',
+            content: JSON.stringify({ success: true }),
+            tool_call_id: toolCallId,
+          };
+          core.history.push(toolMsg);
+        }
       }
-    }
 
-    core.saveChatState();
-    renderHistory();
-    sendBtn.disabled = false;
-    updateUndoRedoButtons();
-  }
+      core.saveChatState();
+      renderHistory();
+      updateUndoRedoButtons();
+    }
+  });
 }
 
 sendBtn.addEventListener('click', handleChatSend);
@@ -332,11 +341,16 @@ undoChatBtn.addEventListener('click', () => {
       renderHistory();
       const lastAssisWithTool = [...core.history]
         .reverse()
-        .find((m) => m.role === 'assistant' && m.tool_calls && m.tool_calls.length > 0);
+        .find(
+          (m) =>
+            m.role === 'assistant' && m.tool_calls && m.tool_calls.length > 0,
+        );
 
       let foundArgs = '';
       if (lastAssisWithTool && lastAssisWithTool.tool_calls) {
-        const tc = lastAssisWithTool.tool_calls.find(t => t.function.name === 'update_workflow');
+        const tc = lastAssisWithTool.tool_calls.find(
+          (t) => t.function.name === 'update_workflow',
+        );
         if (tc) foundArgs = tc.function.arguments;
       }
       parseAndRenderWorkflow(foundArgs);
@@ -357,11 +371,16 @@ redoChatBtn.addEventListener('click', () => {
       renderHistory();
       const lastAssisWithTool = [...core.history]
         .reverse()
-        .find((m) => m.role === 'assistant' && m.tool_calls && m.tool_calls.length > 0);
+        .find(
+          (m) =>
+            m.role === 'assistant' && m.tool_calls && m.tool_calls.length > 0,
+        );
 
       let foundArgs = '';
       if (lastAssisWithTool && lastAssisWithTool.tool_calls) {
-        const tc = lastAssisWithTool.tool_calls.find(t => t.function.name === 'update_workflow');
+        const tc = lastAssisWithTool.tool_calls.find(
+          (t) => t.function.name === 'update_workflow',
+        );
         if (tc) foundArgs = tc.function.arguments;
       }
       parseAndRenderWorkflow(foundArgs);
@@ -646,20 +665,22 @@ ${text}`;
           id: fakeAssistantId,
           role: 'assistant',
           content: '',
-          tool_calls: [{
-            id: fakeToolCallId,
-            type: 'function',
-            function: {
-              name: 'update_workflow',
-              arguments: JSON.stringify(parsedWorkflow),
-            }
-          }]
+          tool_calls: [
+            {
+              id: fakeToolCallId,
+              type: 'function',
+              function: {
+                name: 'update_workflow',
+                arguments: JSON.stringify(parsedWorkflow),
+              },
+            },
+          ],
         };
         const toolMsg: ChatMessage = {
           id: (Date.now() + 2).toString(),
           role: 'tool',
           content: JSON.stringify({ success: true }),
-          tool_call_id: fakeToolCallId
+          tool_call_id: fakeToolCallId,
         };
 
         core.history.push(assistantMsg);
@@ -673,8 +694,8 @@ ${text}`;
         importStatus.textContent = 'Workflow fixed and imported successfully!';
         importStatus.style.color = 'green';
       } catch (parseError) {
-         importStatus.textContent = 'LLM did not return valid JSON.';
-         importStatus.style.color = 'red';
+        importStatus.textContent = 'LLM did not return valid JSON.';
+        importStatus.style.color = 'red';
       }
     }
   } catch (e: any) {

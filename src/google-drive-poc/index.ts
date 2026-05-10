@@ -21,6 +21,8 @@ function getRequiredElement<T extends HTMLElement>(
   return element;
 }
 
+import { runWithUIState } from '../shared/ui-utils.js';
+
 const clientIdInput = getRequiredElement('clientId', HTMLInputElement);
 const authBtn = getRequiredElement('authBtn', HTMLButtonElement);
 const signoutBtn = getRequiredElement('signoutBtn', HTMLButtonElement);
@@ -72,7 +74,7 @@ function checkLibrariesLoaded() {
 }
 checkLibrariesLoaded();
 
-authBtn.addEventListener('click', () => {
+authBtn.addEventListener('click', async () => {
   const clientId = clientIdInput.value.trim();
   if (!clientId) {
     updateStatus('Please enter a Client ID first.', true);
@@ -84,17 +86,14 @@ authBtn.addEventListener('click', () => {
     return;
   }
 
-  try {
+  await runWithUIState(authBtn, statusDiv, 'Authorizing...', async () => {
     tokenClient = google.accounts.oauth2.initTokenClient({
       client_id: clientId,
       scope: SCOPES,
       callback: '', // defined later
     });
-
-    handleAuthClick();
-  } catch (e: any) {
-    updateStatus(`Error initializing token client: ${e.message}`, true);
-  }
+    handleAuthClick(); // handleAuthClick will update status when done
+  });
 });
 
 function handleAuthClick() {
@@ -164,57 +163,61 @@ async function findPocFile() {
 
 saveBtn.addEventListener('click', async () => {
   const content = dataInput.value;
-  updateStatus('Saving to Google Drive...');
-  saveBtn.disabled = true;
+  let successMessage = '';
+  await runWithUIState(
+    saveBtn,
+    statusDiv,
+    'Saving to Google Drive...',
+    async () => {
+      const fileMetadata = {
+        name: POC_FILE_NAME,
+        mimeType: 'text/plain',
+      };
 
-  try {
-    const fileMetadata = {
-      name: POC_FILE_NAME,
-      mimeType: 'text/plain',
-    };
+      const file = new Blob([content], { type: 'text/plain' });
+      const metadata = new Blob([JSON.stringify(fileMetadata)], {
+        type: 'application/json',
+      });
 
-    const file = new Blob([content], { type: 'text/plain' });
-    const metadata = new Blob([JSON.stringify(fileMetadata)], {
-      type: 'application/json',
-    });
+      const form = new FormData();
+      form.append('metadata', metadata);
+      form.append('file', file);
 
-    const form = new FormData();
-    form.append('metadata', metadata);
-    form.append('file', file);
+      const token = gapi.client.getToken()?.access_token;
+      if (!token) throw new Error('No access token available.');
 
-    const token = gapi.client.getToken()?.access_token;
-    if (!token) throw new Error('No access token available.');
+      let url =
+        'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+      let method = 'POST';
 
-    let url =
-      'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
-    let method = 'POST';
+      // If file exists, update it instead of creating a new one
+      if (fileId) {
+        url = `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart`;
+        method = 'PATCH';
+      }
 
-    // If file exists, update it instead of creating a new one
-    if (fileId) {
-      url = `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart`;
-      method = 'PATCH';
-    }
+      const res = await fetch(url, {
+        method: method,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: form,
+      });
 
-    const res = await fetch(url, {
-      method: method,
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      body: form,
-    });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error?.message || 'Failed to save file');
+      }
 
-    if (!res.ok) {
-      const errData = await res.json();
-      throw new Error(errData.error?.message || 'Failed to save file');
-    }
+      const data = await res.json();
+      fileId = data.id;
+      successMessage = `File saved successfully! (ID: ${fileId})`;
+    },
+    undefined,
+  );
 
-    const data = await res.json();
-    fileId = data.id;
-    updateStatus(`File saved successfully! (ID: ${fileId})`);
-  } catch (err: any) {
-    updateStatus(`Error saving file: ${err.message}`, true);
-  } finally {
-    saveBtn.disabled = false;
+  if (successMessage && !statusDiv.textContent?.startsWith('Error')) {
+    updateStatus(successMessage);
   }
 });
 
@@ -224,32 +227,30 @@ loadBtn.addEventListener('click', async () => {
     return;
   }
 
-  updateStatus('Loading from Google Drive...');
-  loadBtn.disabled = true;
+  await runWithUIState(
+    loadBtn,
+    statusDiv,
+    'Loading from Google Drive...',
+    async () => {
+      const token = gapi.client.getToken()?.access_token;
+      if (!token) throw new Error('No access token available.');
 
-  try {
-    const token = gapi.client.getToken()?.access_token;
-    if (!token) throw new Error('No access token available.');
-
-    const response = await fetch(
-      `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
+      const response = await fetch(
+        `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         },
-      },
-    );
+      );
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-    const text = await response.text();
-    dataInput.value = text;
-    updateStatus('File loaded successfully!');
-  } catch (err: any) {
-    updateStatus(`Error loading file: ${err.message}`, true);
-  } finally {
-    loadBtn.disabled = false;
-  }
+      const text = await response.text();
+      dataInput.value = text;
+    },
+    'File loaded successfully!',
+  );
 });

@@ -1,5 +1,6 @@
 import { PDFDocument } from 'pdf-lib';
 import { getRequiredElement } from '../shared/dom-utils.js';
+import { runWithUIState } from '../shared/ui-utils.js';
 
 const fileInput = getRequiredElement<HTMLInputElement>(
   'pdf-file',
@@ -50,59 +51,63 @@ splitBtn.addEventListener('click', async () => {
     return;
   }
 
-  splitBtn.disabled = true;
-  statusDiv.textContent = `Processing ${file.name} (${formatBytes(file.size)})...`;
   outputList.innerHTML = '';
 
-  try {
-    const arrayBuffer = await file.arrayBuffer();
-    const pdfDoc = await PDFDocument.load(arrayBuffer);
-    const totalPages = pdfDoc.getPageCount();
+  let successMessage = '';
+  await runWithUIState(
+    splitBtn,
+    statusDiv,
+    `Processing ${file.name} (${formatBytes(file.size)})...`,
+    async () => {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdfDoc = await PDFDocument.load(arrayBuffer);
+      const totalPages = pdfDoc.getPageCount();
 
-    if (totalPages === 0) {
-      statusDiv.textContent = 'The selected PDF has no pages.';
-      return;
-    }
-
-    const numChunks = Math.ceil(totalPages / pagesPerSplit);
-    statusDiv.textContent = `Splitting into ${numChunks} file(s)...`;
-
-    for (let i = 0; i < numChunks; i++) {
-      const newPdf = await PDFDocument.create();
-      const startPage = i * pagesPerSplit;
-      const endPage = Math.min(startPage + pagesPerSplit, totalPages);
-
-      const pageIndices = [];
-      for (let j = startPage; j < endPage; j++) {
-        pageIndices.push(j);
+      if (totalPages === 0) {
+        throw new Error('The selected PDF has no pages.');
       }
 
-      const copiedPages = await newPdf.copyPages(pdfDoc, pageIndices);
-      copiedPages.forEach((page) => newPdf.addPage(page));
+      const numChunks = Math.ceil(totalPages / pagesPerSplit);
+      statusDiv.textContent = `Splitting into ${numChunks} file(s)...`;
 
-      const pdfBytes = await newPdf.save();
-      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      const fileSizeFormatted = formatBytes(blob.size);
+      for (let i = 0; i < numChunks; i++) {
+        const newPdf = await PDFDocument.create();
+        const startPage = i * pagesPerSplit;
+        const endPage = Math.min(startPage + pagesPerSplit, totalPages);
 
-      const li = document.createElement('li');
-      const a = document.createElement('a');
-      a.href = url;
+        const pageIndices = [];
+        for (let j = startPage; j < endPage; j++) {
+          pageIndices.push(j);
+        }
 
-      const baseName = file.name.replace(/\.[^/.]+$/, '');
-      const downloadName = `${baseName}_part${i + 1}.pdf`;
+        const copiedPages = await newPdf.copyPages(pdfDoc, pageIndices);
+        copiedPages.forEach((page) => newPdf.addPage(page));
 
-      a.download = downloadName;
-      a.textContent = `Download ${downloadName} (${fileSizeFormatted})`;
-      li.appendChild(a);
-      outputList.appendChild(li);
-    }
+        const pdfBytes = await newPdf.save();
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        const fileSizeFormatted = formatBytes(blob.size);
 
-    statusDiv.textContent = `Done splitting ${file.name} (${formatBytes(file.size)})! Generated ${numChunks} files.`;
-  } catch (error) {
-    console.error(error);
-    statusDiv.textContent = `Error: ${error instanceof Error ? error.message : String(error)}`;
-  } finally {
-    splitBtn.disabled = false;
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.href = url;
+
+        const baseName = file.name.replace(/\.[^/.]+$/, '');
+        const downloadName = `${baseName}_part${i + 1}.pdf`;
+
+        a.download = downloadName;
+        a.textContent = `Download ${downloadName} (${fileSizeFormatted})`;
+        li.appendChild(a);
+        outputList.appendChild(li);
+      }
+
+      successMessage = `Done splitting ${file.name} (${formatBytes(file.size)})! Generated ${numChunks} files.`;
+    },
+    undefined,
+  );
+
+  if (successMessage && !statusDiv.textContent?.startsWith('Error')) {
+    statusDiv.textContent = successMessage;
+    statusDiv.style.color = 'green';
   }
 });

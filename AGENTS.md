@@ -50,6 +50,7 @@ Adopt a mobile-first design:
 - Use `box-sizing: border-box` globally or for sizing elements to prevent padding/borders from breaking width limits.
 - Avoid hardcoded fixed widths (e.g. `width: 300px`); use `width: 100%; max-width: 300px;` instead.
 - Avoid using browser `alert()` for errors or notifications because it force disturbs the user. Always display loading, streaming, and error states gracefully using inline UI elements (e.g., status spans or specific UI containers).
+- When a button triggers an asynchronous action, use the `runWithUIState` utility from `src/shared/ui-utils.js` to manage the disabled state of the button, the loading text, and the error/success status automatically.
 
 ## Pre-push checks
 

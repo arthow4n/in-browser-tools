@@ -1,6 +1,7 @@
 import { getRequiredElement } from '../shared/dom-utils.js';
 import { TextAdventureCore } from './core.js';
 import { ChatMessage } from '../llm-chat/core.js';
+import { runWithUIState } from '../shared/ui-utils.js';
 
 const core = new TextAdventureCore();
 
@@ -405,72 +406,59 @@ async function handleGenerateCharacter(params: { guidance: string }) {
     return;
   }
 
-  chatStatus.textContent = 'Generating character...';
-  chatStatus.style.color = 'black';
-  generateCharacterBtn.disabled = true;
+  await runWithUIState(
+    generateCharacterBtn,
+    chatStatus,
+    'Generating character...',
+    async () => {
+      const generator = core.generateCharacter({
+        scenarioRequest: scenarioText,
+        guidance: params.guidance,
+      });
 
-  try {
-    const generator = core.generateCharacter({
-      scenarioRequest: scenarioText,
-      guidance: params.guidance,
-    });
+      let toolArgs = '';
 
-    let toolArgs = '';
-
-    for await (const chunk of generator) {
-      if (chunk.type === 'tool_call' && chunk.toolCall) {
-        toolArgs = chunk.toolCall.arguments; // streamCompletionWithTools aggregates tool calls and yields the final string at the end.
+      for await (const chunk of generator) {
+        if (chunk.type === 'tool_call' && chunk.toolCall) {
+          toolArgs = chunk.toolCall.arguments; // streamCompletionWithTools aggregates tool calls and yields the final string at the end.
+        }
       }
-    }
 
-    if (toolArgs) {
-      const parsed = JSON.parse(toolArgs);
-      if (parsed.characterName) {
-        core.characterName = parsed.characterName;
-        characterNameInput.value = core.characterName;
+      if (toolArgs) {
+        const parsed = JSON.parse(toolArgs);
+        if (parsed.characterName) {
+          core.characterName = parsed.characterName;
+          characterNameInput.value = core.characterName;
+        }
+        if (parsed.characterDescription) {
+          core.characterDescription = parsed.characterDescription;
+          characterDescriptionInput.value = core.characterDescription;
+        }
+        core.saveChatState();
       }
-      if (parsed.characterDescription) {
-        core.characterDescription = parsed.characterDescription;
-        characterDescriptionInput.value = core.characterDescription;
-      }
-      core.saveChatState();
-    }
-    chatStatus.textContent = 'Character generated.';
-    chatStatus.style.color = 'green';
-  } catch (err: any) {
-    console.error(err);
-    chatStatus.textContent = 'Error: ' + err.message;
-    chatStatus.style.color = 'red';
-  } finally {
-    generateCharacterBtn.disabled = false;
-  }
+    },
+    'Character generated.',
+  );
 }
 
 async function handleGenerateAction() {
   const guidance = actionGuidanceInput.value.trim();
 
-  chatStatus.textContent = 'Generating next action...';
-  chatStatus.style.color = 'black';
-  generateActionBtn.disabled = true;
+  await runWithUIState(
+    generateActionBtn,
+    chatStatus,
+    'Generating next action...',
+    async () => {
+      const generator = core.generateNextAction(guidance);
+      let fullText = '';
 
-  try {
-    const generator = core.generateNextAction(guidance);
-    let fullText = '';
-
-    for await (const chunk of generator) {
-      fullText += chunk;
-      userInput.value = fullText;
-    }
-
-    chatStatus.textContent = 'Action suggested.';
-    chatStatus.style.color = 'green';
-  } catch (err: any) {
-    console.error(err);
-    chatStatus.textContent = 'Error: ' + err.message;
-    chatStatus.style.color = 'red';
-  } finally {
-    generateActionBtn.disabled = false;
-  }
+      for await (const chunk of generator) {
+        fullText += chunk;
+        userInput.value = fullText;
+      }
+    },
+    'Action suggested.',
+  );
 }
 
 async function handleGenerateIntro(params: { guidance: string }) {
@@ -512,12 +500,9 @@ async function handleGenerateIntro(params: { guidance: string }) {
 }
 
 async function generateResponse() {
-  chatStatus.textContent = 'Generating...';
-  chatStatus.style.color = 'black';
-  sendBtn.disabled = true;
   generateIntroBtn.disabled = true;
 
-  try {
+  await runWithUIState(sendBtn, chatStatus, 'Generating...', async () => {
     let assistantMessage: ChatMessage = {
       id: Date.now().toString(),
       role: 'assistant',
@@ -599,15 +584,9 @@ async function generateResponse() {
 
     core.saveChatState();
     renderHistory();
-    chatStatus.textContent = '';
-  } catch (err: any) {
-    console.error(err);
-    chatStatus.textContent = 'Error: ' + err.message;
-    chatStatus.style.color = 'red';
-  } finally {
-    sendBtn.disabled = false;
-    generateIntroBtn.disabled = false;
-  }
+  });
+
+  generateIntroBtn.disabled = false;
 }
 
 init();

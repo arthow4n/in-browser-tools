@@ -7,6 +7,7 @@ import { setupLLMSettings } from '../shared/llm-settings.js';
 import { LLMCore } from '../shared/llm-core.js';
 import { UndoRedoManager } from '../shared/undo-redo.js';
 import { getRequiredElement } from '../shared/dom-utils.js';
+import { runWithUIState } from '../shared/ui-utils.js';
 
 const els = {
   llmSettingsContainer: getRequiredElement(
@@ -198,44 +199,42 @@ els.startBtn.addEventListener('click', async () => {
     promptType: els.promptType.value as 'system' | 'user',
   };
 
-  els.startBtn.disabled = true;
-  els.statusText.textContent = 'Running...';
-  els.statusText.style.color = '#0066cc';
   els.logArea.innerHTML = '';
   els.resultsPanel.style.display = 'none';
   els.resultsTableBody.innerHTML = '';
 
-  const core = new PromptImproverCore(config, llmCore);
+  await runWithUIState(
+    els.startBtn,
+    els.statusText,
+    'Running...',
+    async () => {
+      const core = new PromptImproverCore(config, llmCore);
 
-  try {
-    const generator = core.run();
-    let finalResults: IterationResult[] = [];
+      try {
+        const generator = core.run();
+        let finalResults: IterationResult[] = [];
 
-    while (true) {
-      const { value, done } = await generator.next();
-      if (done) {
-        if (value) finalResults = value as IterationResult[];
-        break;
+        while (true) {
+          const { value, done } = await generator.next();
+          if (done) {
+            if (value) finalResults = value as IterationResult[];
+            break;
+          }
+
+          const event = value;
+          appendLog(event.type, event.message, event.data);
+        }
+
+        if (finalResults && finalResults.length > 0) {
+          renderResults(finalResults);
+        }
+      } catch (e: any) {
+        appendLog('info', 'Fatal Error: ' + e.message);
+        throw e;
       }
-
-      const event = value;
-      appendLog(event.type, event.message, event.data);
-    }
-
-    els.statusText.textContent = 'Complete';
-    els.statusText.style.color = 'green';
-
-    if (finalResults && finalResults.length > 0) {
-      renderResults(finalResults);
-    }
-  } catch (e: any) {
-    els.statusText.textContent = 'Error';
-    els.statusText.style.color = 'red';
-    appendLog('info', 'Fatal Error: ' + e.message);
-    console.error(e);
-  } finally {
-    els.startBtn.disabled = false;
-  }
+    },
+    'Complete',
+  );
 });
 
 function renderResults(results: IterationResult[]) {
