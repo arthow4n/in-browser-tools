@@ -64,13 +64,27 @@
       .message.character {
         background-color: #fff3e0;
       }
+      .message.assistant {
+        background-color: #f5f5f5;
+      }
       .message.system {
         background-color: #e8f5e9;
+      }
+      .message.tool {
+        background-color: #fce4ec;
       }
       .character-name {
         font-weight: bold;
         margin-bottom: 5px;
         display: block;
+      }
+      .message-controls {
+        margin-top: 10px;
+        text-align: right;
+      }
+      .message-controls button {
+        padding: 4px 8px;
+        font-size: 0.8em;
       }
       .history-container {
         max-height: 500px;
@@ -87,129 +101,207 @@
     <h1>Text Adventure Writer</h1>
     <a href="./">← Back to Tools</a>
 
-    <div id="setup-view">
-      <section id="settings-section">
-        <h2>Settings</h2>
-        <div id="llm-settings-container">
-          <label for="shared-api-key">OpenRouter API Key:</label>
-          <input type="password" id="shared-api-key" placeholder="sk-or-v1-..." />
+    <section id="settings-section">
+      <h2>Settings</h2>
+      <div id="llm-settings-container">
+        <label for="shared-api-key">OpenRouter API Key:</label>
+        <input type="password" id="shared-api-key" placeholder="sk-or-v1-..." />
 
-          <label for="shared-model-input">Model:</label>
-          <input
-            type="text"
-            id="shared-model-input"
-            list="shared-models-list"
-            placeholder="e.g. google/gemini-2.5-flash"
-          />
-          <ul id="shared-models-list" style="display: none"></ul>
-          <button id="fetch-models-btn" style="margin-top: 5px">
-            Fetch Models
-          </button>
-        </div>
-      </section>
+        <label for="shared-model-input">Model:</label>
+        <input
+          type="text"
+          id="shared-model-input"
+          list="shared-models-list"
+          placeholder="e.g. google/gemini-2.5-flash"
+        />
+        <ul id="shared-models-list" style="display: none"></ul>
+        <button id="fetch-models-btn" style="margin-top: 5px">
+          Fetch Models
+        </button>
+      </div>
+    </section>
 
-      <section id="scenario-setup-section">
-        <h2>Game Setup</h2>
-        <label for="scenario-request">Scenario / Setting:</label>
-        <textarea
-          id="scenario-request"
-          rows="3"
-          placeholder="e.g., A fantasy world where magic is outlawed..."
-        ></textarea>
+    <section id="scenario-setup-section">
+      <h2>Scenario Setup</h2>
+      <label for="scenario-request">Initial Scenario Request:</label>
+      <textarea
+        id="scenario-request"
+        rows="3"
+        placeholder="Describe the scenario you want the LLM to start with..."
+      ></textarea>
+    </section>
 
-        <label for="character-description">Your Character:</label>
-        <textarea
-          id="character-description"
-          rows="3"
-          placeholder="e.g., Elara, a rogue mage with a quick wit..."
-        ></textarea>
+    <section id="character-setup-section">
+      <h2>Character Setup</h2>
+      <label for="character-name">Your Character's Name:</label>
+      <input type="text" id="character-name" placeholder="e.g., Arthur Dent" />
 
+      <label for="character-description">Character Description:</label>
+      <textarea
+        id="character-description"
+        rows="3"
+        placeholder="Describe your character's appearance, background, and personality..."
+      ></textarea>
+
+      <div
+        style="margin-top: 10px; border-top: 1px dashed #ccc; padding-top: 10px"
+      >
+        <label for="character-guidance"
+          >Optional: Suggest how to generate/regenerate the character:</label
+        >
+        <input
+          type="text"
+          id="character-guidance"
+          placeholder="e.g., Make them a grumpy wizard..."
+        />
         <button
-          id="start-game-btn"
+          id="generate-character-btn"
           style="
             width: 100%;
-            padding: 12px;
+            padding: 10px;
             font-weight: bold;
-            background-color: #4caf50;
+            background-color: #ff9800;
             color: white;
             border: none;
-            margin-top: 10px;
           "
         >
-          Start Adventure
+          Generate/Regenerate Character
         </button>
-      </section>
-    </div>
+      </div>
+    </section>
 
-    <div id="game-view" style="display: none;">
-      <section id="chat-section">
-        <h2>Story</h2>
-        <div class="history-container" id="history-container">
-          <!-- Messages will be rendered here -->
-        </div>
+    <section id="intro-setup-section">
+      <h2>Story Intro</h2>
+      <label for="intro-guidance"
+        >Optional: Suggest how to generate/regenerate the intro scenario:</label
+      >
+      <input
+        type="text"
+        id="intro-guidance"
+        placeholder="e.g., Start with a loud explosion..."
+      />
+      <button
+        id="generate-intro-btn"
+        style="
+          width: 100%;
+          padding: 10px;
+          font-weight: bold;
+          background-color: #2196f3;
+          color: white;
+          border: none;
+          margin-bottom: 10px;
+        "
+      >
+        Generate/Regenerate Intro
+      </button>
+    </section>
 
-        <div style="display: flex; gap: 10px; align-items: flex-start;">
-          <textarea
-            id="user-input"
-            rows="2"
-            placeholder="What do you do?"
-            style="flex-grow: 1; margin-bottom: 0;"
-          ></textarea>
-          <button
-            id="send-btn"
-            style="
-              padding: 10px 20px;
-              font-weight: bold;
-              background-color: #2196f3;
-              color: white;
-              border: none;
-              height: 100%;
-            "
-          >
-            Submit
-          </button>
-        </div>
-        <span
-          id="chat-status"
-          style="font-weight: bold; display: block; margin-top: 10px"
-        ></span>
+    <section id="chat-section">
+      <h2>Story</h2>
+      <div class="history-container" id="history-container">
+        <!-- Messages will be rendered here -->
+      </div>
+
+      <div
+        style="
+          margin-bottom: 15px;
+          border-bottom: 1px dashed #ccc;
+          padding-bottom: 10px;
+        "
+      >
+        <label for="action-guidance"
+          >Optional: Suggest how to generate your next action:</label
+        >
+        <input
+          type="text"
+          id="action-guidance"
+          placeholder="e.g., I want to fight back..."
+        />
         <button
-          id="restart-btn"
-          style="width: 100%; margin-top: 10px; margin-bottom: 20px"
-        >
-          Restart Game
-        </button>
-
-        <details
-          id="advanced-details"
+          id="generate-action-btn"
           style="
-            border: 1px solid #ccc;
+            width: 100%;
             padding: 10px;
-            border-radius: 5px;
-            background: #fafafa;
+            font-weight: bold;
+            background-color: #9c27b0;
+            color: white;
+            border: none;
           "
         >
-          <summary style="cursor: pointer; font-weight: bold">
-            Advanced: Underlying Chat Conversation
-          </summary>
-          <div style="margin-top: 10px; font-size: 0.9em; color: #555">
-            This section shows the raw conversation sent to the LLM, including
-            system prompts and tool calls.
-          </div>
-          <div
-            class="history-container"
-            id="advanced-history-container"
-            style="
-              margin-top: 15px;
-              border-top: 1px solid #ddd;
-              padding-top: 10px;
-            "
-          >
-            <!-- Advanced messages will be rendered here -->
-          </div>
-        </details>
-      </section>
-    </div>
+          Auto-fill Next Action
+        </button>
+      </div>
+
+      <label for="user-input">Your Action/Dialogue:</label>
+      <textarea
+        id="user-input"
+        rows="3"
+        placeholder="What do you do or say?"
+      ></textarea>
+
+      <label for="story-direction"
+        >Story Progression Direction (Optional):</label
+      >
+      <textarea
+        id="story-direction"
+        rows="2"
+        placeholder="Any extra instructions for the narrator on where the story should go..."
+      ></textarea>
+
+      <button
+        id="send-btn"
+        style="
+          width: 100%;
+          padding: 10px;
+          font-weight: bold;
+          background-color: #4caf50;
+          color: white;
+          border: none;
+        "
+      >
+        Send
+      </button>
+      <span
+        id="chat-status"
+        style="font-weight: bold; display: block; margin-top: 10px"
+      ></span>
+      <button
+        id="clear-history-btn"
+        style="width: 100%; margin-top: 10px; margin-bottom: 20px"
+      >
+        Restart Story
+      </button>
+
+      <details
+        id="advanced-details"
+        style="
+          border: 1px solid #ccc;
+          padding: 10px;
+          border-radius: 5px;
+          background: #fafafa;
+        "
+      >
+        <summary style="cursor: pointer; font-weight: bold">
+          Advanced: Underlying Chat Conversation
+        </summary>
+        <div style="margin-top: 10px; font-size: 0.9em; color: #555">
+          This section shows the raw conversation sent to the LLM, including
+          system prompts and tool calls. You can edit or delete messages to fix
+          mistakes in the story or change the context.
+        </div>
+        <div
+          class="history-container"
+          id="advanced-history-container"
+          style="
+            margin-top: 15px;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+          "
+        >
+          <!-- Advanced messages will be rendered here -->
+        </div>
+      </details>
+    </section>
 
     <script type="module" src="./index.ts"></script>
   </body>

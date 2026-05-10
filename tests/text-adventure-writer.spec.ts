@@ -8,12 +8,11 @@ test.describe('Text Adventure Writer Tool', () => {
 
     await expect(page.locator('h1')).toHaveText('Text Adventure Writer');
     await expect(page.locator('#shared-api-key')).toBeVisible();
-    await expect(page.locator('#scenario-request')).toBeVisible();
-    await expect(page.locator('#character-description')).toBeVisible();
+    await expect(page.locator('#character-name')).toBeVisible();
 
     await page.fill('#shared-api-key', 'test-api-key');
-    await page.fill('#scenario-request', 'A dark forest');
-    await page.fill('#character-description', 'A brave knight');
+    await page.fill('#character-name', 'Arthur Dent');
+    await page.fill('#character-description', 'A bewildered Englishman.');
 
     // Wait slightly to ensure initialization happened
     await page.waitForTimeout(100);
@@ -23,7 +22,7 @@ test.describe('Text Adventure Writer Tool', () => {
       .locator('#shared-api-key')
       .evaluate((node) => node.dispatchEvent(new Event('change')));
     await page
-      .locator('#scenario-request')
+      .locator('#character-name')
       .evaluate((node) => node.dispatchEvent(new Event('input')));
     await page
       .locator('#character-description')
@@ -33,23 +32,24 @@ test.describe('Text Adventure Writer Tool', () => {
     await page.waitForTimeout(100);
 
     await expect(page.locator('#shared-api-key')).toHaveValue('test-api-key');
-    await expect(page.locator('#scenario-request')).toHaveValue('A dark forest');
+    await expect(page.locator('#character-name')).toHaveValue('Arthur Dent');
     await expect(page.locator('#character-description')).toHaveValue(
-      'A brave knight',
+      'A bewildered Englishman.',
     );
   });
 
-  test('should validate empty scenario request before starting', async ({
+  test('should validate empty character name before sending', async ({
     page,
   }) => {
     await page.goto('/text-adventure-writer.html');
     await page.fill('#shared-api-key', 'test-key');
-    await page.fill('#scenario-request', '');
+    await page.fill('#character-name', '');
 
-    await page.click('#start-game-btn');
+    await page.fill('#user-input', 'Hello!');
+    await page.click('#send-btn');
 
     await expect(page.locator('#chat-status')).toHaveText(
-      'Please enter a scenario request first.',
+      'Please enter your character name.',
     );
   });
 
@@ -86,20 +86,21 @@ test.describe('Text Adventure Writer Tool', () => {
     await page.goto('/text-adventure-writer.html');
     await page.fill('#shared-api-key', 'test-key');
     await page.fill('#shared-model-input', 'test-model');
-    await page.fill('#scenario-request', 'A dark forest');
-    await page.fill('#character-description', 'A brave knight');
+    await page.fill('#character-name', 'Arthur Dent');
 
-    // Start game
-    await page.click('#start-game-btn');
-
-    // Check if we entered game view
-    await expect(page.locator('#game-view')).toBeVisible();
+    // Send a message
+    await page.fill('#user-input', 'I wake up.');
+    await page.fill('#story-direction', 'Make it sudden.');
+    await page.click('#send-btn');
 
     const history = page.locator('#history-container');
 
-    // Check user initial message
+    // Check user message
     await expect(history.locator('.message.user')).toContainText(
-      'Start the adventure based on the setup.',
+      '[Arthur Dent]: I wake up.',
+    );
+    await expect(history.locator('.message.user')).toContainText(
+      '[OOC - Story Direction]: Make it sudden.',
     );
 
     // Wait for the tool call response to render
