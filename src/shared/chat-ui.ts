@@ -43,6 +43,10 @@ export function createMessageElement(
   const deleteBelowBtn = document.createElement('button');
   deleteBelowBtn.textContent = 'Delete ↓';
 
+  const improveBtn = document.createElement('button');
+  improveBtn.textContent = 'Improve';
+
+  controls.appendChild(improveBtn);
   controls.appendChild(editBtn);
   controls.appendChild(deleteBtn);
   controls.appendChild(deleteBelowBtn);
@@ -50,6 +54,97 @@ export function createMessageElement(
   div.appendChild(roleLabel);
   div.appendChild(contentDiv);
   div.appendChild(controls);
+
+  // Improve logic
+  const improveControls = document.createElement('div');
+  improveControls.style.display = 'none';
+  improveControls.style.marginTop = '10px';
+  improveControls.style.padding = '10px';
+  improveControls.style.border = '1px solid #ccc';
+  improveControls.style.borderRadius = '5px';
+
+  const instructionsInput = document.createElement('input');
+  instructionsInput.type = 'text';
+  instructionsInput.placeholder = 'Optional Instructions (e.g. Make it more professional)';
+  instructionsInput.style.width = '100%';
+  instructionsInput.style.marginBottom = '10px';
+  instructionsInput.style.padding = '5px';
+  instructionsInput.style.boxSizing = 'border-box';
+
+  const doImproveBtn = document.createElement('button');
+  doImproveBtn.textContent = 'Improve / Regenerate';
+  doImproveBtn.style.marginRight = '5px';
+
+  const cancelImproveBtn = document.createElement('button');
+  cancelImproveBtn.textContent = 'Cancel';
+  cancelImproveBtn.style.marginRight = '5px';
+
+  const improveStatus = document.createElement('span');
+  improveStatus.style.fontWeight = 'bold';
+
+  improveControls.appendChild(instructionsInput);
+  improveControls.appendChild(doImproveBtn);
+  improveControls.appendChild(cancelImproveBtn);
+  improveControls.appendChild(improveStatus);
+
+  div.appendChild(improveControls);
+
+  improveBtn.addEventListener('click', () => {
+    improveControls.style.display = improveControls.style.display === 'none' ? 'block' : 'none';
+  });
+
+  cancelImproveBtn.addEventListener('click', () => {
+    improveControls.style.display = 'none';
+  });
+
+  doImproveBtn.addEventListener('click', async () => {
+    const instructions = instructionsInput.value.trim();
+    const originalContent = msg.content;
+    const prompt = 'Please improve the following message to be more detailed. Original Message:\n' + originalContent + (instructions ? '\n\nInstructions:\n' + instructions : '');
+
+    doImproveBtn.disabled = true;
+    improveStatus.textContent = 'Improving...';
+    improveStatus.style.color = 'black';
+
+    msg.content = '';
+    contentDiv.textContent = '';
+
+    try {
+      // @ts-ignore
+      const generator = core.streamChatCompletionWithTools([{
+        id: Date.now().toString(),
+        role: 'user',
+        content: prompt
+      }]);
+
+      for await (const chunk of generator) {
+        if (chunk.type === 'text' && chunk.text) {
+          msg.content += chunk.text;
+          contentDiv.textContent = msg.content;
+
+          // auto scroll if possible
+          const historyContainer = div.parentElement;
+          if (historyContainer) {
+            historyContainer.scrollTop = historyContainer.scrollHeight;
+          }
+        }
+      }
+
+      if (core.saveChatState) core.saveChatState();
+      renderHistory();
+      improveControls.style.display = 'none';
+    } catch (e: any) {
+      improveStatus.textContent = `Error: ${e.message}`;
+      improveStatus.style.color = 'red';
+      msg.content = originalContent + `\n[Improve Error: ${e.message}]`;
+      contentDiv.textContent = msg.content;
+    } finally {
+      doImproveBtn.disabled = false;
+      if (improveStatus.textContent === 'Improving...') {
+          improveStatus.textContent = '';
+      }
+    }
+  });
 
   // Edit logic
   let isEditing = false;
