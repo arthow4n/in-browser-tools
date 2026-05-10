@@ -24,6 +24,7 @@ export class ChatCore extends LLMCore {
   public savedPrompts: SavedPrompt[] = [];
   public history: ChatMessage[] = [];
   public toolsEnabled: boolean = false;
+  public disabledTools: Set<string> = new Set();
   public tools: AgentTool[] = [];
 
   constructor() {
@@ -55,6 +56,16 @@ export class ChatCore extends LLMCore {
     } catch {
       this.history = [];
     }
+
+    this.toolsEnabled = localStorage.getItem('llm-chat-toolsEnabled') === 'true';
+    try {
+      const disabled = JSON.parse(
+        localStorage.getItem('llm-chat-disabledTools') || '[]',
+      );
+      this.disabledTools = new Set(disabled);
+    } catch {
+      this.disabledTools = new Set();
+    }
   }
 
   saveChatState() {
@@ -64,6 +75,20 @@ export class ChatCore extends LLMCore {
       JSON.stringify(this.savedPrompts),
     );
     localStorage.setItem('llm-chat-history', JSON.stringify(this.history));
+    localStorage.setItem('llm-chat-toolsEnabled', this.toolsEnabled.toString());
+    localStorage.setItem('llm-chat-disabledTools', JSON.stringify(Array.from(this.disabledTools)));
+  }
+
+  isToolEnabled(name: string): boolean {
+    return !this.disabledTools.has(name);
+  }
+
+  setToolEnabled(name: string, enabled: boolean) {
+    if (enabled) {
+      this.disabledTools.delete(name);
+    } else {
+      this.disabledTools.add(name);
+    }
   }
 
   async *streamChatCompletion(
@@ -97,7 +122,14 @@ export class ChatCore extends LLMCore {
       }),
     ];
 
-    const toolsToPass = this.toolsEnabled ? this.tools : undefined;
+    let toolsToPass = undefined;
+    if (this.toolsEnabled) {
+      toolsToPass = this.tools.filter(t => this.isToolEnabled(t.name));
+      if (toolsToPass.length === 0) {
+        toolsToPass = undefined;
+      }
+    }
+
     yield* this.streamCompletionWithTools(messages, toolsToPass);
   }
 

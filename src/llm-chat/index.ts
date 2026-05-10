@@ -62,10 +62,43 @@ const enableToolsCheckbox = getRequiredElement(
   'enable-tools-checkbox',
   HTMLInputElement,
 );
+const toolListContainer = getRequiredElement(
+  'tool-list-container',
+  HTMLDivElement,
+);
 
 enableToolsCheckbox.checked = core.toolsEnabled;
+
+function renderToolList() {
+  toolListContainer.innerHTML = '';
+
+  for (const tool of core.tools) {
+    const label = document.createElement('label');
+    label.style.display = 'flex';
+    label.style.alignItems = 'center';
+    label.style.gap = '5px';
+    label.style.fontWeight = 'normal';
+    label.style.fontSize = '0.9em';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = core.isToolEnabled(tool.name);
+
+    checkbox.addEventListener('change', () => {
+      core.setToolEnabled(tool.name, checkbox.checked);
+      core.saveChatState();
+    });
+
+    label.appendChild(checkbox);
+    label.appendChild(document.createTextNode(`${tool.name}: ${tool.description}`));
+    toolListContainer.appendChild(label);
+  }
+}
+
 enableToolsCheckbox.addEventListener('change', () => {
   core.toolsEnabled = enableToolsCheckbox.checked;
+  toolListContainer.style.display = core.toolsEnabled ? 'flex' : 'none';
+  core.saveChatState();
 });
 
 // --- Initialization ---
@@ -75,6 +108,8 @@ function init() {
   systemPromptTextarea.value = core.systemPrompt;
   renderSavedPrompts();
   renderHistory();
+  renderToolList();
+  toolListContainer.style.display = core.toolsEnabled ? 'flex' : 'none';
 }
 
 // --- System Prompt Events ---
