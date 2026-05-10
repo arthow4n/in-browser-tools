@@ -506,7 +506,7 @@ async function handleElaborate() {
   const elaborateMessage: ChatMessage = {
     id: Date.now().toString(),
     role: 'user',
-    content: '[OOC]: Please rewrite and elaborate on your last response. Make it much more vibrant, detailed, and immersive. Describe the environment, sensory details, and character emotions more deeply.',
+    content: '[OOC]: Please rewrite and significantly elaborate on your last response. Make it much more vibrant, detailed, and immersive. Describe the environment, sensory details, and character emotions more deeply, and significantly expand the narrative length by adding more events or richer environmental exposition.',
   };
 
   core.history.push(elaborateMessage);
