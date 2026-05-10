@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Repo Chat</title>
+    <style>
+      *,
+      *:before,
+      *:after {
+        box-sizing: border-box;
+      }
+      body {
+        font-family: sans-serif;
+        line-height: 1.6;
+        margin: 0;
+        padding: 20px;
+        max-width: 800px;
+        margin: 0 auto;
+      }
+      section {
+        margin-bottom: 20px;
+        padding: 15px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+      }
+      h2 {
+        margin-top: 0;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+      input[type='text'],
+      textarea {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 10px;
+        box-sizing: border-box;
+      }
+      button {
+        padding: 8px 15px;
+        cursor: pointer;
+        margin-right: 5px;
+        margin-bottom: 5px;
+      }
+      .message {
+        margin-bottom: 15px;
+        padding: 10px;
+        border-radius: 5px;
+      }
+      .message.user {
+        background-color: #e3f2fd;
+        margin-left: 20px;
+      }
+      .message.assistant {
+        background-color: #f5f5f5;
+        margin-right: 20px;
+      }
+      .message.system {
+        background-color: #fff3e0;
+        font-style: italic;
+      }
+      .message.tool {
+        background-color: #e8f5e9;
+        font-family: monospace;
+        white-space: pre-wrap;
+        font-size: 0.9em;
+      }
+      .error {
+        color: red;
+      }
+      .tool-call {
+        background-color: #fce4ec;
+        padding: 5px;
+        margin-top: 5px;
+        border-radius: 3px;
+        font-family: monospace;
+        font-size: 0.9em;
+      }
+      pre {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
+      #history-container {
+        border: 1px solid #ccc;
+        padding: 10px;
+        height: 400px;
+        overflow-y: auto;
+        margin-bottom: 10px;
+      }
+      #ask-question-container {
+        border: 1px solid blue;
+        padding: 10px;
+        margin-top: 10px;
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Repo Chat</h1>
+    <a href="./">← Back to Tools</a>
+
+    <div id="llm-settings-container"></div>
+
+    <section>
+      <h2>Repository</h2>
+      <label for="repo-url">GitHub Repo URL:</label>
+      <input type="text" id="repo-url" placeholder="https://github.com/user/repo" value="https://github.com/arthow4n/in-browser-tools.git" />
+      <button id="clone-btn">Clone Repository</button>
+      <span id="clone-status"></span>
+    </section>
+
+    <section>
+      <h2>Chat</h2>
+      <div id="history-container"></div>
+
+      <div id="ask-question-container">
+        <p id="question-text"></p>
+        <div id="suggested-answers-container"></div>
+        <input type="text" id="free-text-answer" placeholder="Or type your own answer here..." />
+        <button id="submit-answer-btn">Submit Answer</button>
+      </div>
+
+      <label for="chat-input">Message:</label>
+      <textarea id="chat-input" rows="4"></textarea>
+      <button id="send-btn">Send</button>
+      <span id="chat-status"></span>
+    </section>
+  </body>
+</html>

@@ -1,9 +1,12 @@
 import { defineConfig } from '@rsbuild/core';
+import { pluginNodePolyfill } from '@rsbuild/plugin-node-polyfill';
 
 export default defineConfig({
+  plugins: [pluginNodePolyfill()],
   source: {
     entry: {
       index: './src/index.ts',
+      'repo-chat': './src/repo-chat/index.ts',
       'mp3-splitter': './src/mp3-splitter/index.ts',
       'pdf-merger': './src/pdf-merger/index.ts',
       'pdf-splitter': './src/pdf-splitter/index.ts',
