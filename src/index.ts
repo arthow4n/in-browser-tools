@@ -11,6 +11,7 @@ const tools = [
   { name: 'Agent Workflow Designer', path: 'agent-workflow-designer.html' },
   { name: 'Repo Chat', path: 'repo-chat.html' },
   { name: 'Text Adventure Writer', path: 'text-adventure-writer.html' },
+  { name: 'Basic Auth Generator', path: 'basic-auth-generator.html' },
 ];
 
 const list = document.getElementById('tools-list');
