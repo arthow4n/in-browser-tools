@@ -10,6 +10,7 @@ const tools = [
   { name: 'Text Inspector', path: 'text-inspector.html' },
   { name: 'Agent Workflow Designer', path: 'agent-workflow-designer.html' },
   { name: 'Text Adventure Writer', path: 'text-adventure-writer.html' },
+  { name: 'Basic Auth Generator', path: 'basic-auth-generator.html' },
 ];
 
 const list = document.getElementById('tools-list');

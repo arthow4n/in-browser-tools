@@ -13,6 +13,7 @@ export default defineConfig({
       'text-inspector': './src/text-inspector/index.ts',
       'agent-workflow-designer': './src/agent-workflow-designer/index.ts',
       'text-adventure-writer': './src/text-adventure-writer/index.ts',
+      'basic-auth-generator': './src/basic-auth-generator/index.ts',
     },
   },
   html: {
