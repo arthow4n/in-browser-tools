@@ -1,8 +1,6 @@
 import { ChatCore, ChatMessage } from '../llm-chat/core.js';
-import { StreamChunk } from '../shared/llm-core.js';
 
 export class TextAdventureCore extends ChatCore {
-  public characterName: string = '';
   public characterDescription: string = '';
   public scenarioRequest: string = '';
 
@@ -11,7 +9,7 @@ export class TextAdventureCore extends ChatCore {
     this.toolsEnabled = true;
 
     // Explicitly call loadChatState here again because super() calls the parent's loadChatState
-    // which won't initialize characterName and characterDescription yet.
+    // which won't initialize characterDescription and scenarioRequest yet.
     this.loadChatState();
     this.registerTool({
       name: 'speak',
@@ -41,7 +39,7 @@ export class TextAdventureCore extends ChatCore {
   override loadChatState() {
     this.systemPrompt =
       localStorage.getItem('text-adventure-systemPrompt') ||
-      'You are a text adventure writer agent. You must drive the story forward and act as the narrator and any characters involved in the story. Keep the story engaging. Before making a tool call to write as a character or the narrator, you must CONSTANTLY think about how to progress the story and keep the user engaged. Write these thoughts out loud in plain text. Your plain text thoughts will be hidden from the user, serving as your internal plan. Then, you MUST use the `speak` tool to narrate the story or have characters speak to the user.';
+      'You are a text adventure writer agent. You act as the narrator and any characters involved in the story. Keep the story engaging. Before making a tool call to write as a character or the narrator, you must CONSTANTLY think about how to progress the story and keep the user engaged. Write these thoughts out loud in plain text. Your plain text thoughts will be hidden from the user, serving as your internal plan. Then, you MUST use the `speak` tool to narrate the story or have characters speak to the user.';
 
     try {
       this.history = JSON.parse(
@@ -51,8 +49,6 @@ export class TextAdventureCore extends ChatCore {
       this.history = [];
     }
 
-    this.characterName =
-      localStorage.getItem('text-adventure-characterName') || '';
     this.characterDescription =
       localStorage.getItem('text-adventure-characterDescription') || '';
     this.scenarioRequest =
@@ -65,7 +61,6 @@ export class TextAdventureCore extends ChatCore {
       'text-adventure-history',
       JSON.stringify(this.history),
     );
-    localStorage.setItem('text-adventure-characterName', this.characterName);
     localStorage.setItem(
       'text-adventure-characterDescription',
       this.characterDescription,
@@ -76,80 +71,15 @@ export class TextAdventureCore extends ChatCore {
     );
   }
 
-  public async *generateNextAction(
-    guidance: string,
-  ): AsyncGenerator<string, void, unknown> {
-    const messages: ChatMessage[] = [
-      {
-        id: 'sys-next-action',
-        role: 'system',
-        content: `You are an assistant helping the player decide what to say or do next in their text adventure.
-Analyze the story history. Provide a brief, single action or dialogue for the player character to take next.
-Do NOT narrate the outcome or speak for other characters. Output ONLY the text that should go into the user's input box.`,
-      },
-      ...this.history,
-    ];
+  public getDynamicSystemPrompt(): string {
+    return `You are a text adventure writer agent. You must drive the story forward and act as the narrator and any characters involved in the story. Keep the story engaging.
 
-    let userPrompt = 'Based on the story so far, what should I do next?';
-    if (guidance) {
-      userPrompt += `\n\nGuidance: ${guidance}`;
-    }
+Before making a tool call to write as a character or the narrator, you must CONSTANTLY think about how to progress the story and keep the user engaged. Write these thoughts out loud in plain text. Your plain text thoughts will be hidden from the user, serving as your internal plan. Then, you MUST use the \`speak\` tool to narrate the story or have characters speak to the user.
 
-    messages.push({
-      id: 'user-next-action',
-      role: 'user',
-      content: userPrompt,
-    });
+[OOC - Initial Scenario]:
+${this.scenarioRequest}
 
-    // Temporarily disable tools so the LLM responds in plain text
-    const originalToolsEnabled = this.toolsEnabled;
-    this.toolsEnabled = false;
-
-    try {
-      yield* this.streamChatCompletion(messages);
-    } finally {
-      this.toolsEnabled = originalToolsEnabled;
-    }
-  }
-
-  public async *generateCharacter(params: {
-    scenarioRequest: string;
-    guidance: string;
-  }): AsyncGenerator<StreamChunk, void, unknown> {
-    const messages: ChatMessage[] = [
-      {
-        id: 'sys-char-gen',
-        role: 'system',
-        content:
-          'You are a creative assistant helping a player set up a character for a text adventure. Output the character details using the provided tool.',
-      },
-      {
-        id: 'user-char-gen',
-        role: 'user',
-        content: `Initial Scenario Request: ${params.scenarioRequest}\n\nAdditional Guidance: ${params.guidance}`,
-      },
-    ];
-
-    const characterTool = {
-      name: 'setup_character',
-      description: 'Set up the character name and description.',
-      parameters: {
-        type: 'object',
-        properties: {
-          characterName: {
-            type: 'string',
-            description: 'The name of the character.',
-          },
-          characterDescription: {
-            type: 'string',
-            description:
-              "A brief description of the character's appearance, background, and personality.",
-          },
-        },
-        required: ['characterName', 'characterDescription'],
-      },
-    };
-
-    yield* this.streamCompletionWithTools(messages, [characterTool]);
+[OOC - Player Character]:
+${this.characterDescription}`;
   }
 }
