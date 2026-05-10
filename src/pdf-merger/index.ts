@@ -1,4 +1,5 @@
 import { PDFDocument } from 'pdf-lib';
+import { runWithUIState } from '../shared/ui-utils.js';
 
 const fileInput = document.getElementById('pdf-files');
 const fileList = document.getElementById('file-list');
@@ -51,40 +52,38 @@ mergeBtn.addEventListener('click', async () => {
     return;
   }
 
-  mergeBtn.disabled = true;
-  statusDiv.textContent = 'Merging PDFs...';
   outputDiv.innerHTML = '';
 
-  try {
-    const mergedPdf = await PDFDocument.create();
+  await runWithUIState(
+    mergeBtn,
+    statusDiv,
+    'Merging PDFs...',
+    async () => {
+      const mergedPdf = await PDFDocument.create();
 
-    for (const file of selectedFiles) {
-      const arrayBuffer = await file.arrayBuffer();
-      const pdfDoc = await PDFDocument.load(arrayBuffer);
-      const copiedPages = await mergedPdf.copyPages(
-        pdfDoc,
-        pdfDoc.getPageIndices(),
-      );
-      copiedPages.forEach((page) => {
-        mergedPdf.addPage(page);
-      });
-    }
+      for (const file of selectedFiles) {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdfDoc = await PDFDocument.load(arrayBuffer);
+        const copiedPages = await mergedPdf.copyPages(
+          pdfDoc,
+          pdfDoc.getPageIndices(),
+        );
+        copiedPages.forEach((page) => {
+          mergedPdf.addPage(page);
+        });
+      }
 
-    const mergedPdfBytes = await mergedPdf.save();
-    const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
-    const url = URL.createObjectURL(blob);
+      const mergedPdfBytes = await mergedPdf.save();
+      const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
 
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'merged.pdf';
-    a.textContent = 'Download Merged PDF';
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'merged.pdf';
+      a.textContent = 'Download Merged PDF';
 
-    outputDiv.appendChild(a);
-    statusDiv.textContent = 'Done merging!';
-  } catch (error) {
-    console.error(error);
-    statusDiv.textContent = `Error: ${error instanceof Error ? error.message : String(error)}`;
-  } finally {
-    mergeBtn.disabled = false;
-  }
+      outputDiv.appendChild(a);
+    },
+    'Done merging!',
+  );
 });

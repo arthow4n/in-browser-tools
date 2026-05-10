@@ -2,6 +2,7 @@ import { ChatCore, ChatMessage } from './core.js';
 import { setupLLMSettings } from '../shared/llm-settings.js';
 import { browserAlertTool } from './tools/browser-alert.js';
 import { getRequiredElement } from '../shared/dom-utils.js';
+import { runWithUIState } from '../shared/ui-utils.js';
 
 const core = new ChatCore();
 core.registerTool(browserAlertTool);
@@ -82,35 +83,32 @@ systemPromptTextarea.addEventListener('input', () => {
 });
 
 improvePromptBtn.addEventListener('click', async () => {
-  improvePromptStatus.textContent = '';
   if (!core.apiKey || !core.model) {
     improvePromptStatus.textContent =
       'API Key and Model are required to improve prompt.';
     improvePromptStatus.style.color = 'red';
     return;
   }
-  improvePromptBtn.disabled = true;
-  improvePromptBtn.textContent = 'Improving...';
-  try {
-    const intention = promptIntentionTextarea.value.trim();
-    const howToImprove = promptHowToImproveTextarea.value.trim();
-    const evaluationFocus = promptEvaluationFocusTextarea.value.trim();
 
-    const improved = await core.improveSystemPrompt(
-      intention,
-      howToImprove,
-      evaluationFocus,
-    );
-    systemPromptTextarea.value = improved;
-    core.systemPrompt = improved;
-    core.saveChatState();
-  } catch (e: any) {
-    improvePromptStatus.textContent = `Error: ${e.message}`;
-    improvePromptStatus.style.color = 'red';
-  } finally {
-    improvePromptBtn.disabled = false;
-    improvePromptBtn.textContent = 'Improve Prompt with LLM';
-  }
+  await runWithUIState(
+    improvePromptBtn,
+    improvePromptStatus,
+    'Improving...',
+    async () => {
+      const intention = promptIntentionTextarea.value.trim();
+      const howToImprove = promptHowToImproveTextarea.value.trim();
+      const evaluationFocus = promptEvaluationFocusTextarea.value.trim();
+
+      const improved = await core.improveSystemPrompt(
+        intention,
+        howToImprove,
+        evaluationFocus,
+      );
+      systemPromptTextarea.value = improved;
+      core.systemPrompt = improved;
+      core.saveChatState();
+    },
+  );
 });
 
 function renderSavedPrompts() {
@@ -272,7 +270,6 @@ clearHistoryBtn.addEventListener('click', () => {
 });
 
 sendBtn.addEventListener('click', async () => {
-  chatStatus.textContent = '';
   const text = userInputTextarea.value.trim();
   if (!text && core.history.length === 0) return;
 

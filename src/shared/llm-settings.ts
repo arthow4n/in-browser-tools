@@ -1,5 +1,6 @@
 import { LLMCore } from './llm-core.js';
 import { getRequiredElement } from './dom-utils.js';
+import { runWithUIState } from './ui-utils.js';
 
 export function setupLLMSettings(container: HTMLElement, core: LLMCore) {
   // Setup HTML structure
@@ -111,30 +112,30 @@ export function setupLLMSettings(container: HTMLElement, core: LLMCore) {
   });
 
   fetchModelsBtn.addEventListener('click', async () => {
-    statusText.textContent = '';
     if (!core.apiKey) {
       statusText.textContent = 'Please enter an OpenRouter API Key first.';
       statusText.style.color = 'red';
       return;
     }
 
-    fetchModelsBtn.disabled = true;
-    fetchModelsBtn.textContent = 'Fetching...';
-
-    try {
-      const models = await core.fetchModels();
-      availableModels = models;
-      modelsList.innerHTML = '';
-      renderDropdown();
-
-      statusText.textContent = `Fetched ${models.length} models successfully.`;
+    let successMessage = '';
+    await runWithUIState(
+      fetchModelsBtn,
+      statusText,
+      'Fetching...',
+      async () => {
+        const models = await core.fetchModels();
+        availableModels = models;
+        modelsList.innerHTML = '';
+        renderDropdown();
+        successMessage = `Fetched ${models.length} models successfully.`;
+      },
+      undefined,
+    );
+    // runWithUIState has cleared or set error.
+    if (successMessage && !statusText.textContent) {
+      statusText.textContent = successMessage;
       statusText.style.color = 'green';
-    } catch (e: any) {
-      statusText.textContent = `Error fetching models: ${e.message}`;
-      statusText.style.color = 'red';
-    } finally {
-      fetchModelsBtn.disabled = false;
-      fetchModelsBtn.textContent = 'Fetch Models';
     }
   });
 }
