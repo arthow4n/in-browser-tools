@@ -7,8 +7,8 @@ export class RepoChatCore extends ChatCore {
   constructor() {
     super();
     this.systemPrompt =
-      'You are a chat agent helping the user generate an execution plan to be delegated to an autonomous coding agent. The plan should outline the approach but not be overly detailed. Entrust the coding agent to handle the implementation details. Use the ask_question tool to clarify requirements.';
-    this.toolsEnabled = true; // Enable tools by default
+      'You are a chat agent helping the user generate an execution plan to be delegated to an autonomous coding agent. The plan should outline the approach but not be overly detailed. Entrust the coding agent to handle the implementation details. You do not have access to any tools. You must rely on the files provided in your context to answer questions and generate the plan.';
+    this.toolsEnabled = false; // Disable tools
   }
 
   async cloneRepo(url: string, statusCallback: (msg: string) => void) {
@@ -35,7 +35,14 @@ export class RepoChatCore extends ChatCore {
     const readDirRecursive = async (dir: string) => {
       const entries = fs.readdirSync(dir) as string[];
       for (const entry of entries) {
-        if (entry === '.git' || entry === 'node_modules') continue;
+        if (
+          entry === '.git' ||
+          entry === 'node_modules' ||
+          entry === 'package-lock.json' ||
+          entry === 'yarn.lock' ||
+          entry === 'pnpm-lock.yaml'
+        )
+          continue;
         const fullPath = dir === '/' ? `/${entry}` : `${dir}/${entry}`;
         const stat = fs.statSync(fullPath);
         if (stat.isDirectory()) {
@@ -64,40 +71,13 @@ export class RepoChatCore extends ChatCore {
       }
     }
 
-    const toolCallId = 'call_seed_repo_files_' + Date.now();
+    this.systemPrompt += `\n\n--- REPOSITORY FILES ---\n${totalContent}`;
 
-    // 1. Mock the assistant calling read_files
-    const assistantMsg: ChatMessage = {
-      id: 'msg_seed_call_' + Date.now(),
-      role: 'assistant',
-      content: '',
-      tool_calls: [
-        {
-          id: toolCallId,
-          type: 'function',
-          function: {
-            name: 'read_files',
-            arguments: JSON.stringify({ path: '/' }),
-          },
-        },
-      ],
-    };
-    this.history.push(assistantMsg);
-
-    // 2. Mock the tool returning the file contents
-    const toolMsg: ChatMessage = {
-      id: 'msg_seed_result_' + Date.now(),
-      role: 'tool',
-      content: totalContent,
-      tool_call_id: toolCallId,
-    };
-    this.history.push(toolMsg);
-
-    // 3. Add the initial question
+    // Add the initial question
     const questionMsg: ChatMessage = {
       id: 'msg_seed_question_' + Date.now(),
       role: 'assistant',
-      content: 'What changes do you want to make to the repo?',
+      content: 'I have read the repository files into my context. What changes do you want to make to the repo?',
     };
     this.history.push(questionMsg);
   }

@@ -14,40 +14,24 @@ test('Repo Chat Verification', async ({ page }) => {
   // Wait for cloning to finish and seed
   await expect(page.locator('#clone-status')).toHaveText('Cloned and seeded successfully.', { timeout: 30000 });
 
-  // Ensure tool calls were printed
-  await expect(page.locator('.message.tool')).toBeVisible({ timeout: 10000 });
-  await expect(page.locator('.message.assistant').filter({ hasText: 'What changes do you want to make' })).toBeVisible();
+  // Ensure tool messages are NOT printed since they were removed
+  await expect(page.locator('.message.tool')).toBeHidden();
 
-  // Test chat asking a question
-  let callCount = 0;
+  // Ensure the new assistant prompt appears
+  await expect(page.locator('.message.assistant').filter({ hasText: 'I have read the repository files into my context' })).toBeVisible();
+
+  // Test basic streaming behavior without tools
   await page.route('https://openrouter.ai/api/v1/chat/completions', async (route) => {
-    callCount++;
-    if (callCount === 1) {
-      const streamBody = `data: {"choices":[{"delta":{"content":null,"tool_calls":[{"index":0,"id":"call_123","type":"function","function":{"name":"ask_question","arguments":"{\\"question\\":\\"Are you sure?\\",\\"suggested_answers\\":[\\"Yes\\",\\"No\\"]}"}}]}}]}
+    const streamBody = `data: {"choices":[{"delta":{"content":"Okay, proceeding with the plan based on the file context."}}]}
 
 data: [DONE]
 `;
-      await route.fulfill({ status: 200, contentType: 'text/event-stream', body: streamBody });
-    } else {
-      const streamBody = `data: {"choices":[{"delta":{"content":"Okay, proceeding with the plan."}}]}
-
-data: [DONE]
-`;
-      await route.fulfill({ status: 200, contentType: 'text/event-stream', body: streamBody });
-    }
+    await route.fulfill({ status: 200, contentType: 'text/event-stream', body: streamBody });
   });
 
   await page.fill('#chat-input', 'Test intention');
   await page.click('#send-btn');
 
-  // Wait for UI to show question
-  await expect(page.locator('#ask-question-container')).toBeVisible({ timeout: 10000 });
-  await expect(page.locator('#question-text')).toHaveText('Are you sure?');
-
-  // Answer
-  await page.locator('#ask-question-container button', { hasText: 'Yes' }).click();
-
-  // Verify UI continues
-  await expect(page.locator('#ask-question-container')).toBeHidden({ timeout: 10000 });
-  await expect(page.locator('.message.assistant').filter({ hasText: 'Okay, proceeding with the plan.' })).toBeVisible();
+  // Verify UI continues and shows assistant response
+  await expect(page.locator('.message.assistant').filter({ hasText: 'Okay, proceeding with the plan based on the file context.' })).toBeVisible();
 });
