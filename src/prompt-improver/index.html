@@ -42,13 +42,35 @@
       }
       .grid {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 350px 1fr;
         gap: 20px;
+        align-items: start;
       }
-      @media (max-width: 768px) {
+      @media (max-width: 900px) {
         .grid {
           grid-template-columns: 1fr;
         }
+      }
+      .cost-panel {
+        background: #eef5fb;
+        border: 1px solid #b3d4fc;
+        padding: 15px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        font-size: 14px;
+      }
+      .cost-metric {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 5px;
+      }
+      .cost-metric span:last-child {
+        font-weight: bold;
+      }
+      .progress-container {
+        margin-top: 10px;
+        font-weight: bold;
+        color: #0052a3;
       }
       label {
         display: block;
@@ -152,11 +174,27 @@
       </div>
 
       <div class="grid">
-        <!-- Configuration Panel -->
-        <div class="panel">
+        <!-- Configuration Sidebar -->
+        <aside class="panel">
           <h2>Configuration</h2>
 
           <div id="llm-settings-container"></div>
+
+          <div id="cost-estimation-panel" class="cost-panel">
+            <div style="font-weight: bold; margin-bottom: 10px; font-size: 16px;">Estimation & Progress</div>
+            <div class="cost-metric">
+              <span>Estimated API Calls:</span>
+              <span id="api-calls-est">0</span>
+            </div>
+            <div class="cost-metric">
+              <span>Est. Output Words:</span>
+              <span id="words-est">0</span>
+            </div>
+            <div class="progress-container">
+              <span>Progress: </span>
+              <span id="progress-text">Not started</span>
+            </div>
+          </div>
 
           <label for="original-prompt">Original Prompt:</label>
           <textarea
@@ -182,16 +220,20 @@ Ensure the LLM is considerate and fills in details the original vague prompt mig
             placeholder="e.g., Focus on whether the prompt encourages concise formatting."
           ></textarea>
 
-          <div style="display: flex; flex-wrap: wrap; gap: 20px">
-            <div style="flex: 1; min-width: 150px">
-              <label for="max-rounds">Max Rounds:</label>
+          <div style="display: flex; flex-wrap: wrap; gap: 10px">
+            <div style="flex: 1; min-width: 100px">
+              <label for="max-rounds">Rounds:</label>
               <input type="number" id="max-rounds" value="3" min="1" max="10" />
             </div>
-            <div style="flex: 1; min-width: 150px">
-              <label for="prompt-type">Prompt Type:</label>
+            <div style="flex: 1; min-width: 100px">
+              <label for="branch-factor">Branches:</label>
+              <input type="number" id="branch-factor" value="3" min="1" max="10" />
+            </div>
+            <div style="flex: 1; min-width: 100px">
+              <label for="prompt-type">Type:</label>
               <select id="prompt-type">
-                <option value="system">System Prompt</option>
-                <option value="user">User Prompt</option>
+                <option value="system">System</option>
+                <option value="user">User</option>
               </select>
             </div>
           </div>
@@ -205,37 +247,42 @@ Ensure the LLM is considerate and fills in details the original vague prompt mig
               margin-top: 10px;
             "
           >
-            <button id="start-btn">Start Improvement Loop</button>
-            <button id="undo-btn" disabled>Undo</button>
-            <button id="redo-btn" disabled>Redo</button>
-            <span id="status-text" class="status"></span>
+            <button id="start-btn" style="width: 100%;">Start Improvement Loop</button>
+            <div style="display: flex; gap: 10px; width: 100%;">
+              <button id="undo-btn" style="flex: 1" disabled>Undo</button>
+              <button id="redo-btn" style="flex: 1" disabled>Redo</button>
+            </div>
+            <span id="status-text" class="status" style="width: 100%; text-align: center;"></span>
           </div>
-        </div>
+        </aside>
 
-        <!-- Live Loop Panel -->
-        <div class="panel">
-          <h2>Live Loop Log</h2>
-          <div id="log-area" class="log-area"></div>
-        </div>
-      </div>
+        <!-- Main Content Area -->
+        <main>
+          <div class="panel">
+            <h2>Live Loop Log</h2>
+            <div id="log-area" class="log-area"></div>
+          </div>
 
-      <!-- Final Results Panel -->
-      <div class="panel" id="results-panel" style="display: none">
-        <h2>Final Ranking (Highest Score First)</h2>
-        <div style="overflow-x: auto">
-          <table id="results-table">
-            <thead>
-              <tr>
-                <th style="width: 5%">Rank</th>
-                <th style="width: 5%">Round</th>
-                <th style="width: 10%">Score</th>
-                <th style="width: 40%">Prompt</th>
-                <th style="width: 40%">Feedback</th>
-              </tr>
-            </thead>
-            <tbody id="results-table-body"></tbody>
-          </table>
-        </div>
+          <!-- Final Results Panel -->
+          <div class="panel" id="results-panel" style="display: none">
+            <h2>Final Ranking (Highest Score First)</h2>
+            <div style="overflow-x: auto">
+              <table id="results-table">
+                <thead>
+                  <tr>
+                    <th style="width: 5%">Rank</th>
+                    <th style="width: 5%">Round</th>
+                    <th style="width: 5%">Branch</th>
+                    <th style="width: 5%">Score</th>
+                    <th style="width: 40%">Prompt</th>
+                    <th style="width: 40%">Feedback</th>
+                  </tr>
+                </thead>
+                <tbody id="results-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </main>
       </div>
     </div>
   </body>

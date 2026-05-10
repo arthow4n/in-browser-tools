@@ -151,6 +151,7 @@ export class ChatCore extends LLMCore {
         'Ensure the LLM understands its role and fills in missing details from the vague prompt.',
       evaluationFocus: evaluationFocus || '',
       maxLoopRound: 1,
+      branchFactor: 1,
       promptType: 'system',
     };
 
