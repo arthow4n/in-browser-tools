@@ -3,7 +3,10 @@ import {
   ChatMessage as SharedChatMessage,
   StreamChunk,
 } from '../shared/llm-core.js';
-import { PromptImproverCore, PromptImproverConfig } from '../shared/prompt-improver-core.js';
+import {
+  PromptImproverCore,
+  PromptImproverConfig,
+} from '../shared/prompt-improver-core.js';
 import { AgentTool } from './tools/index.js';
 
 export interface ChatMessage extends SharedChatMessage {
@@ -98,14 +101,22 @@ export class ChatCore extends LLMCore {
     yield* this.streamCompletionWithTools(messages, toolsToPass);
   }
 
-  async improveSystemPrompt(intention: string = '', howToImprove: string = '', evaluationFocus: string = ''): Promise<string> {
+  async improveSystemPrompt(
+    intention: string = '',
+    howToImprove: string = '',
+    evaluationFocus: string = '',
+  ): Promise<string> {
     if (!this.apiKey) throw new Error('API Key is required');
     if (!this.model) throw new Error('Model is required');
 
     const config: PromptImproverConfig = {
       originalPrompt: this.systemPrompt,
-      intention: intention || 'Improve the clarity and effectiveness of this system prompt.',
-      howToImprove: howToImprove || 'Ensure the LLM understands its role and fills in missing details from the vague prompt.',
+      intention:
+        intention ||
+        'Improve the clarity and effectiveness of this system prompt.',
+      howToImprove:
+        howToImprove ||
+        'Ensure the LLM understands its role and fills in missing details from the vague prompt.',
       evaluationFocus: evaluationFocus || '',
       maxLoopRound: 1,
       promptType: 'system',

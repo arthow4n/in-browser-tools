@@ -64,10 +64,27 @@
       .message.character {
         background-color: #fff3e0;
       }
+      .message.assistant {
+        background-color: #f5f5f5;
+      }
+      .message.system {
+        background-color: #e8f5e9;
+      }
+      .message.tool {
+        background-color: #fce4ec;
+      }
       .character-name {
         font-weight: bold;
         margin-bottom: 5px;
         display: block;
+      }
+      .message-controls {
+        margin-top: 10px;
+        text-align: right;
+      }
+      .message-controls button {
+        padding: 4px 8px;
+        font-size: 0.8em;
       }
       .history-container {
         max-height: 500px;
@@ -126,10 +143,28 @@
         placeholder="Describe your character's appearance, background, and personality..."
       ></textarea>
 
-      <div style="margin-top: 10px; border-top: 1px dashed #ccc; padding-top: 10px;">
-        <label for="character-guidance">Optional: Suggest how to generate/regenerate the character:</label>
-        <input type="text" id="character-guidance" placeholder="e.g., Make them a grumpy wizard..." />
-        <button id="generate-character-btn" style="width: 100%; padding: 10px; font-weight: bold; background-color: #ff9800; color: white; border: none;">
+      <div
+        style="margin-top: 10px; border-top: 1px dashed #ccc; padding-top: 10px"
+      >
+        <label for="character-guidance"
+          >Optional: Suggest how to generate/regenerate the character:</label
+        >
+        <input
+          type="text"
+          id="character-guidance"
+          placeholder="e.g., Make them a grumpy wizard..."
+        />
+        <button
+          id="generate-character-btn"
+          style="
+            width: 100%;
+            padding: 10px;
+            font-weight: bold;
+            background-color: #ff9800;
+            color: white;
+            border: none;
+          "
+        >
           Generate/Regenerate Character
         </button>
       </div>
@@ -137,9 +172,26 @@
 
     <section id="intro-setup-section">
       <h2>Story Intro</h2>
-      <label for="intro-guidance">Optional: Suggest how to generate/regenerate the intro scenario:</label>
-      <input type="text" id="intro-guidance" placeholder="e.g., Start with a loud explosion..." />
-      <button id="generate-intro-btn" style="width: 100%; padding: 10px; font-weight: bold; background-color: #2196f3; color: white; border: none; margin-bottom: 10px;">
+      <label for="intro-guidance"
+        >Optional: Suggest how to generate/regenerate the intro scenario:</label
+      >
+      <input
+        type="text"
+        id="intro-guidance"
+        placeholder="e.g., Start with a loud explosion..."
+      />
+      <button
+        id="generate-intro-btn"
+        style="
+          width: 100%;
+          padding: 10px;
+          font-weight: bold;
+          background-color: #2196f3;
+          color: white;
+          border: none;
+          margin-bottom: 10px;
+        "
+      >
         Generate/Regenerate Intro
       </button>
     </section>
@@ -150,10 +202,62 @@
         <!-- Messages will be rendered here -->
       </div>
 
-      <div style="margin-bottom: 15px; border-bottom: 1px dashed #ccc; padding-bottom: 10px;">
-        <label for="action-guidance">Optional: Suggest how to generate your next action:</label>
-        <input type="text" id="action-guidance" placeholder="e.g., I want to fight back..." />
-        <button id="generate-action-btn" style="width: 100%; padding: 10px; font-weight: bold; background-color: #9c27b0; color: white; border: none;">
+      <details
+        style="
+          margin-bottom: 20px;
+          border: 1px solid #ccc;
+          padding: 10px;
+          border-radius: 5px;
+          background: #fafafa;
+        "
+      >
+        <summary style="cursor: pointer; font-weight: bold">
+          Advanced: Underlying Chat Conversation
+        </summary>
+        <div style="margin-top: 10px; font-size: 0.9em; color: #555">
+          This section shows the raw conversation sent to the LLM, including
+          system prompts and tool calls. You can edit or delete messages to fix
+          mistakes in the story or change the context.
+        </div>
+        <div
+          class="history-container"
+          id="advanced-history-container"
+          style="
+            margin-top: 15px;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+          "
+        >
+          <!-- Advanced messages will be rendered here -->
+        </div>
+      </details>
+
+      <div
+        style="
+          margin-bottom: 15px;
+          border-bottom: 1px dashed #ccc;
+          padding-bottom: 10px;
+        "
+      >
+        <label for="action-guidance"
+          >Optional: Suggest how to generate your next action:</label
+        >
+        <input
+          type="text"
+          id="action-guidance"
+          placeholder="e.g., I want to fight back..."
+        />
+        <button
+          id="generate-action-btn"
+          style="
+            width: 100%;
+            padding: 10px;
+            font-weight: bold;
+            background-color: #9c27b0;
+            color: white;
+            border: none;
+          "
+        >
           Auto-fill Next Action
         </button>
       </div>

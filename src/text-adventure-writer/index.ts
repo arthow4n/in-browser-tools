@@ -57,6 +57,10 @@ const historyContainer = getRequiredElement(
   'history-container',
   HTMLDivElement,
 );
+const advancedHistoryContainer = getRequiredElement(
+  'advanced-history-container',
+  HTMLDivElement,
+);
 const userInput = getRequiredElement('user-input', HTMLTextAreaElement);
 const storyDirectionInput = getRequiredElement(
   'story-direction',
@@ -165,7 +169,138 @@ function init() {
   renderHistory();
 }
 
-function renderHistory() {
+function createAdvancedMessageElement(msg: ChatMessage): HTMLDivElement {
+  const div = document.createElement('div');
+  div.className = `message ${msg.role}`;
+  if (msg.id) {
+    div.dataset.id = msg.id;
+  }
+
+  const contentDiv = document.createElement('div');
+  contentDiv.className = 'content';
+
+  let displayContent = msg.content;
+
+  if (msg.tool_calls && msg.tool_calls.length > 0) {
+    displayContent += '\n\n**Tool Calls:**\n';
+    for (const tc of msg.tool_calls) {
+      displayContent += `- ${tc.function.name}(${tc.function.arguments})\n`;
+    }
+  }
+
+  contentDiv.textContent = displayContent;
+
+  const roleLabel = document.createElement('div');
+  roleLabel.style.fontWeight = 'bold';
+  roleLabel.style.marginBottom = '5px';
+  roleLabel.style.textTransform = 'capitalize';
+  roleLabel.textContent = msg.role;
+
+  const controls = document.createElement('div');
+  controls.className = 'message-controls';
+
+  const editBtn = document.createElement('button');
+  editBtn.textContent = 'Edit';
+  const deleteBtn = document.createElement('button');
+  deleteBtn.textContent = 'Delete';
+
+  const deleteBelowBtn = document.createElement('button');
+  deleteBelowBtn.textContent = 'Delete ↓';
+
+  controls.appendChild(editBtn);
+  controls.appendChild(deleteBtn);
+  controls.appendChild(deleteBelowBtn);
+
+  div.appendChild(roleLabel);
+  div.appendChild(contentDiv);
+  div.appendChild(controls);
+
+  // Edit logic
+  let isEditing = false;
+  let editTextarea: HTMLTextAreaElement;
+
+  editBtn.addEventListener('click', () => {
+    if (!isEditing) {
+      isEditing = true;
+      editBtn.textContent = 'Save';
+      editTextarea = document.createElement('textarea');
+      // If the message has tool calls (how narrator/characters speak),
+      // we allow editing the raw JSON arguments so they can adjust the story.
+      if (msg.tool_calls && msg.tool_calls.length > 0) {
+        // Simplified: We assume editing the first tool call is the main use case
+        // or we just serialize all tool calls. Let's serialize the whole array for full control.
+        editTextarea.value = JSON.stringify(msg.tool_calls, null, 2);
+      } else {
+        editTextarea.value = msg.content;
+      }
+      editTextarea.rows = 4;
+      editTextarea.style.width = '100%';
+      div.replaceChild(editTextarea, contentDiv);
+    } else {
+      isEditing = false;
+      editBtn.textContent = 'Edit';
+
+      if (msg.tool_calls && msg.tool_calls.length > 0) {
+        try {
+          msg.tool_calls = JSON.parse(editTextarea.value);
+        } catch (e) {
+          chatStatus.textContent = 'Invalid JSON formatting for tool calls.';
+          chatStatus.style.color = 'red';
+          isEditing = true;
+          editBtn.textContent = 'Save';
+          return;
+        }
+      } else {
+        msg.content = editTextarea.value;
+      }
+
+      let newDisplayContent = msg.content;
+      if (msg.tool_calls && msg.tool_calls.length > 0) {
+        newDisplayContent += '\n\n**Tool Calls:**\n';
+        for (const tc of msg.tool_calls) {
+          newDisplayContent += `- ${tc.function.name}(${tc.function.arguments})\n`;
+        }
+      }
+      contentDiv.textContent = newDisplayContent;
+
+      div.replaceChild(contentDiv, editTextarea);
+      core.saveChatState();
+      // Also need to re-render the normal story history since we changed the underlying data
+      renderHistory(false); // Don't loop infinitely
+    }
+  });
+
+  deleteBtn.addEventListener('click', () => {
+    if (confirm('Delete this message?')) {
+      core.history = core.history.filter((m) => m.id !== msg.id);
+      core.saveChatState();
+      renderHistory();
+    }
+  });
+
+  deleteBelowBtn.addEventListener('click', () => {
+    if (confirm('Delete this message and all messages below it?')) {
+      const idx = core.history.findIndex((m) => m.id === msg.id);
+      if (idx !== -1) {
+        core.history = core.history.slice(0, idx);
+        core.saveChatState();
+        renderHistory();
+      }
+    }
+  });
+
+  return div;
+}
+
+function renderAdvancedHistory() {
+  advancedHistoryContainer.innerHTML = '';
+  for (const msg of core.history) {
+    advancedHistoryContainer.appendChild(createAdvancedMessageElement(msg));
+  }
+  advancedHistoryContainer.scrollTop = advancedHistoryContainer.scrollHeight;
+}
+
+function renderHistory(updateAdvanced: boolean = true) {
   historyContainer.innerHTML = '';
   for (const msg of core.history) {
     if (msg.role === 'user') {
@@ -203,6 +338,9 @@ function renderHistory() {
     }
   }
   historyContainer.scrollTop = historyContainer.scrollHeight;
+  if (updateAdvanced) {
+    renderAdvancedHistory();
+  }
 }
 
 async function handleSend() {

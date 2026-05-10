@@ -87,7 +87,7 @@ export class TextAdventureCore extends ChatCore {
 Analyze the story history. Provide a brief, single action or dialogue for the player character to take next.
 Do NOT narrate the outcome or speak for other characters. Output ONLY the text that should go into the user's input box.`,
       },
-      ...this.history
+      ...this.history,
     ];
 
     let userPrompt = 'Based on the story so far, what should I do next?';

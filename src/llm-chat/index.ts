@@ -96,7 +96,11 @@ improvePromptBtn.addEventListener('click', async () => {
     const howToImprove = promptHowToImproveTextarea.value.trim();
     const evaluationFocus = promptEvaluationFocusTextarea.value.trim();
 
-    const improved = await core.improveSystemPrompt(intention, howToImprove, evaluationFocus);
+    const improved = await core.improveSystemPrompt(
+      intention,
+      howToImprove,
+      evaluationFocus,
+    );
     systemPromptTextarea.value = improved;
     core.systemPrompt = improved;
     core.saveChatState();
