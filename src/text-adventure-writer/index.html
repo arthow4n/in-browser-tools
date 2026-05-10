@@ -202,36 +202,6 @@
         <!-- Messages will be rendered here -->
       </div>
 
-      <details
-        style="
-          margin-bottom: 20px;
-          border: 1px solid #ccc;
-          padding: 10px;
-          border-radius: 5px;
-          background: #fafafa;
-        "
-      >
-        <summary style="cursor: pointer; font-weight: bold">
-          Advanced: Underlying Chat Conversation
-        </summary>
-        <div style="margin-top: 10px; font-size: 0.9em; color: #555">
-          This section shows the raw conversation sent to the LLM, including
-          system prompts and tool calls. You can edit or delete messages to fix
-          mistakes in the story or change the context.
-        </div>
-        <div
-          class="history-container"
-          id="advanced-history-container"
-          style="
-            margin-top: 15px;
-            border-top: 1px solid #ddd;
-            padding-top: 10px;
-          "
-        >
-          <!-- Advanced messages will be rendered here -->
-        </div>
-      </details>
-
       <div
         style="
           margin-bottom: 15px;
@@ -295,9 +265,42 @@
         id="chat-status"
         style="font-weight: bold; display: block; margin-top: 10px"
       ></span>
-      <button id="clear-history-btn" style="width: 100%; margin-top: 10px">
+      <button
+        id="clear-history-btn"
+        style="width: 100%; margin-top: 10px; margin-bottom: 20px"
+      >
         Restart Story
       </button>
+
+      <details
+        id="advanced-details"
+        style="
+          border: 1px solid #ccc;
+          padding: 10px;
+          border-radius: 5px;
+          background: #fafafa;
+        "
+      >
+        <summary style="cursor: pointer; font-weight: bold">
+          Advanced: Underlying Chat Conversation
+        </summary>
+        <div style="margin-top: 10px; font-size: 0.9em; color: #555">
+          This section shows the raw conversation sent to the LLM, including
+          system prompts and tool calls. You can edit or delete messages to fix
+          mistakes in the story or change the context.
+        </div>
+        <div
+          class="history-container"
+          id="advanced-history-container"
+          style="
+            margin-top: 15px;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+          "
+        >
+          <!-- Advanced messages will be rendered here -->
+        </div>
+      </details>
     </section>
 
     <script type="module" src="./index.ts"></script>

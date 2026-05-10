@@ -41,7 +41,7 @@ export class TextAdventureCore extends ChatCore {
   override loadChatState() {
     this.systemPrompt =
       localStorage.getItem('text-adventure-systemPrompt') ||
-      'You are a text adventure writer agent. You must drive the story forward and act as the narrator and any characters involved in the story. Keep the story engaging. Your thoughts are hidden from the user. You MUST use the `speak` tool to narrate the story or have characters speak to the user.';
+      'You are a text adventure writer agent. You must drive the story forward and act as the narrator and any characters involved in the story. Keep the story engaging. Before making a tool call to write as a character or the narrator, you must CONSTANTLY think about how to progress the story and keep the user engaged. Write these thoughts out loud in plain text. Your plain text thoughts will be hidden from the user, serving as your internal plan. Then, you MUST use the `speak` tool to narrate the story or have characters speak to the user.';
 
     try {
       this.history = JSON.parse(

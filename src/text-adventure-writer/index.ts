@@ -73,6 +73,10 @@ const clearHistoryBtn = getRequiredElement(
   'clear-history-btn',
   HTMLButtonElement,
 );
+const advancedDetails = getRequiredElement(
+  'advanced-details',
+  HTMLDetailsElement,
+);
 
 function init() {
   apiKeyInput.value = core.apiKey;
@@ -165,6 +169,17 @@ function init() {
     core.history = [];
     core.saveChatState();
     renderHistory();
+  });
+
+  advancedDetails.addEventListener('toggle', () => {
+    if (advancedDetails.open) {
+      setTimeout(() => {
+        window.scrollTo({
+          top: document.body.scrollHeight,
+          behavior: 'smooth',
+        });
+      }, 0);
+    }
   });
 
   renderHistory();
@@ -309,32 +324,52 @@ function renderHistory(updateAdvanced: boolean = true) {
       div.className = 'message user';
       div.textContent = msg.content;
       historyContainer.appendChild(div);
-    } else if (msg.role === 'assistant' && msg.tool_calls) {
-      for (const tc of msg.tool_calls) {
-        if (tc.function.name === 'speak') {
-          try {
-            const args = JSON.parse(tc.function.arguments);
-            const div = document.createElement('div');
+    } else if (msg.role === 'assistant') {
+      let hasToolCallsRendered = false;
+      if (msg.tool_calls && msg.tool_calls.length > 0) {
+        for (const tc of msg.tool_calls) {
+          if (tc.function.name === 'speak') {
+            hasToolCallsRendered = true;
+            try {
+              const args = JSON.parse(tc.function.arguments);
+              const div = document.createElement('div');
 
-            const nameSpan = document.createElement('span');
-            nameSpan.className = 'character-name';
-            nameSpan.textContent = args.character;
-            div.appendChild(nameSpan);
+              const nameSpan = document.createElement('span');
+              nameSpan.className = 'character-name';
+              nameSpan.textContent = args.character;
+              div.appendChild(nameSpan);
 
-            const msgNode = document.createTextNode(args.message);
-            div.appendChild(msgNode);
+              const msgNode = document.createTextNode(args.message);
+              div.appendChild(msgNode);
 
-            if (args.character.toLowerCase() === 'narrator') {
-              div.className = 'message narrator';
-            } else {
-              div.className = 'message character';
+              if (args.character.toLowerCase() === 'narrator') {
+                div.className = 'message narrator';
+              } else {
+                div.className = 'message character';
+              }
+
+              historyContainer.appendChild(div);
+            } catch (e) {
+              // Arguments might be incomplete while streaming, or invalid JSON.
             }
-
-            historyContainer.appendChild(div);
-          } catch (e) {
-            // Arguments might be incomplete while streaming, or invalid JSON.
           }
         }
+      }
+
+      // Fallback: If no tool calls were rendered but there is plain text content, render it as Narrator.
+      if (!hasToolCallsRendered && msg.content && msg.content.trim()) {
+        const div = document.createElement('div');
+        div.className = 'message narrator';
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'character-name';
+        nameSpan.textContent = 'Narrator';
+        div.appendChild(nameSpan);
+
+        const msgNode = document.createTextNode(msg.content);
+        div.appendChild(msgNode);
+
+        historyContainer.appendChild(div);
       }
     }
   }
