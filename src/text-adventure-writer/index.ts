@@ -69,6 +69,7 @@ const storyDirectionInput = getRequiredElement(
 );
 const sendBtn = getRequiredElement('send-btn', HTMLButtonElement);
 const chatStatus = getRequiredElement('chat-status', HTMLSpanElement);
+const elaborateBtn = getRequiredElement('elaborate-btn', HTMLButtonElement);
 const clearHistoryBtn = getRequiredElement(
   'clear-history-btn',
   HTMLButtonElement,
@@ -165,6 +166,8 @@ function init() {
 
   generateActionBtn.addEventListener('click', handleGenerateAction);
 
+  elaborateBtn.addEventListener('click', handleElaborate);
+
   clearHistoryBtn.addEventListener('click', () => {
     core.history = [];
     core.saveChatState();
@@ -195,16 +198,33 @@ function createAdvancedMessageElement(msg: ChatMessage): HTMLDivElement {
   const contentDiv = document.createElement('div');
   contentDiv.className = 'content';
 
-  let displayContent = msg.content;
-
-  if (msg.tool_calls && msg.tool_calls.length > 0) {
-    displayContent += '\n\n**Tool Calls:**\n';
-    for (const tc of msg.tool_calls) {
-      displayContent += `- ${tc.function.name}(${tc.function.arguments})\n`;
+  if (msg.content) {
+    const textDiv = document.createElement('div');
+    if (msg.role === 'assistant') {
+      textDiv.innerHTML = `<strong>Agent Thoughts:</strong><br/>`;
     }
+    const textContentNode = document.createTextNode(msg.content);
+    textDiv.appendChild(textContentNode);
+    textDiv.style.marginBottom = '10px';
+    contentDiv.appendChild(textDiv);
   }
 
-  contentDiv.textContent = displayContent;
+  if (msg.tool_calls && msg.tool_calls.length > 0) {
+    const toolDiv = document.createElement('div');
+    toolDiv.innerHTML = `<strong>Tool Calls:</strong><br/>`;
+    toolDiv.style.padding = '10px';
+    toolDiv.style.backgroundColor = '#f0f0f0';
+    toolDiv.style.borderLeft = '3px solid #ccc';
+    toolDiv.style.marginTop = '5px';
+    toolDiv.style.fontFamily = 'monospace';
+    toolDiv.style.whiteSpace = 'pre-wrap';
+
+    for (const tc of msg.tool_calls) {
+      const tcText = document.createTextNode(`- ${tc.function.name}(${tc.function.arguments})\n`);
+      toolDiv.appendChild(tcText);
+    }
+    contentDiv.appendChild(toolDiv);
+  }
 
   const roleLabel = document.createElement('div');
   roleLabel.style.fontWeight = 'bold';
@@ -474,6 +494,26 @@ async function handleGenerateCharacter(params: { guidance: string }) {
     },
     'Character generated.',
   );
+}
+
+async function handleElaborate() {
+  if (core.history.length === 0) {
+    chatStatus.textContent = 'No history to elaborate on.';
+    chatStatus.style.color = 'red';
+    return;
+  }
+
+  const elaborateMessage: ChatMessage = {
+    id: Date.now().toString(),
+    role: 'user',
+    content: '[OOC]: Please rewrite and elaborate on your last response. Make it much more vibrant, detailed, and immersive. Describe the environment, sensory details, and character emotions more deeply.',
+  };
+
+  core.history.push(elaborateMessage);
+  core.saveChatState();
+  renderHistory();
+
+  await generateResponse();
 }
 
 async function handleGenerateAction() {
