@@ -2,13 +2,52 @@ import { ChatCore, ChatMessage } from '../llm-chat/core.js';
 import * as git from 'isomorphic-git';
 import http from 'isomorphic-git/http/web';
 import { fs, vol } from 'memfs';
+import { getStorage, setStorage } from '../shared/storage.js';
+
+const DEFAULT_SYSTEM_PROMPT = 'You are a chat agent helping the user generate an execution plan to be delegated to an autonomous coding agent. The plan should outline the approach but not be overly detailed. Entrust the coding agent to handle the implementation details. You do not have access to any tools. You must rely on the files provided in your context to answer questions and generate the plan.';
 
 export class RepoChatCore extends ChatCore {
   constructor() {
     super();
-    this.systemPrompt =
-      'You are a chat agent helping the user generate an execution plan to be delegated to an autonomous coding agent. The plan should outline the approach but not be overly detailed. Entrust the coding agent to handle the implementation details. You do not have access to any tools. You must rely on the files provided in your context to answer questions and generate the plan.';
     this.toolsEnabled = false; // Disable tools
+    this.loadChatState(); // load states explicitly here as well to overwrite ChatCore defaults
+  }
+
+  loadChatState() {
+    this.systemPrompt =
+      getStorage('repo-chat-systemPrompt') || DEFAULT_SYSTEM_PROMPT;
+
+    try {
+      this.history = JSON.parse(
+        getStorage('repo-chat-history') || '[]',
+      );
+    } catch {
+      this.history = [];
+    }
+  }
+
+  saveChatState() {
+    setStorage('repo-chat-systemPrompt', this.systemPrompt);
+    setStorage('repo-chat-history', JSON.stringify(this.history));
+  }
+
+  restartChat() {
+    // Keeps the first message which is the cloned repo context + the initial assistant message
+    if (this.history.length >= 2) {
+      this.history = this.history.slice(0, 2);
+    } else if (this.history.length === 1) {
+      this.history = [this.history[0]];
+    } else {
+      this.history = [];
+    }
+    this.saveChatState();
+  }
+
+  clearAll() {
+    this.systemPrompt = DEFAULT_SYSTEM_PROMPT;
+    this.history = [];
+    vol.reset();
+    this.saveChatState();
   }
 
   async cloneRepo(url: string, statusCallback: (msg: string) => void) {

@@ -5,46 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Repo Chat</title>
     <style>
-      *,
-      *:before,
-      *:after {
-        box-sizing: border-box;
-      }
-      body {
-        font-family: sans-serif;
-        line-height: 1.6;
-        margin: 0;
-        padding: 20px;
-        max-width: 800px;
-        margin: 0 auto;
-      }
-      section {
-        margin-bottom: 20px;
-        padding: 15px;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-      }
-      h2 {
-        margin-top: 0;
-      }
-      label {
-        display: block;
-        margin-bottom: 5px;
-        font-weight: bold;
-      }
-      input[type='text'],
-      textarea {
-        width: 100%;
-        padding: 8px;
-        margin-bottom: 10px;
-        box-sizing: border-box;
-      }
-      button {
-        padding: 8px 15px;
-        cursor: pointer;
-        margin-right: 5px;
-        margin-bottom: 5px;
-      }
       .message {
         margin-bottom: 15px;
         padding: 10px;
@@ -102,17 +62,21 @@
       <h2>Repository</h2>
       <label for="repo-url">GitHub Repo URL:</label>
       <input type="text" id="repo-url" placeholder="https://github.com/user/repo" value="https://github.com/arthow4n/in-browser-tools.git" />
-      <button id="clone-btn">Clone Repository</button>
-      <span id="clone-status"></span>
+      <button id="clone-btn" class="btn btn-primary">Clone Repository</button>
+      <span id="clone-status" class="status"></span>
     </section>
 
     <section>
       <h2>Chat</h2>
+      <div class="flex-row mb-2">
+        <button id="restart-chat-btn" class="btn btn-secondary">Restart Chat</button>
+        <button id="clear-all-btn" class="btn btn-danger">Clear All</button>
+      </div>
       <div id="history-container"></div>
 
       <label for="chat-input">Message:</label>
       <textarea id="chat-input" rows="4"></textarea>
-      <button id="send-btn">Send</button>
+      <button id="send-btn" class="btn btn-primary">Send</button>
       <span id="chat-status"></span>
     </section>
   </body>

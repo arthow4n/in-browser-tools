@@ -24,7 +24,9 @@ export type StorageKey =
   | 'text-adventure-characterName'
   | 'text-adventure-characterDescription'
   | 'text-adventure-scenarioRequest'
-  | 'text-adventure-outputLanguage';
+  | 'text-adventure-outputLanguage'
+  | 'repo-chat-systemPrompt'
+  | 'repo-chat-history';
 
 export function getStorage(key: StorageKey): string | null {
   return localStorage.getItem(PREFIX + key);

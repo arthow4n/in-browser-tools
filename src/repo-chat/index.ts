@@ -4,6 +4,7 @@ import { getRequiredElement } from '../shared/dom-utils.js';
 import { runWithUIState } from '../shared/ui-utils.js';
 import { ChatMessage } from '../llm-chat/core.js';
 import { createMessageElement } from '../shared/chat-ui.js';
+import '../shared/components/styles.css';
 
 const core = new RepoChatCore();
 
@@ -21,6 +22,9 @@ const historyContainer = getRequiredElement(
   HTMLDivElement,
 );
 
+const restartChatBtn = getRequiredElement('restart-chat-btn', HTMLButtonElement);
+const clearAllBtn = getRequiredElement('clear-all-btn', HTMLButtonElement);
+
 const chatInput = getRequiredElement('chat-input', HTMLTextAreaElement);
 const sendBtn = getRequiredElement('send-btn', HTMLButtonElement);
 const chatStatus = getRequiredElement('chat-status', HTMLSpanElement);
@@ -36,6 +40,21 @@ function renderHistory() {
   }
   historyContainer.scrollTop = historyContainer.scrollHeight;
 }
+
+// Initial load
+renderHistory();
+
+// Reset logic
+restartChatBtn.addEventListener('click', () => {
+  core.restartChat();
+  renderHistory();
+});
+
+clearAllBtn.addEventListener('click', () => {
+  core.clearAll();
+  renderHistory();
+  cloneStatus.textContent = '';
+});
 
 // Clone logic
 cloneBtn.addEventListener('click', async () => {
@@ -55,6 +74,7 @@ cloneBtn.addEventListener('click', async () => {
       });
       cloneStatus.textContent = 'Seeding repo data to chat...';
       await core.seedChatHistory();
+      core.saveChatState();
       renderHistory();
     },
     'Cloned and seeded successfully.'
@@ -73,6 +93,7 @@ sendBtn.addEventListener('click', async () => {
   };
 
   core.history.push(userMsg);
+  core.saveChatState();
   chatInput.value = '';
   renderHistory();
 
@@ -122,6 +143,8 @@ async function handleChatGeneration() {
       if (currentAssistantEl) {
         currentAssistantEl.classList.remove('streaming');
       }
+
+      core.saveChatState();
     },
     ''
   );
