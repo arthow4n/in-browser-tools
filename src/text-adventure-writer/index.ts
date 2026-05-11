@@ -82,6 +82,11 @@ const clearHistoryBtn = getRequiredElement(
   'clear-history-btn',
   HTMLButtonElement,
 );
+const oocUserInput = getRequiredElement('ooc-user-input', HTMLTextAreaElement);
+const oocSendBtn = getRequiredElement('ooc-send-btn', HTMLButtonElement);
+const oocChatStatus = getRequiredElement('ooc-chat-status', HTMLSpanElement);
+const oocChatHistory = getRequiredElement('ooc-chat-history', HTMLDivElement);
+
 const advancedDetails = getRequiredElement(
   'advanced-details',
   HTMLDetailsElement,
@@ -210,6 +215,8 @@ function init() {
     renderHistory();
   });
 
+  oocSendBtn.addEventListener('click', handleOOCSend);
+
   advancedDetails.addEventListener('toggle', () => {
     if (advancedDetails.open) {
       setTimeout(() => {
@@ -222,6 +229,30 @@ function init() {
   });
 
   renderHistory();
+}
+
+async function handleOOCSend() {
+  const question = oocUserInput.value.trim();
+  if (!question) return;
+
+  const userMsgDiv = document.createElement('div');
+  userMsgDiv.className = 'message user';
+  userMsgDiv.textContent = question;
+  oocChatHistory.appendChild(userMsgDiv);
+  oocChatHistory.style.display = 'block';
+  oocUserInput.value = '';
+
+  await runWithUIState(oocSendBtn, oocChatStatus, 'Thinking...', async () => {
+    const gmMsgDiv = document.createElement('div');
+    gmMsgDiv.className = 'message system';
+    oocChatHistory.appendChild(gmMsgDiv);
+
+    const generator = core.generateOOCResponse(question);
+    for await (const chunk of generator) {
+      gmMsgDiv.textContent += chunk;
+      oocChatHistory.scrollTop = oocChatHistory.scrollHeight;
+    }
+  }, '');
 }
 
 function createAdvancedMessageElement(msg: ChatMessage): HTMLDivElement {
@@ -289,56 +320,101 @@ function createAdvancedMessageElement(msg: ChatMessage): HTMLDivElement {
 
   // Edit logic
   let isEditing = false;
-  let editTextarea: HTMLTextAreaElement;
+  let editContainer: HTMLDivElement;
+  let contentTextarea: HTMLTextAreaElement;
+  let toolCallTextareas: { tc: any; textarea: HTMLTextAreaElement }[] = [];
 
   editBtn.addEventListener('click', () => {
     if (!isEditing) {
       isEditing = true;
       editBtn.textContent = 'Save';
-      editTextarea = document.createElement('textarea');
-      // If the message has tool calls (how narrator/characters speak),
-      // we allow editing the raw JSON arguments so they can adjust the story.
+
+      editContainer = document.createElement('div');
+
+      contentTextarea = document.createElement('textarea');
+      contentTextarea.value = msg.content || '';
+      contentTextarea.rows = 4;
+      contentTextarea.style.width = '100%';
+      contentTextarea.placeholder = 'Agent Thoughts (Plain text)';
+      editContainer.appendChild(contentTextarea);
+
+      toolCallTextareas = [];
       if (msg.tool_calls && msg.tool_calls.length > 0) {
-        // Simplified: We assume editing the first tool call is the main use case
-        // or we just serialize all tool calls. Let's serialize the whole array for full control.
-        editTextarea.value = JSON.stringify(msg.tool_calls, null, 2);
-      } else {
-        editTextarea.value = msg.content;
+        for (const tc of msg.tool_calls) {
+          const label = document.createElement('div');
+          label.textContent = `Tool Call: ${tc.function.name}`;
+          label.style.marginTop = '10px';
+          label.style.fontWeight = 'bold';
+          editContainer.appendChild(label);
+
+          const tcTextarea = document.createElement('textarea');
+          try {
+            // Pretty print the arguments JSON
+            const parsedArgs = JSON.parse(tc.function.arguments);
+            tcTextarea.value = JSON.stringify(parsedArgs, null, 2);
+          } catch {
+            tcTextarea.value = tc.function.arguments;
+          }
+          tcTextarea.rows = 4;
+          tcTextarea.style.width = '100%';
+          editContainer.appendChild(tcTextarea);
+          toolCallTextareas.push({ tc, textarea: tcTextarea });
+        }
       }
-      editTextarea.rows = 4;
-      editTextarea.style.width = '100%';
-      div.replaceChild(editTextarea, contentDiv);
+
+      div.replaceChild(editContainer, contentDiv);
     } else {
+      // Saving logic
+      for (const item of toolCallTextareas) {
+        try {
+          const parsedArgs = JSON.parse(item.textarea.value);
+          item.tc.function.arguments = JSON.stringify(parsedArgs);
+        } catch (e) {
+          chatStatus.textContent = `Invalid JSON for tool call ${item.tc.function.name}`;
+          chatStatus.style.color = 'red';
+          return; // Abort save
+        }
+      }
+
       isEditing = false;
       editBtn.textContent = 'Edit';
 
-      if (msg.tool_calls && msg.tool_calls.length > 0) {
-        try {
-          msg.tool_calls = JSON.parse(editTextarea.value);
-        } catch (e) {
-          chatStatus.textContent = 'Invalid JSON formatting for tool calls.';
-          chatStatus.style.color = 'red';
-          isEditing = true;
-          editBtn.textContent = 'Save';
-          return;
+      msg.content = contentTextarea.value;
+
+      // Rebuild the display content
+      contentDiv.innerHTML = '';
+      if (msg.content) {
+        const textDiv = document.createElement('div');
+        if (msg.role === 'assistant') {
+          textDiv.innerHTML = `<strong>Agent Thoughts:</strong><br/>`;
         }
-      } else {
-        msg.content = editTextarea.value;
+        const textContentNode = document.createTextNode(msg.content);
+        textDiv.appendChild(textContentNode);
+        textDiv.style.marginBottom = '10px';
+        contentDiv.appendChild(textDiv);
       }
 
-      let newDisplayContent = msg.content;
       if (msg.tool_calls && msg.tool_calls.length > 0) {
-        newDisplayContent += '\n\n**Tool Calls:**\n';
+        const toolDiv = document.createElement('div');
+        toolDiv.innerHTML = `<strong>Tool Calls:</strong><br/>`;
+        toolDiv.style.padding = '10px';
+        toolDiv.style.backgroundColor = '#f0f0f0';
+        toolDiv.style.borderLeft = '3px solid #ccc';
+        toolDiv.style.marginTop = '5px';
+        toolDiv.style.fontFamily = 'monospace';
+        toolDiv.style.whiteSpace = 'pre-wrap';
+
         for (const tc of msg.tool_calls) {
-          newDisplayContent += `- ${tc.function.name}(${tc.function.arguments})\n`;
+          const tcText = document.createTextNode(`- ${tc.function.name}(${tc.function.arguments})\n`);
+          toolDiv.appendChild(tcText);
         }
+        contentDiv.appendChild(toolDiv);
       }
-      contentDiv.textContent = newDisplayContent;
 
-      div.replaceChild(contentDiv, editTextarea);
+      div.replaceChild(contentDiv, editContainer);
       core.saveChatState();
-      // Also need to re-render the normal story history since we changed the underlying data
-      renderHistory(false); // Don't loop infinitely
+      // Re-render the normal story history
+      renderHistory(false);
     }
   });
 
