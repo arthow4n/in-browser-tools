@@ -36,6 +36,7 @@
     "@rsbuild/plugin-node-polyfill": "^1.4.4",
     "isomorphic-git": "^1.37.6",
     "memfs": "^4.57.2",
-    "pdf-lib": "^1.17.1"
+    "pdf-lib": "^1.17.1",
+    "serve-handler": "^6.1.7"
   }
 }
