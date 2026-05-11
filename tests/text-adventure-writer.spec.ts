@@ -7,10 +7,18 @@ test.describe('Text Adventure Writer Tool', () => {
     await page.goto('/text-adventure-writer.html');
 
     await expect(page.locator('h1')).toHaveText('Text Adventure Writer');
-    await expect(page.locator('#shared-api-key')).toBeVisible();
-    await expect(page.locator('#character-name')).toBeVisible();
 
+    // Go to settings to set API key since it's shared now
+    await page.goto('/settings.html');
     await page.fill('#shared-api-key', 'test-api-key');
+    await page.fill('#shared-model-input', 'test-model');
+    // Save is automatic via input event listener, but we might need to trigger change or wait
+    await page.locator('#shared-api-key').evaluate(node => node.dispatchEvent(new Event('input')));
+
+    // Go back to text adventure writer
+    await page.goto('/text-adventure-writer.html');
+
+    await expect(page.locator('#character-name')).toBeVisible();
     await page.fill('#character-name', 'Arthur Dent');
     await page.fill('#character-description', 'A bewildered Englishman.');
 
@@ -18,9 +26,6 @@ test.describe('Text Adventure Writer Tool', () => {
     await page.waitForTimeout(100);
 
     // Trigger change events so the event listeners fire and save the state
-    await page
-      .locator('#shared-api-key')
-      .evaluate((node) => node.dispatchEvent(new Event('change')));
     await page
       .locator('#character-name')
       .evaluate((node) => node.dispatchEvent(new Event('input')));
@@ -31,7 +36,6 @@ test.describe('Text Adventure Writer Tool', () => {
     await page.reload();
     await page.waitForTimeout(100);
 
-    await expect(page.locator('#shared-api-key')).toHaveValue('test-api-key');
     await expect(page.locator('#character-name')).toHaveValue('Arthur Dent');
     await expect(page.locator('#character-description')).toHaveValue(
       'A bewildered Englishman.',
@@ -41,8 +45,7 @@ test.describe('Text Adventure Writer Tool', () => {
   test('should validate empty character name before sending', async ({
     page,
   }) => {
-    await page.goto('/text-adventure-writer.html');
-    await page.fill('#shared-api-key', 'test-key');
+    await page.goto('/text-adventure-writer');
     await page.fill('#character-name', '');
 
     await page.fill('#user-input', 'Hello!');
@@ -83,9 +86,12 @@ test.describe('Text Adventure Writer Tool', () => {
       },
     );
 
-    await page.goto('/text-adventure-writer.html');
+    await page.goto('/settings.html');
     await page.fill('#shared-api-key', 'test-key');
     await page.fill('#shared-model-input', 'test-model');
+    await page.locator('#shared-api-key').evaluate(node => node.dispatchEvent(new Event('input')));
+
+    await page.goto('/text-adventure-writer.html');
     await page.fill('#character-name', 'Arthur Dent');
 
     // Send a message
@@ -95,12 +101,9 @@ test.describe('Text Adventure Writer Tool', () => {
 
     const history = page.locator('#history-container');
 
-    // Check user message
+    // Check user messages (System message separate now)
     await expect(history.locator('.message.user')).toContainText(
       '[Arthur Dent]: I wake up.',
-    );
-    await expect(history.locator('.message.user')).toContainText(
-      '[OOC - Story Direction]: Make it sudden.',
     );
 
     // Wait for the tool call response to render

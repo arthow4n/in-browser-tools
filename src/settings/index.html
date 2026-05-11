@@ -155,6 +155,14 @@
 
         <h2>OpenRouter Provider Routing</h2>
 
+        <label for="provider-reasoning-effort">Reasoning Effort (if supported by model):</label>
+        <select id="provider-reasoning-effort">
+          <option value="">Default</option>
+          <option value="low">Low</option>
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+        </select>
+
         <label for="provider-order">Preferred Provider (order):</label>
         <input type="text" id="provider-order" placeholder="e.g. deepinfra, anthropic" />
         <small style="color: #666; display: block; margin-bottom: 10px;">Comma separated provider slugs.</small>

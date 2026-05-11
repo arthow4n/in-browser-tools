@@ -11,6 +11,7 @@ const modelsList = getRequiredElement('shared-models-list', HTMLUListElement);
 const fetchModelsBtn = getRequiredElement('shared-fetch-models-btn', HTMLButtonElement);
 const statusText = getRequiredElement('shared-status-text', HTMLSpanElement);
 
+const providerReasoningEffortSelect = getRequiredElement('provider-reasoning-effort', HTMLSelectElement);
 const providerOrderInput = getRequiredElement('provider-order', HTMLInputElement);
 const providerDataCollectionSelect = getRequiredElement('provider-data-collection', HTMLSelectElement);
 const providerAllowFallbacksCheckbox = getRequiredElement('provider-allow-fallbacks', HTMLInputElement);
@@ -23,6 +24,7 @@ const resetStatus = getRequiredElement('reset-status', HTMLSpanElement);
 // Load initial state
 apiKeyInput.value = core.apiKey;
 modelInput.value = core.model;
+providerReasoningEffortSelect.value = core.providerPrefs.reasoningEffort || '';
 providerOrderInput.value = core.providerPrefs.order.join(', ');
 providerDataCollectionSelect.value = core.providerPrefs.dataCollection;
 providerAllowFallbacksCheckbox.checked = core.providerPrefs.allowFallbacks;
@@ -32,6 +34,7 @@ const notifyChange = () => {
   core.apiKey = apiKeyInput.value.trim();
   core.model = modelInput.value.trim();
 
+  core.providerPrefs.reasoningEffort = providerReasoningEffortSelect.value as '' | 'low' | 'medium' | 'high';
   const orderStr = providerOrderInput.value.trim();
   core.providerPrefs.order = orderStr ? orderStr.split(',').map(s => s.trim()).filter(Boolean) : [];
   core.providerPrefs.dataCollection = providerDataCollectionSelect.value as 'allow' | 'deny';
@@ -47,6 +50,7 @@ const notifyChange = () => {
 
 apiKeyInput.addEventListener('input', notifyChange);
 modelInput.addEventListener('input', notifyChange);
+providerReasoningEffortSelect.addEventListener('change', notifyChange);
 providerOrderInput.addEventListener('input', notifyChange);
 providerDataCollectionSelect.addEventListener('change', notifyChange);
 providerAllowFallbacksCheckbox.addEventListener('change', notifyChange);
@@ -130,6 +134,7 @@ resetAllSettingsBtn.addEventListener('click', () => {
   core.loadState();
   apiKeyInput.value = core.apiKey;
   modelInput.value = core.model;
+  providerReasoningEffortSelect.value = core.providerPrefs.reasoningEffort || '';
   providerOrderInput.value = core.providerPrefs.order.join(', ');
   providerDataCollectionSelect.value = core.providerPrefs.dataCollection;
   providerAllowFallbacksCheckbox.checked = core.providerPrefs.allowFallbacks;
