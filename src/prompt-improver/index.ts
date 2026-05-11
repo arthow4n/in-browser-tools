@@ -8,6 +8,7 @@ import { LLMCore } from '../shared/llm-core.js';
 import { UndoRedoManager } from '../shared/undo-redo.js';
 import { getRequiredElement } from '../shared/dom-utils.js';
 import { runWithUIState } from '../shared/ui-utils.js';
+import { getStorage, setStorage } from '../shared/storage.js';
 
 const els = {
   llmSettingsContainer: getRequiredElement(
@@ -95,21 +96,21 @@ function applyStateToUI(state: PromptState) {
 
 function loadState() {
   els.originalPrompt.value =
-    localStorage.getItem('prompt-improver-originalPrompt') || '';
+    getStorage('prompt-improver-originalPrompt') || '';
   els.intention.value =
-    localStorage.getItem('prompt-improver-intention') ||
+    getStorage('prompt-improver-intention') ||
     'Used for Gemini Deep Research';
   els.howToImprove.value =
-    localStorage.getItem('prompt-improver-howToImprove') ||
+    getStorage('prompt-improver-howToImprove') ||
     'Ensure the LLM is considerate and fills in details the original vague prompt might not have thought about.';
   els.evaluationFocus.value =
-    localStorage.getItem('prompt-improver-evaluationFocus') || '';
+    getStorage('prompt-improver-evaluationFocus') || '';
   els.maxRounds.value =
-    localStorage.getItem('prompt-improver-maxRounds') || '3';
+    getStorage('prompt-improver-maxRounds') || '3';
   els.branchFactor.value =
-    localStorage.getItem('prompt-improver-branchFactor') || '3';
+    getStorage('prompt-improver-branchFactor') || '3';
   els.promptType.value =
-    localStorage.getItem('prompt-improver-promptType') || 'system';
+    getStorage('prompt-improver-promptType') || 'system';
 
   undoManager = new UndoRedoManager(
     getStateFromUI(),
@@ -120,19 +121,19 @@ function loadState() {
 }
 
 function saveState() {
-  localStorage.setItem(
+  setStorage(
     'prompt-improver-originalPrompt',
     els.originalPrompt.value,
   );
-  localStorage.setItem('prompt-improver-intention', els.intention.value);
-  localStorage.setItem('prompt-improver-howToImprove', els.howToImprove.value);
-  localStorage.setItem(
+  setStorage('prompt-improver-intention', els.intention.value);
+  setStorage('prompt-improver-howToImprove', els.howToImprove.value);
+  setStorage(
     'prompt-improver-evaluationFocus',
     els.evaluationFocus.value,
   );
-  localStorage.setItem('prompt-improver-maxRounds', els.maxRounds.value);
-  localStorage.setItem('prompt-improver-branchFactor', els.branchFactor.value);
-  localStorage.setItem('prompt-improver-promptType', els.promptType.value);
+  setStorage('prompt-improver-maxRounds', els.maxRounds.value);
+  setStorage('prompt-improver-branchFactor', els.branchFactor.value);
+  setStorage('prompt-improver-promptType', els.promptType.value);
 
   if (undoManager) {
     undoManager.save(getStateFromUI());
@@ -158,19 +159,19 @@ els.undoBtn.addEventListener('click', () => {
   if (state) {
     applyStateToUI(state);
     // save to localStorage without adding to undo history
-    localStorage.setItem(
+    setStorage(
       'prompt-improver-originalPrompt',
       state.originalPrompt,
     );
-    localStorage.setItem('prompt-improver-intention', state.intention);
-    localStorage.setItem('prompt-improver-howToImprove', state.howToImprove);
-    localStorage.setItem(
+    setStorage('prompt-improver-intention', state.intention);
+    setStorage('prompt-improver-howToImprove', state.howToImprove);
+    setStorage(
       'prompt-improver-evaluationFocus',
       state.evaluationFocus,
     );
-    localStorage.setItem('prompt-improver-maxRounds', state.maxRounds);
-    localStorage.setItem('prompt-improver-branchFactor', state.branchFactor);
-    localStorage.setItem('prompt-improver-promptType', state.promptType);
+    setStorage('prompt-improver-maxRounds', state.maxRounds);
+    setStorage('prompt-improver-branchFactor', state.branchFactor);
+    setStorage('prompt-improver-promptType', state.promptType);
   }
 });
 
@@ -179,19 +180,19 @@ els.redoBtn.addEventListener('click', () => {
   if (state) {
     applyStateToUI(state);
     // save to localStorage without adding to undo history
-    localStorage.setItem(
+    setStorage(
       'prompt-improver-originalPrompt',
       state.originalPrompt,
     );
-    localStorage.setItem('prompt-improver-intention', state.intention);
-    localStorage.setItem('prompt-improver-howToImprove', state.howToImprove);
-    localStorage.setItem(
+    setStorage('prompt-improver-intention', state.intention);
+    setStorage('prompt-improver-howToImprove', state.howToImprove);
+    setStorage(
       'prompt-improver-evaluationFocus',
       state.evaluationFocus,
     );
-    localStorage.setItem('prompt-improver-maxRounds', state.maxRounds);
-    localStorage.setItem('prompt-improver-branchFactor', state.branchFactor);
-    localStorage.setItem('prompt-improver-promptType', state.promptType);
+    setStorage('prompt-improver-maxRounds', state.maxRounds);
+    setStorage('prompt-improver-branchFactor', state.branchFactor);
+    setStorage('prompt-improver-promptType', state.promptType);
   }
 });
 

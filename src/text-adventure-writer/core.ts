@@ -1,5 +1,6 @@
 import { ChatCore, ChatMessage } from '../llm-chat/core.js';
 import { StreamChunk } from '../shared/llm-core.js';
+import { getStorage, setStorage } from '../shared/storage.js';
 
 export class TextAdventureCore extends ChatCore {
   public characterName: string = '';
@@ -47,7 +48,7 @@ export class TextAdventureCore extends ChatCore {
 
     const oldDefaultPrompt1 = 'You are a text adventure writer agent. You must drive the story forward and act as the narrator and any characters involved in the story. Keep the story engaging. Before making a tool call to write as a character or the narrator, you must CONSTANTLY think about how to progress the story and keep the user engaged. Write these thoughts out loud in plain text. Your plain text thoughts will be hidden from the user, serving as your internal plan. Then, you MUST use the `speak` tool to narrate the story or have characters speak to the user.';
 
-    const savedPrompt = localStorage.getItem('text-adventure-systemPrompt');
+    const savedPrompt = getStorage('text-adventure-systemPrompt');
     if (!savedPrompt || savedPrompt === oldDefaultPrompt1 || savedPrompt === oldDefaultPrompt2) {
       this.systemPrompt = defaultPrompt;
     } else {
@@ -56,32 +57,32 @@ export class TextAdventureCore extends ChatCore {
 
     try {
       this.history = JSON.parse(
-        localStorage.getItem('text-adventure-history') || '[]',
+        getStorage('text-adventure-history') || '[]',
       );
     } catch {
       this.history = [];
     }
 
     this.characterName =
-      localStorage.getItem('text-adventure-characterName') || '';
+      getStorage('text-adventure-characterName') || '';
     this.characterDescription =
-      localStorage.getItem('text-adventure-characterDescription') || '';
+      getStorage('text-adventure-characterDescription') || '';
     this.scenarioRequest =
-      localStorage.getItem('text-adventure-scenarioRequest') || '';
+      getStorage('text-adventure-scenarioRequest') || '';
   }
 
   override saveChatState() {
-    localStorage.setItem('text-adventure-systemPrompt', this.systemPrompt);
-    localStorage.setItem(
+    setStorage('text-adventure-systemPrompt', this.systemPrompt);
+    setStorage(
       'text-adventure-history',
       JSON.stringify(this.history),
     );
-    localStorage.setItem('text-adventure-characterName', this.characterName);
-    localStorage.setItem(
+    setStorage('text-adventure-characterName', this.characterName);
+    setStorage(
       'text-adventure-characterDescription',
       this.characterDescription,
     );
-    localStorage.setItem(
+    setStorage(
       'text-adventure-scenarioRequest',
       this.scenarioRequest,
     );

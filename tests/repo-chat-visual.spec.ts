@@ -2,10 +2,11 @@ import { test, expect } from '@playwright/test';
 import path from 'path';
 
 test('Repo Chat Verification', async ({ page }) => {
-  await page.goto('http://localhost:3000/repo-chat');
-
   // Fill in OpenRouter Settings mock
+  await page.goto('http://localhost:3000/settings');
   await page.fill('#shared-api-key', 'mock-api-key');
+
+  await page.goto('http://localhost:3000/repo-chat');
 
   // Test clone
   await page.fill('#repo-url', 'https://github.com/arthow4n/in-browser-tools.git');

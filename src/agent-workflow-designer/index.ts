@@ -2,6 +2,8 @@ import { UndoRedoManager } from '../shared/undo-redo.js';
 import { ChatCore, ChatMessage } from '../llm-chat/core.js';
 import { setupLLMSettings } from '../shared/llm-settings.js';
 import { getRequiredElement } from '../shared/dom-utils.js';
+import { runWithUIState } from '../shared/ui-utils.js';
+import { getStorage, setStorage } from '../shared/storage.js';
 
 const SYSTEM_PROMPT = `You are a multi-agent workflow designer. The user will interactively chat with you to design and improve an agent workflow.
 
@@ -80,7 +82,7 @@ class DesignerChat extends ChatCore {
     super.loadChatState();
     try {
       this.history = JSON.parse(
-        localStorage.getItem('agent-workflow-designer-history') || '[]',
+        getStorage('agent-workflow-designer-history') || '[]',
       );
     } catch {
       this.history = [];
@@ -92,7 +94,7 @@ class DesignerChat extends ChatCore {
 
   saveChatState() {
     super.saveChatState();
-    localStorage.setItem(
+    setStorage(
       'agent-workflow-designer-history',
       JSON.stringify(this.history),
     );
@@ -334,7 +336,7 @@ undoChatBtn.addEventListener('click', () => {
     const state = undoManager.undo();
     if (state) {
       core.history = [...state];
-      localStorage.setItem(
+      setStorage(
         'agent-workflow-designer-history',
         JSON.stringify(core.history),
       );
@@ -364,7 +366,7 @@ redoChatBtn.addEventListener('click', () => {
     const state = undoManager.redo();
     if (state) {
       core.history = [...state];
-      localStorage.setItem(
+      setStorage(
         'agent-workflow-designer-history',
         JSON.stringify(core.history),
       );
