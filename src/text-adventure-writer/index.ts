@@ -11,6 +11,10 @@ const fetchModelsBtn = getRequiredElement(
   'fetch-models-btn',
   HTMLButtonElement,
 );
+const outputLanguageInput = getRequiredElement(
+  'output-language',
+  HTMLInputElement,
+);
 const modelsList = getRequiredElement('shared-models-list', HTMLUListElement);
 
 const characterNameInput = getRequiredElement(
@@ -89,6 +93,14 @@ function init() {
   characterNameInput.value = core.characterName;
   characterDescriptionInput.value = core.characterDescription;
   scenarioRequestInput.value = core.scenarioRequest;
+  outputLanguageInput.value = core.outputLanguage;
+
+  outputLanguageInput.addEventListener('input', (e) => {
+    if (e.currentTarget instanceof HTMLInputElement) {
+      core.outputLanguage = e.currentTarget.value;
+      core.saveChatState();
+    }
+  });
 
   scenarioRequestInput.addEventListener('input', (e) => {
     if (e.currentTarget instanceof HTMLTextAreaElement) {

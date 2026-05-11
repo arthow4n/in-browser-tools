@@ -23,7 +23,8 @@ export type StorageKey =
   | 'text-adventure-history'
   | 'text-adventure-characterName'
   | 'text-adventure-characterDescription'
-  | 'text-adventure-scenarioRequest';
+  | 'text-adventure-scenarioRequest'
+  | 'text-adventure-outputLanguage';
 
 export function getStorage(key: StorageKey): string | null {
   return localStorage.getItem(PREFIX + key);
