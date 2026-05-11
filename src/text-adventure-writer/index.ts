@@ -70,6 +70,10 @@ const storyDirectionInput = getRequiredElement(
 const sendBtn = getRequiredElement('send-btn', HTMLButtonElement);
 const chatStatus = getRequiredElement('chat-status', HTMLSpanElement);
 const elaborateBtn = getRequiredElement('elaborate-btn', HTMLButtonElement);
+const regenerateLastBtn = getRequiredElement(
+  'regenerate-last-btn',
+  HTMLButtonElement,
+);
 const clearHistoryBtn = getRequiredElement(
   'clear-history-btn',
   HTMLButtonElement,
@@ -168,6 +172,26 @@ function init() {
 
   elaborateBtn.addEventListener('click', handleElaborate);
 
+  regenerateLastBtn.addEventListener('click', () => {
+    let lastUserIdx = -1;
+    for (let i = core.history.length - 1; i >= 0; i--) {
+      if (core.history[i].role === 'user') {
+        lastUserIdx = i;
+        break;
+      }
+    }
+
+    if (lastUserIdx !== -1) {
+      core.history = core.history.slice(0, lastUserIdx + 1);
+      core.saveChatState();
+      renderHistory();
+      generateResponse();
+    } else {
+      chatStatus.textContent = 'No user message to regenerate from.';
+      chatStatus.style.color = 'red';
+    }
+  });
+
   clearHistoryBtn.addEventListener('click', () => {
     core.history = [];
     core.saveChatState();
@@ -240,12 +264,12 @@ function createAdvancedMessageElement(msg: ChatMessage): HTMLDivElement {
   const deleteBtn = document.createElement('button');
   deleteBtn.textContent = 'Delete';
 
-  const deleteBelowBtn = document.createElement('button');
-  deleteBelowBtn.textContent = 'Delete ↓';
+  const regenerateBelowBtn = document.createElement('button');
+  regenerateBelowBtn.textContent = 'Regenerate ↓';
 
   controls.appendChild(editBtn);
   controls.appendChild(deleteBtn);
-  controls.appendChild(deleteBelowBtn);
+  controls.appendChild(regenerateBelowBtn);
 
   div.appendChild(roleLabel);
   div.appendChild(contentDiv);
@@ -314,13 +338,18 @@ function createAdvancedMessageElement(msg: ChatMessage): HTMLDivElement {
     }
   });
 
-  deleteBelowBtn.addEventListener('click', () => {
-    if (confirm('Delete this message and all messages below it?')) {
+  regenerateBelowBtn.addEventListener('click', () => {
+    if (confirm('Delete all messages after this point and regenerate?')) {
       const idx = core.history.findIndex((m) => m.id === msg.id);
       if (idx !== -1) {
-        core.history = core.history.slice(0, idx);
+        if (msg.role === 'user') {
+          core.history = core.history.slice(0, idx + 1);
+        } else {
+          core.history = core.history.slice(0, idx);
+        }
         core.saveChatState();
         renderHistory();
+        generateResponse();
       }
     }
   });
@@ -417,14 +446,6 @@ async function handleSend() {
   }
 
   const newMessages: ChatMessage[] = [];
-
-  if (core.characterDescription) {
-    newMessages.push({
-      id: Date.now().toString() + '-sys',
-      role: 'system',
-      content: `[OOC - Character Update]: The user is playing as ${core.characterName}. Description: ${core.characterDescription}`,
-    });
-  }
 
   const userMessage: ChatMessage = {
     id: Date.now().toString(),
@@ -548,13 +569,6 @@ async function handleGenerateIntro(params: { guidance: string }) {
   core.history = [];
 
   const initialMessages: ChatMessage[] = [];
-  if (core.characterDescription) {
-    initialMessages.push({
-      id: Date.now().toString() + '-sys',
-      role: 'system',
-      content: `[OOC - Character Update]: The user is playing as ${core.characterName || 'an unknown character'}. Description: ${core.characterDescription}`,
-    });
-  }
 
   let introPrompt = `[OOC - Initial Scenario]: The user requested the following scenario to begin: ${scenarioText}`;
   if (params.guidance) {

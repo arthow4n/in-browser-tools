@@ -17,7 +17,7 @@ export class TextAdventureCore extends ChatCore {
     this.registerTool({
       name: 'speak',
       description:
-        'Speak as a character or the narrator. You MUST use this tool to communicate anything to the user. Your regular text response is hidden.',
+        'Speak as a character or the narrator. You MUST use this tool to communicate anything to the user. Your regular text response is hidden. You MUST NOT interleave multiple characters or narration in a single tool call. Make a SEPARATE tool call for each character\'s speech and for each piece of narration.',
       parameters: {
         type: 'object',
         properties: {
@@ -41,15 +41,16 @@ export class TextAdventureCore extends ChatCore {
 
   override loadChatState() {
     const defaultPrompt =
-      'You are an expert text adventure game master and writer. You must drive the story forward autonomously, acting as the narrator and all non-player characters. Your responses MUST be substantial, detailed progressions (at least 3-4 paragraphs) that unfold the narrative organically. Do not wait for the player to initiate every single micro-action. Instead, advance the plot, describe the environment with rich, vibrant sensory details, and deeply convey character emotions. At the end of your lengthy progression, present the player with an engaging hook, a cliffhanger, or a meaningful choice to respond to. Before making a tool call to write as a character or the narrator, you must CONSTANTLY think about how to dramatically progress the story, introduce new elements, and keep the user fully immersed. Write these thoughts out loud in plain text. Your plain text thoughts will be hidden from the user, serving as your internal plan. Then, you MUST use the `speak` tool to narrate the lengthy story progression or have characters speak to the user.';
+      'You are an expert text adventure game master and writer. You must drive the story forward autonomously, acting as the narrator and all non-player characters. Your responses MUST be substantial, detailed progressions (at least 3-4 paragraphs) that unfold the narrative organically. Do not wait for the player to initiate every single micro-action. Instead, advance the plot, describe the environment with rich, vibrant sensory details, and deeply convey character emotions. At the end of your lengthy progression, present the player with an engaging hook, a cliffhanger, or a meaningful choice to respond to. Before making a tool call to write as a character or the narrator, you must CONSTANTLY think about how to dramatically progress the story, introduce new elements, and keep the user fully immersed. Write these thoughts out loud in plain text. Your plain text thoughts will be hidden from the user, serving as your internal plan. Then, you MUST use the `speak` tool to narrate the lengthy story progression or have characters speak to the user. Crucially, you MUST NOT interleave different characters\' dialogue or narration in a single `speak` tool call. If the narrator speaks, then a character speaks, then the narrator speaks again, this MUST be three separate tool calls.';
 
     const oldDefaultPrompt2 =
       'You are a text adventure writer agent. You must drive the story forward and act as the narrator and any characters involved in the story. Keep the story engaging, vibrant, and immersive. Make sure to describe the environment, the sensory details, and the character emotions in a way that makes the user feel they are truly in the scenario. Before making a tool call to write as a character or the narrator, you must CONSTANTLY think about how to progress the story and keep the user engaged. Write these thoughts out loud in plain text. Your plain text thoughts will be hidden from the user, serving as your internal plan. Then, you MUST use the `speak` tool to narrate the story or have characters speak to the user.';
 
     const oldDefaultPrompt1 = 'You are a text adventure writer agent. You must drive the story forward and act as the narrator and any characters involved in the story. Keep the story engaging. Before making a tool call to write as a character or the narrator, you must CONSTANTLY think about how to progress the story and keep the user engaged. Write these thoughts out loud in plain text. Your plain text thoughts will be hidden from the user, serving as your internal plan. Then, you MUST use the `speak` tool to narrate the story or have characters speak to the user.';
+    const oldDefaultPrompt3 = 'You are an expert text adventure game master and writer. You must drive the story forward autonomously, acting as the narrator and all non-player characters. Your responses MUST be substantial, detailed progressions (at least 3-4 paragraphs) that unfold the narrative organically. Do not wait for the player to initiate every single micro-action. Instead, advance the plot, describe the environment with rich, vibrant sensory details, and deeply convey character emotions. At the end of your lengthy progression, present the player with an engaging hook, a cliffhanger, or a meaningful choice to respond to. Before making a tool call to write as a character or the narrator, you must CONSTANTLY think about how to dramatically progress the story, introduce new elements, and keep the user fully immersed. Write these thoughts out loud in plain text. Your plain text thoughts will be hidden from the user, serving as your internal plan. Then, you MUST use the `speak` tool to narrate the lengthy story progression or have characters speak to the user.';
 
     const savedPrompt = getStorage('text-adventure-systemPrompt');
-    if (!savedPrompt || savedPrompt === oldDefaultPrompt1 || savedPrompt === oldDefaultPrompt2) {
+    if (!savedPrompt || savedPrompt === oldDefaultPrompt1 || savedPrompt === oldDefaultPrompt2 || savedPrompt === oldDefaultPrompt3) {
       this.systemPrompt = defaultPrompt;
     } else {
       this.systemPrompt = savedPrompt;
@@ -143,6 +144,34 @@ Do NOT narrate the outcome or speak for other characters. Output ONLY the plain 
     } finally {
       this.toolsEnabled = originalToolsEnabled;
     }
+  }
+
+  override async *streamChatCompletion(
+    newMessages: ChatMessage[],
+  ): AsyncGenerator<string, void, unknown> {
+    const injectedMessages = [...newMessages];
+    if (this.characterDescription) {
+      injectedMessages.unshift({
+        id: Date.now().toString() + '-sys-injected',
+        role: 'system',
+        content: `[OOC - Character Update]: The user is playing as ${this.characterName || 'an unknown character'}. Description: ${this.characterDescription}`,
+      });
+    }
+    yield* super.streamChatCompletion(injectedMessages);
+  }
+
+  override async *streamChatCompletionWithTools(
+    newMessages: ChatMessage[],
+  ): AsyncGenerator<StreamChunk, void, unknown> {
+    const injectedMessages = [...newMessages];
+    if (this.characterDescription) {
+      injectedMessages.unshift({
+        id: Date.now().toString() + '-sys-injected',
+        role: 'system',
+        content: `[OOC - Character Update]: The user is playing as ${this.characterName || 'an unknown character'}. Description: ${this.characterDescription}`,
+      });
+    }
+    yield* super.streamChatCompletionWithTools(injectedMessages);
   }
 
   public async *generateCharacter(params: {
