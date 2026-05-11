@@ -6,6 +6,7 @@ export class TextAdventureCore extends ChatCore {
   public characterName: string = '';
   public characterDescription: string = '';
   public scenarioRequest: string = '';
+  public outputLanguage: string = 'Same as the user input language';
 
   constructor() {
     super();
@@ -70,6 +71,8 @@ export class TextAdventureCore extends ChatCore {
       getStorage('text-adventure-characterDescription') || '';
     this.scenarioRequest =
       getStorage('text-adventure-scenarioRequest') || '';
+    this.outputLanguage =
+      getStorage('text-adventure-outputLanguage') || 'Same as the user input language';
   }
 
   override saveChatState() {
@@ -86,6 +89,10 @@ export class TextAdventureCore extends ChatCore {
     setStorage(
       'text-adventure-scenarioRequest',
       this.scenarioRequest,
+    );
+    setStorage(
+      'text-adventure-outputLanguage',
+      this.outputLanguage,
     );
   }
 
@@ -119,7 +126,8 @@ export class TextAdventureCore extends ChatCore {
         role: 'system',
         content: `You are an assistant helping the player decide what to say or do next in their text adventure.
 Analyze the story history. Provide a brief, single action or dialogue for the player character to take next.
-Do NOT narrate the outcome or speak for other characters. Output ONLY the plain text that should go into the user's input box. You must NOT use JSON or tool formats.`,
+Do NOT narrate the outcome or speak for other characters. Output ONLY the plain text that should go into the user's input box. You must NOT use JSON or tool formats.
+${this.outputLanguage ? `[OOC - Output Language]: You must output the action/dialogue in the following language: ${this.outputLanguage}. Note: "the user" here refers to the human playing the game, not your "user" role in this chat thread.` : ''}`,
       },
       ...plainTextHistory,
     ];
@@ -152,9 +160,16 @@ Do NOT narrate the outcome or speak for other characters. Output ONLY the plain 
     const injectedMessages = [...newMessages];
     if (this.characterDescription) {
       injectedMessages.unshift({
-        id: Date.now().toString() + '-sys-injected',
+        id: Date.now().toString() + '-sys-injected-char',
         role: 'system',
         content: `[OOC - Character Update]: The user is playing as ${this.characterName || 'an unknown character'}. Description: ${this.characterDescription}`,
+      });
+    }
+    if (this.outputLanguage) {
+      injectedMessages.unshift({
+        id: Date.now().toString() + '-sys-injected-lang',
+        role: 'system',
+        content: `[OOC - Output Language]: You must use the following language for all your outputs, responses, narrations, and character dialogues: ${this.outputLanguage}. Note: "the user" here refers to the human playing the game, not your "user" role in this chat thread.`,
       });
     }
     yield* super.streamChatCompletion(injectedMessages);
@@ -166,9 +181,16 @@ Do NOT narrate the outcome or speak for other characters. Output ONLY the plain 
     const injectedMessages = [...newMessages];
     if (this.characterDescription) {
       injectedMessages.unshift({
-        id: Date.now().toString() + '-sys-injected',
+        id: Date.now().toString() + '-sys-injected-char',
         role: 'system',
         content: `[OOC - Character Update]: The user is playing as ${this.characterName || 'an unknown character'}. Description: ${this.characterDescription}`,
+      });
+    }
+    if (this.outputLanguage) {
+      injectedMessages.unshift({
+        id: Date.now().toString() + '-sys-injected-lang',
+        role: 'system',
+        content: `[OOC - Output Language]: You must use the following language for all your outputs, responses, narrations, and character dialogues: ${this.outputLanguage}. Note: "the user" here refers to the human playing the game, not your "user" role in this chat thread.`,
       });
     }
     yield* super.streamChatCompletionWithTools(injectedMessages);
@@ -183,7 +205,8 @@ Do NOT narrate the outcome or speak for other characters. Output ONLY the plain 
         id: 'sys-char-gen',
         role: 'system',
         content:
-          'You are a creative assistant helping a player set up a character for a text adventure. Output the character details using the provided tool.',
+          `You are a creative assistant helping a player set up a character for a text adventure. Output the character details using the provided tool.
+${this.outputLanguage ? `[OOC - Output Language]: You must use the following language for all your outputs and tool calls: ${this.outputLanguage}. Note: "the user" here refers to the human playing the game, not your "user" role in this chat thread.` : ''}`,
       },
       {
         id: 'user-char-gen',
