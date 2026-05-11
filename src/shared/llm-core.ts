@@ -1,3 +1,5 @@
+import { getStorage, setStorage } from './storage.js';
+
 export interface ToolCall {
   id: string;
   type: 'function';
@@ -33,21 +35,44 @@ export interface Model {
 export class LLMCore {
   public apiKey: string = '';
   public model: string = 'google/gemini-2.5-flash';
+  public providerPrefs: {
+    order: string[];
+    allowFallbacks: boolean;
+    dataCollection: 'allow' | 'deny';
+    zdr: boolean;
+  } = {
+    order: ['deepinfra'],
+    allowFallbacks: true,
+    dataCollection: 'deny',
+    zdr: true,
+  };
 
   constructor() {
     this.loadState();
   }
 
   public loadState() {
-    this.apiKey = localStorage.getItem('shared-openrouter-apiKey') || '';
+    this.apiKey = getStorage('shared-openrouter-apiKey') || '';
     this.model =
-      localStorage.getItem('shared-openrouter-model') ||
+      getStorage('shared-openrouter-model') ||
       'google/gemini-2.5-flash';
+    try {
+      const savedPrefs = getStorage('shared-openrouter-providerPrefs');
+      if (savedPrefs) {
+        this.providerPrefs = JSON.parse(savedPrefs);
+      }
+    } catch {
+      // Ignored
+    }
   }
 
   public saveState() {
-    localStorage.setItem('shared-openrouter-apiKey', this.apiKey);
-    localStorage.setItem('shared-openrouter-model', this.model);
+    setStorage('shared-openrouter-apiKey', this.apiKey);
+    setStorage('shared-openrouter-model', this.model);
+    setStorage(
+      'shared-openrouter-providerPrefs',
+      JSON.stringify(this.providerPrefs),
+    );
   }
 
   public async fetchModels(): Promise<Model[]> {
@@ -86,6 +111,12 @@ export class LLMCore {
             body: JSON.stringify({
               model: this.model,
               messages,
+              provider: {
+                order: this.providerPrefs.order,
+                allow_fallbacks: this.providerPrefs.allowFallbacks,
+                data_collection: this.providerPrefs.dataCollection,
+                zdr: this.providerPrefs.zdr,
+              },
             }),
           },
         );
@@ -117,6 +148,12 @@ export class LLMCore {
         const body: any = {
           model: this.model,
           messages,
+          provider: {
+            order: this.providerPrefs.order,
+            allow_fallbacks: this.providerPrefs.allowFallbacks,
+            data_collection: this.providerPrefs.dataCollection,
+            zdr: this.providerPrefs.zdr,
+          },
         };
 
         if (tools && tools.length > 0) {
@@ -178,6 +215,12 @@ export class LLMCore {
         model: this.model,
         messages: messages,
         stream: true,
+        provider: {
+          order: this.providerPrefs.order,
+          allow_fallbacks: this.providerPrefs.allowFallbacks,
+          data_collection: this.providerPrefs.dataCollection,
+          zdr: this.providerPrefs.zdr,
+        },
       }),
     });
 
@@ -230,6 +273,12 @@ export class LLMCore {
       model: this.model,
       messages: messages,
       stream: true,
+      provider: {
+        order: this.providerPrefs.order,
+        allow_fallbacks: this.providerPrefs.allowFallbacks,
+        data_collection: this.providerPrefs.dataCollection,
+        zdr: this.providerPrefs.zdr,
+      },
     };
 
     if (tools && tools.length > 0) {

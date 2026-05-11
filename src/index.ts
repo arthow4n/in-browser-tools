@@ -12,6 +12,7 @@ const tools = [
   { name: 'Repo Chat', path: 'repo-chat.html' },
   { name: 'Text Adventure Writer', path: 'text-adventure-writer.html' },
   { name: 'Basic Auth Generator', path: 'basic-auth-generator.html' },
+  { name: 'Settings', path: 'settings.html' },
 ];
 
 const list = document.getElementById('tools-list');

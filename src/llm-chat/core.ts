@@ -8,6 +8,7 @@ import {
   PromptImproverConfig,
 } from '../shared/prompt-improver-core.js';
 import { AgentTool } from './tools/index.js';
+import { getStorage, setStorage } from '../shared/storage.js';
 
 export interface ChatMessage extends SharedChatMessage {
   id: string; // Override to make it required
@@ -38,12 +39,12 @@ export class ChatCore extends LLMCore {
 
   loadChatState() {
     this.systemPrompt =
-      localStorage.getItem('llm-chat-systemPrompt') ||
+      getStorage('llm-chat-systemPrompt') ||
       'You are a helpful assistant.';
 
     try {
       this.savedPrompts = JSON.parse(
-        localStorage.getItem('llm-chat-savedPrompts') || '[]',
+        getStorage('llm-chat-savedPrompts') || '[]',
       );
     } catch {
       this.savedPrompts = [];
@@ -51,16 +52,16 @@ export class ChatCore extends LLMCore {
 
     try {
       this.history = JSON.parse(
-        localStorage.getItem('llm-chat-history') || '[]',
+        getStorage('llm-chat-history') || '[]',
       );
     } catch {
       this.history = [];
     }
 
-    this.toolsEnabled = localStorage.getItem('llm-chat-toolsEnabled') === 'true';
+    this.toolsEnabled = getStorage('llm-chat-toolsEnabled') === 'true';
     try {
       const disabled = JSON.parse(
-        localStorage.getItem('llm-chat-disabledTools') || '[]',
+        getStorage('llm-chat-disabledTools') || '[]',
       );
       this.disabledTools = new Set(disabled);
     } catch {
@@ -69,14 +70,14 @@ export class ChatCore extends LLMCore {
   }
 
   saveChatState() {
-    localStorage.setItem('llm-chat-systemPrompt', this.systemPrompt);
-    localStorage.setItem(
+    setStorage('llm-chat-systemPrompt', this.systemPrompt);
+    setStorage(
       'llm-chat-savedPrompts',
       JSON.stringify(this.savedPrompts),
     );
-    localStorage.setItem('llm-chat-history', JSON.stringify(this.history));
-    localStorage.setItem('llm-chat-toolsEnabled', this.toolsEnabled.toString());
-    localStorage.setItem('llm-chat-disabledTools', JSON.stringify(Array.from(this.disabledTools)));
+    setStorage('llm-chat-history', JSON.stringify(this.history));
+    setStorage('llm-chat-toolsEnabled', this.toolsEnabled.toString());
+    setStorage('llm-chat-disabledTools', JSON.stringify(Array.from(this.disabledTools)));
   }
 
   isToolEnabled(name: string): boolean {
