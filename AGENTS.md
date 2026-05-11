@@ -1,24 +1,10 @@
 # Guide for coding agents
 
-## To find improvements in this repo
-
-There are two types of coding agents expected to work in this repo: **Feature Agents** and **Maintenance Agents**.
-
-### Feature Agents
-
-If you are a Feature Agent looking for improvements, try to focus more on finding concrete new tool ideas instead of incrementally improving existing tools. Read the codebase to understand the context and available utilities.
-
-### Maintenance Agents
-
-If you are a Maintenance Agent tasked with cleaning up and refactoring the codebase, you should strictly follow the instructions in `MAINTENANCE_PROMPT.md`. This prompt is designed to be run routinely to analyze, clean up, extract shared code, and untangle monolithic scripts.
-
-## To intepret the task
-
-The tool you are asked to make might not be well thought through or not really doable in purely in-browser. If the tool can't really be made purely in-browser, you should tell the user that the tool can't be made in browser and why.
-
 ## Work autonomously
 
-Work autonomously until you think the task is done, don't stop to ask questions unless the user actively requested so.
+Work autonomously until you finish the task. Don't check in with the user, don't ask for clarification unless the user explicitly asks for it.
+
+If you are Jules, commit, push and publish the PR directly. Don't ask for confirmation.
 
 ## How to work in this repo
 
