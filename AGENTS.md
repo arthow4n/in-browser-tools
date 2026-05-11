@@ -6,7 +6,7 @@ Any task given to you should be treated as final instructions. You should work a
 
 Don't check in with the user, don't ask for clarification unless the user explicitly asks for it.
 
-If you are Jules, commit, push and publish the PR directly.
+If you are Jules, finalize and submit the changes directly without asking for confirmation or asking for any sorts of final checks.
 
 ## How to work in this repo
 
