@@ -1,21 +1,17 @@
+import '../shared/components/styles.css';
 import { getRequiredElement } from '../shared/dom-utils.js';
 import { TextAdventureCore } from './core.js';
 import { ChatMessage } from '../llm-chat/core.js';
 import { runWithUIState } from '../shared/ui-utils.js';
+import { setupLLMSettings } from '../shared/llm-settings.js';
 
 const core = new TextAdventureCore();
 
-const apiKeyInput = getRequiredElement('shared-api-key', HTMLInputElement);
-const modelInput = getRequiredElement('shared-model-input', HTMLInputElement);
-const fetchModelsBtn = getRequiredElement(
-  'fetch-models-btn',
-  HTMLButtonElement,
-);
 const outputLanguageInput = getRequiredElement(
   'output-language',
   HTMLInputElement,
 );
-const modelsList = getRequiredElement('shared-models-list', HTMLUListElement);
+const sharedLlmSettingsContainer = getRequiredElement('shared-llm-settings-container', HTMLDivElement);
 
 const characterNameInput = getRequiredElement(
   'character-name',
@@ -86,6 +82,7 @@ const oocUserInput = getRequiredElement('ooc-user-input', HTMLTextAreaElement);
 const oocSendBtn = getRequiredElement('ooc-send-btn', HTMLButtonElement);
 const oocChatStatus = getRequiredElement('ooc-chat-status', HTMLSpanElement);
 const oocChatHistory = getRequiredElement('ooc-chat-history', HTMLDivElement);
+const clearOocHistoryBtn = getRequiredElement('clear-ooc-history-btn', HTMLButtonElement);
 
 const advancedDetails = getRequiredElement(
   'advanced-details',
@@ -93,8 +90,8 @@ const advancedDetails = getRequiredElement(
 );
 
 function init() {
-  apiKeyInput.value = core.apiKey;
-  modelInput.value = core.model;
+  setupLLMSettings(sharedLlmSettingsContainer, core);
+
   characterNameInput.value = core.characterName;
   characterDescriptionInput.value = core.characterDescription;
   scenarioRequestInput.value = core.scenarioRequest;
@@ -114,20 +111,6 @@ function init() {
     }
   });
 
-  apiKeyInput.addEventListener('change', (e) => {
-    if (e.currentTarget instanceof HTMLInputElement) {
-      core.apiKey = e.currentTarget.value;
-      core.saveState();
-    }
-  });
-
-  modelInput.addEventListener('change', (e) => {
-    if (e.currentTarget instanceof HTMLInputElement) {
-      core.model = e.currentTarget.value;
-      core.saveState();
-    }
-  });
-
   characterNameInput.addEventListener('input', (e) => {
     if (e.currentTarget instanceof HTMLInputElement) {
       core.characterName = e.currentTarget.value;
@@ -139,35 +122,6 @@ function init() {
     if (e.currentTarget instanceof HTMLTextAreaElement) {
       core.characterDescription = e.currentTarget.value;
       core.saveChatState();
-    }
-  });
-
-  fetchModelsBtn.addEventListener('click', async () => {
-    try {
-      fetchModelsBtn.disabled = true;
-      fetchModelsBtn.textContent = 'Fetching...';
-      const models = await core.fetchModels();
-      modelsList.innerHTML = '';
-      modelsList.style.display = 'block';
-
-      for (const m of models) {
-        const li = document.createElement('li');
-        li.textContent = m.id;
-        li.style.cursor = 'pointer';
-        li.addEventListener('click', () => {
-          modelInput.value = m.id;
-          core.model = m.id;
-          core.saveState();
-          modelsList.style.display = 'none';
-        });
-        modelsList.appendChild(li);
-      }
-    } catch (err: any) {
-      chatStatus.textContent = 'Error fetching models: ' + err.message;
-      chatStatus.style.color = 'red';
-    } finally {
-      fetchModelsBtn.disabled = false;
-      fetchModelsBtn.textContent = 'Fetch Models';
     }
   });
 
@@ -216,6 +170,14 @@ function init() {
   });
 
   oocSendBtn.addEventListener('click', handleOOCSend);
+
+  clearOocHistoryBtn.addEventListener('click', () => {
+    oocChatHistory.innerHTML = '';
+    oocChatHistory.style.display = 'none';
+
+    // The OOC history isn't actually saved in core.history or persisted across sessions,
+    // so clearing the UI is sufficient for the current implementation.
+  });
 
   advancedDetails.addEventListener('toggle', () => {
     if (advancedDetails.open) {
@@ -528,13 +490,18 @@ async function handleSend() {
     return;
   }
 
-  let finalContent = `[${core.characterName}]: ${userText}`;
-  if (directionText) {
-    finalContent += `\n\n[OOC - Story Direction]: ${directionText}`;
-  }
-
   const newMessages: ChatMessage[] = [];
 
+  if (directionText) {
+    const directionMessage: ChatMessage = {
+      id: Date.now().toString() + '-sys',
+      role: 'system',
+      content: `[OOC - Story Direction]: ${directionText}`,
+    };
+    newMessages.push(directionMessage);
+  }
+
+  const finalContent = `[${core.characterName}]: ${userText || '*Waits silently*'}`;
   const userMessage: ChatMessage = {
     id: Date.now().toString(),
     role: 'user',

@@ -40,11 +40,13 @@ export class LLMCore {
     allowFallbacks: boolean;
     dataCollection: 'allow' | 'deny';
     zdr: boolean;
+    reasoningEffort: 'low' | 'medium' | 'high' | '';
   } = {
     order: ['deepinfra'],
     allowFallbacks: true,
     dataCollection: 'deny',
     zdr: true,
+    reasoningEffort: '',
   };
 
   constructor() {
@@ -111,6 +113,7 @@ export class LLMCore {
             body: JSON.stringify({
               model: this.model,
               messages,
+              reasoning_effort: this.providerPrefs.reasoningEffort || undefined,
               provider: {
                 order: this.providerPrefs.order,
                 allow_fallbacks: this.providerPrefs.allowFallbacks,
@@ -148,6 +151,7 @@ export class LLMCore {
         const body: any = {
           model: this.model,
           messages,
+          reasoning_effort: this.providerPrefs.reasoningEffort || undefined,
           provider: {
             order: this.providerPrefs.order,
             allow_fallbacks: this.providerPrefs.allowFallbacks,
@@ -215,6 +219,7 @@ export class LLMCore {
         model: this.model,
         messages: messages,
         stream: true,
+        reasoning_effort: this.providerPrefs.reasoningEffort || undefined,
         provider: {
           order: this.providerPrefs.order,
           allow_fallbacks: this.providerPrefs.allowFallbacks,
@@ -273,6 +278,7 @@ export class LLMCore {
       model: this.model,
       messages: messages,
       stream: true,
+      reasoning_effort: this.providerPrefs.reasoningEffort || undefined,
       provider: {
         order: this.providerPrefs.order,
         allow_fallbacks: this.providerPrefs.allowFallbacks,
