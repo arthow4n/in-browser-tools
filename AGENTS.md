@@ -46,6 +46,7 @@ Keep everything simple, but leave some spacing between elements, so they are cli
 Adopt a mobile-first design:
 
 - Always include the `<meta name="viewport" content="width=device-width, initial-scale=1.0" />` tag in the `<head>` of HTML files.
+- **Shared UI Components**: Always import `src/shared/components/styles.css` in your tool's entry `index.ts` to use shared CSS styles. Use standard classes like `.btn-primary`, `.btn-danger`, `.input-group`, and `.panel` instead of inline styling or custom `<style>` tags to maintain a consistent UI.
 - Ensure layouts wrap properly on small screens (e.g. use `display: flex; flex-wrap: wrap;` or media queries for CSS grids). Input fields and buttons should wrap to the next line on mobile rather than overflowing.
 - Use `box-sizing: border-box` globally or for sizing elements to prevent padding/borders from breaking width limits.
 - Avoid hardcoded fixed widths (e.g. `width: 300px`); use `width: 100%; max-width: 300px;` instead.
@@ -62,6 +63,8 @@ You MUST run the pre-push checks and fix any issues raised during the pre-push c
 - `npm run test` and ensure they pass. These tests act as living documents of the expected features, you should add tests or update the existing tests if you are making changes. Double check if the tests cover your changes.
 
 ## Coding conventions
+
+- **Component Reuse**: Actively extract new reusable UI components and styles into `src/shared/components/` when valid to build up a design system.
 
 - Prefer object parameters (named arguments) to positional arguments for functions to improve readability.
 - Disallow optional arguments with default values. All arguments should be explicitly declared and passed to functions.
