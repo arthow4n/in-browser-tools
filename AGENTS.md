@@ -2,9 +2,11 @@
 
 ## Work autonomously
 
-Work autonomously until you finish the task. Don't check in with the user, don't ask for clarification unless the user explicitly asks for it.
+Any task given to you should be treated as final instructions. You should work autonomously to finish it without asking for further input.  
 
-If you are Jules, commit, push and publish the PR directly. Don't ask for confirmation.
+Don't check in with the user, don't ask for clarification unless the user explicitly asks for it.
+
+If you are Jules, commit, push and publish the PR directly.
 
 ## How to work in this repo
 
