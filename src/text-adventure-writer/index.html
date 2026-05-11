@@ -104,25 +104,10 @@
     <section id="settings-section">
       <h2>Settings</h2>
       <div id="llm-settings-container">
-        <label for="shared-api-key">OpenRouter API Key:</label>
-        <input type="password" id="shared-api-key" placeholder="sk-or-v1-..." />
-
-        <label for="shared-model-input">Model:</label>
-        <input
-          type="text"
-          id="shared-model-input"
-          list="shared-models-list"
-          placeholder="e.g. google/gemini-2.5-flash"
-        />
-        <ul id="shared-models-list" style="display: none"></ul>
-        <button id="fetch-models-btn" style="margin-top: 5px">
-          Fetch Models
-        </button>
-
-        <div style="margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px">
-          <label for="output-language">Output Language:</label>
-          <input type="text" id="output-language" placeholder="Same as the user input language" />
-        </div>
+      </div>
+      <div style="margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px">
+        <label for="output-language">Output Language:</label>
+        <input type="text" id="output-language" placeholder="Same as the user input language" />
       </div>
     </section>
 
@@ -310,6 +295,7 @@
         <div id="ooc-chat-history" class="history-container" style="max-height: 200px; display: none; margin-bottom: 10px; background: white; padding: 10px; border-radius: 5px; border: 1px solid #ccc;"></div>
         <textarea id="ooc-user-input" rows="2" placeholder="Ask a question about the game, e.g., 'What are my options?' or 'What is in my inventory?'"></textarea>
         <button id="ooc-send-btn" style="width: 100%; padding: 10px; font-weight: bold; background-color: #9c27b0; color: white; border: none;">Ask GM</button>
+        <button id="clear-ooc-history-btn" style="width: 100%; margin-top: 10px; margin-bottom: 20px; background-color: #f44336; color: white; padding: 10px; font-weight: bold; border: none;">Clear GM History</button>
         <span id="ooc-chat-status" style="font-weight: bold; display: block; margin-top: 10px;"></span>
       </section>
 
