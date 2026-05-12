@@ -32,49 +32,174 @@ export interface Model {
   name: string;
 }
 
+export interface ProviderPrefs {
+  order: string[];
+  allowFallbacks: boolean;
+  dataCollection: 'allow' | 'deny';
+  zdr: boolean;
+  reasoningEffort: 'xhigh' | 'high' | 'medium' | 'low' | 'minimal' | 'none' | '';
+}
+
+export interface OpenRouterPreset {
+  id: string;
+  name: string;
+  apiKey: string;
+  model: string;
+  providerPrefs: ProviderPrefs;
+}
+
 export class LLMCore {
-  public apiKey: string = '';
-  public model: string = 'google/gemini-2.5-flash';
-  public providerPrefs: {
-    order: string[];
-    allowFallbacks: boolean;
-    dataCollection: 'allow' | 'deny';
-    zdr: boolean;
-    reasoningEffort: 'xhigh' | 'high' | 'medium' | 'low' | 'minimal' | 'none' | '';
-  } = {
-    order: ['deepinfra'],
-    allowFallbacks: true,
-    dataCollection: 'deny',
-    zdr: true,
-    reasoningEffort: '',
-  };
+  public presets: OpenRouterPreset[] = [];
+  public activePresetId: string = '';
 
   constructor() {
     this.loadState();
   }
 
+  // Proxies for backwards compatibility
+  get apiKey(): string {
+    const active = this.presets.find(p => p.id === this.activePresetId);
+    return active ? active.apiKey : '';
+  }
+
+  set apiKey(val: string) {
+    const active = this.presets.find(p => p.id === this.activePresetId);
+    if (active) active.apiKey = val;
+  }
+
+  get model(): string {
+    const active = this.presets.find(p => p.id === this.activePresetId);
+    return active ? active.model : 'google/gemini-2.5-flash';
+  }
+
+  set model(val: string) {
+    const active = this.presets.find(p => p.id === this.activePresetId);
+    if (active) active.model = val;
+  }
+
+  get providerPrefs(): ProviderPrefs {
+    const active = this.presets.find(p => p.id === this.activePresetId);
+    if (active) return active.providerPrefs;
+    // Return dummy if not found, though should not happen if state is loaded
+    return {
+      order: ['deepinfra'],
+      allowFallbacks: true,
+      dataCollection: 'deny',
+      zdr: true,
+      reasoningEffort: '',
+    };
+  }
+
+  set providerPrefs(val: ProviderPrefs) {
+    const active = this.presets.find(p => p.id === this.activePresetId);
+    if (active) active.providerPrefs = val;
+  }
+
+  public addPreset(name: string): OpenRouterPreset {
+    const newPreset: OpenRouterPreset = {
+      id: crypto.randomUUID(),
+      name,
+      apiKey: '',
+      model: 'google/gemini-2.5-flash',
+      providerPrefs: {
+        order: ['deepinfra'],
+        allowFallbacks: true,
+        dataCollection: 'deny',
+        zdr: true,
+        reasoningEffort: '',
+      }
+    };
+    this.presets.push(newPreset);
+    this.activePresetId = newPreset.id;
+    this.saveState();
+    return newPreset;
+  }
+
+  public renamePreset(id: string, newName: string) {
+    const preset = this.presets.find(p => p.id === id);
+    if (preset) {
+      preset.name = newName;
+      this.saveState();
+    }
+  }
+
+  public deletePreset(id: string) {
+    if (this.presets.length <= 1) return; // Must have at least one preset
+    this.presets = this.presets.filter(p => p.id !== id);
+    if (this.activePresetId === id) {
+      this.activePresetId = this.presets[0].id;
+    }
+    this.saveState();
+  }
+
+  public switchPreset(id: string) {
+    if (this.presets.find(p => p.id === id)) {
+      this.activePresetId = id;
+      this.saveState();
+    }
+  }
+
   public loadState() {
-    this.apiKey = getStorage('shared-openrouter-apiKey') || '';
-    this.model =
-      getStorage('shared-openrouter-model') ||
-      'google/gemini-2.5-flash';
     try {
-      const savedPrefs = getStorage('shared-openrouter-providerPrefs');
-      if (savedPrefs) {
-        this.providerPrefs = JSON.parse(savedPrefs);
+      const savedPresets = getStorage('shared-openrouter-presets');
+      if (savedPresets) {
+        this.presets = JSON.parse(savedPresets);
       }
     } catch {
       // Ignored
     }
+
+    this.activePresetId = getStorage('shared-openrouter-activePresetId') || '';
+
+    // Migration from old single-config layout if presets are empty
+    if (!this.presets || this.presets.length === 0) {
+      const legacyApiKey = getStorage('shared-openrouter-apiKey') || '';
+      const legacyModel = getStorage('shared-openrouter-model') || 'google/gemini-2.5-flash';
+      let legacyPrefs: ProviderPrefs = {
+        order: ['deepinfra'],
+        allowFallbacks: true,
+        dataCollection: 'deny',
+        zdr: true,
+        reasoningEffort: '',
+      };
+      try {
+        const savedPrefs = getStorage('shared-openrouter-providerPrefs');
+        if (savedPrefs) {
+          legacyPrefs = { ...legacyPrefs, ...JSON.parse(savedPrefs) };
+        }
+      } catch {
+        // Ignored
+      }
+
+      const defaultPreset: OpenRouterPreset = {
+        id: crypto.randomUUID(),
+        name: 'Default Preset',
+        apiKey: legacyApiKey,
+        model: legacyModel,
+        providerPrefs: legacyPrefs,
+      };
+
+      this.presets = [defaultPreset];
+      this.activePresetId = defaultPreset.id;
+      this.saveState();
+    }
+
+    if (!this.presets.find(p => p.id === this.activePresetId)) {
+      this.activePresetId = this.presets[0].id;
+    }
   }
 
   public saveState() {
-    setStorage('shared-openrouter-apiKey', this.apiKey);
-    setStorage('shared-openrouter-model', this.model);
-    setStorage(
-      'shared-openrouter-providerPrefs',
-      JSON.stringify(this.providerPrefs),
-    );
+    setStorage('shared-openrouter-presets', JSON.stringify(this.presets));
+    setStorage('shared-openrouter-activePresetId', this.activePresetId);
+
+    // Also save legacy keys for backwards compatibility in case any old logic still reads them directly without core (shouldn't happen but safe)
+    const active = this.presets.find(p => p.id === this.activePresetId);
+    if (active) {
+      setStorage('shared-openrouter-apiKey', active.apiKey);
+      setStorage('shared-openrouter-model', active.model);
+      setStorage('shared-openrouter-providerPrefs', JSON.stringify(active.providerPrefs));
+    }
   }
 
   public async fetchModels(): Promise<Model[]> {

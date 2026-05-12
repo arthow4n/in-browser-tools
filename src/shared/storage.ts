@@ -4,6 +4,8 @@ export type StorageKey =
   | 'shared-openrouter-apiKey'
   | 'shared-openrouter-model'
   | 'shared-openrouter-providerPrefs'
+  | 'shared-openrouter-presets'
+  | 'shared-openrouter-activePresetId'
   | 'llm-chat-systemPrompt'
   | 'llm-chat-savedPrompts'
   | 'llm-chat-history'
