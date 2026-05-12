@@ -8,6 +8,7 @@ import '../shared/components/styles.css';
 const core = new LLMCore();
 
 export const App: React.FC = () => {
+  const [activePresetId, setActivePresetId] = useState(core.activePresetId);
   const [apiKey, setApiKey] = useState(core.apiKey);
   const [model, setModel] = useState(core.model);
   const [reasoningEffort, setReasoningEffort] = useState(core.providerPrefs.reasoningEffort || '');
@@ -21,16 +22,71 @@ export const App: React.FC = () => {
 
   const { isLoading, statusText, isError, runAction } = useAsyncAction();
 
+  // Sync state variables when preset changes
   useEffect(() => {
+    setApiKey(core.apiKey);
+    setModel(core.model);
+    setReasoningEffort(core.providerPrefs.reasoningEffort || '');
+    setOrder(core.providerPrefs.order.join(', '));
+    setDataCollection(core.providerPrefs.dataCollection);
+    setAllowFallbacks(core.providerPrefs.allowFallbacks);
+    setZdr(core.providerPrefs.zdr);
+  }, [activePresetId]);
+
+  // Update core and save state when inputs change
+  useEffect(() => {
+    if (core.activePresetId !== activePresetId) return; // Prevent saving old data while switching
     core.apiKey = apiKey;
     core.model = model;
-    core.providerPrefs.reasoningEffort = reasoningEffort as '' | 'xhigh' | 'high' | 'medium' | 'low' | 'minimal' | 'none';
-    core.providerPrefs.order = order ? order.split(',').map(s => s.trim()).filter(Boolean) : [];
-    core.providerPrefs.dataCollection = dataCollection as 'allow' | 'deny';
-    core.providerPrefs.allowFallbacks = allowFallbacks;
-    core.providerPrefs.zdr = zdr;
+
+    // We must re-assign the entire object or mutating properties directly might not trigger save logic properly if relying on setters
+    const currentPrefs = core.providerPrefs;
+    core.providerPrefs = {
+      ...currentPrefs,
+      reasoningEffort: reasoningEffort as '' | 'xhigh' | 'high' | 'medium' | 'low' | 'minimal' | 'none',
+      order: order ? order.split(',').map(s => s.trim()).filter(Boolean) : [],
+      dataCollection: dataCollection as 'allow' | 'deny',
+      allowFallbacks,
+      zdr
+    };
     core.saveState();
   }, [apiKey, model, reasoningEffort, order, dataCollection, allowFallbacks, zdr]);
+
+  const handleCreatePreset = () => {
+    const name = prompt('Enter a name for the new preset:');
+    if (name) {
+      const newPreset = core.addPreset(name);
+      setActivePresetId(newPreset.id);
+    }
+  };
+
+  const handleRenamePreset = () => {
+    const currentName = core.presets.find(p => p.id === activePresetId)?.name || '';
+    const newName = prompt('Enter a new name for this preset:', currentName);
+    if (newName && newName !== currentName) {
+      core.renamePreset(activePresetId, newName);
+      // Force re-render to update the dropdown name
+      setActivePresetId('');
+      setTimeout(() => setActivePresetId(core.activePresetId), 0);
+    }
+  };
+
+  const handleDeletePreset = () => {
+    if (core.presets.length <= 1) {
+      alert('Cannot delete the last preset.');
+      return;
+    }
+    if (confirm('Are you sure you want to delete this preset?')) {
+      core.deletePreset(activePresetId);
+      setActivePresetId(core.activePresetId);
+    }
+  };
+
+  const handlePresetChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const id = e.target.value;
+    core.switchPreset(id);
+    setActivePresetId(id);
+  };
 
   const fetchModels = async () => {
     if (!apiKey) {
@@ -77,6 +133,25 @@ export const App: React.FC = () => {
 
       <div id="llm-settings-container">
         <h2>OpenRouter API</h2>
+
+        <div style={{ marginBottom: '20px', padding: '15px', background: '#f5f5f5', borderRadius: '4px', border: '1px solid #ddd' }}>
+          <label htmlFor="preset-select" style={{ fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>Active Preset:</label>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <select
+              id="preset-select"
+              value={activePresetId}
+              onChange={handlePresetChange}
+              style={{ flexGrow: 1, padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+            >
+              {core.presets.map(p => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+            <Button onClick={handleCreatePreset} style={{ padding: '8px 12px' }}>New</Button>
+            <Button onClick={handleRenamePreset} style={{ padding: '8px 12px' }}>Rename</Button>
+            <Button variant="danger" onClick={handleDeletePreset} disabled={core.presets.length <= 1} style={{ padding: '8px 12px' }}>Delete</Button>
+          </div>
+        </div>
 
         <Input
           label="API Key:"
@@ -146,7 +221,7 @@ export const App: React.FC = () => {
         <small style={{ color: '#666', display: 'block', marginBottom: '10px' }}>Comma separated provider slugs.</small>
 
         <label htmlFor="provider-data-collection">Data Collection:</label>
-        <select id="provider-data-collection" value={dataCollection} onChange={(e) => setDataCollection(e.target.value)}>
+        <select id="provider-data-collection" value={dataCollection} onChange={(e) => setDataCollection(e.target.value as 'allow' | 'deny')}>
           <option value="deny">Deny</option>
           <option value="allow">Allow</option>
         </select>
