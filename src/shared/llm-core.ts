@@ -40,7 +40,7 @@ export class LLMCore {
     allowFallbacks: boolean;
     dataCollection: 'allow' | 'deny';
     zdr: boolean;
-    reasoningEffort: 'low' | 'medium' | 'high' | '';
+    reasoningEffort: 'xhigh' | 'high' | 'medium' | 'low' | 'minimal' | 'none' | '';
   } = {
     order: ['deepinfra'],
     allowFallbacks: true,

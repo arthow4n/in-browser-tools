@@ -34,7 +34,7 @@ const notifyChange = () => {
   core.apiKey = apiKeyInput.value.trim();
   core.model = modelInput.value.trim();
 
-  core.providerPrefs.reasoningEffort = providerReasoningEffortSelect.value as '' | 'low' | 'medium' | 'high';
+  core.providerPrefs.reasoningEffort = providerReasoningEffortSelect.value as '' | 'xhigh' | 'high' | 'medium' | 'low' | 'minimal' | 'none';
   const orderStr = providerOrderInput.value.trim();
   core.providerPrefs.order = orderStr ? orderStr.split(',').map(s => s.trim()).filter(Boolean) : [];
   core.providerPrefs.dataCollection = providerDataCollectionSelect.value as 'allow' | 'deny';
