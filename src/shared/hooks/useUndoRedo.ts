@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 
 export function useUndoRedo<T>(
   initialState: T,
-  isEqual: (a: T, b: T) => boolean = (a, b) => a === b
+  isEqual: (a: T, b: T) => boolean = (a, b) => a === b,
 ) {
   const [past, setPast] = useState<T[]>([]);
   const [present, setPresent] = useState<T>(initialState);
@@ -15,7 +15,7 @@ export function useUndoRedo<T>(
       setPresent(newState);
       setFuture([]);
     },
-    [present, isEqual]
+    [present, isEqual],
   );
 
   const undo = useCallback(() => {

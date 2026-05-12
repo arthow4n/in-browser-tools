@@ -22,7 +22,10 @@ const historyContainer = getRequiredElement(
   HTMLDivElement,
 );
 
-const restartChatBtn = getRequiredElement('restart-chat-btn', HTMLButtonElement);
+const restartChatBtn = getRequiredElement(
+  'restart-chat-btn',
+  HTMLButtonElement,
+);
 const clearAllBtn = getRequiredElement('clear-all-btn', HTMLButtonElement);
 
 const chatInput = getRequiredElement('chat-input', HTMLTextAreaElement);
@@ -36,7 +39,9 @@ setupLLMSettings(llmSettingsContainer, core);
 function renderHistory() {
   historyContainer.innerHTML = '';
   for (const msg of core.history) {
-    historyContainer.appendChild(createMessageElement(msg, core, renderHistory));
+    historyContainer.appendChild(
+      createMessageElement(msg, core, renderHistory),
+    );
   }
   historyContainer.scrollTop = historyContainer.scrollHeight;
 }
@@ -77,7 +82,7 @@ cloneBtn.addEventListener('click', async () => {
       core.saveChatState();
       renderHistory();
     },
-    'Cloned and seeded successfully.'
+    'Cloned and seeded successfully.',
   );
 });
 
@@ -123,10 +128,16 @@ async function handleChatGeneration() {
             content: '',
           };
           core.history.push(currentAssistantMsg);
-          currentAssistantEl = createMessageElement(currentAssistantMsg, core, renderHistory);
+          currentAssistantEl = createMessageElement(
+            currentAssistantMsg,
+            core,
+            renderHistory,
+          );
           currentAssistantEl.classList.add('streaming');
           historyContainer.appendChild(currentAssistantEl);
-          currentContentDiv = currentAssistantEl.querySelector('.content') as HTMLDivElement;
+          currentContentDiv = currentAssistantEl.querySelector(
+            '.content',
+          ) as HTMLDivElement;
         }
 
         if (textChunk) {
@@ -146,6 +157,6 @@ async function handleChatGeneration() {
 
       core.saveChatState();
     },
-    ''
+    '',
   );
 }

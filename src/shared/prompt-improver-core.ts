@@ -28,7 +28,14 @@ export interface SetupData {
 }
 
 export interface LogEvent {
-  type: 'info' | 'implementer' | 'tester' | 'evaluator' | 'result' | 'cost_estimation' | 'progress';
+  type:
+    | 'info'
+    | 'implementer'
+    | 'tester'
+    | 'evaluator'
+    | 'result'
+    | 'cost_estimation'
+    | 'progress';
   message: string;
   data?: any;
 }
@@ -66,7 +73,8 @@ export class PromptImproverCore {
     this.config = config;
     this.llmCore = llmCore;
     // 1 (setup) + maxRounds * (1 (implementer) + branchFactor * 2 (tester + evaluator))
-    this.totalEstimatedApiCalls = 1 + this.config.maxLoopRound * (1 + this.config.branchFactor * 2);
+    this.totalEstimatedApiCalls =
+      1 + this.config.maxLoopRound * (1 + this.config.branchFactor * 2);
   }
 
   private countWords(text: string): number {
@@ -84,12 +92,16 @@ export class PromptImproverCore {
         completed: this.completedApiCalls,
         total: this.totalEstimatedApiCalls,
         words: this.totalWordsProcessed,
-      }
+      },
     };
   }
 
   public async *run(): AsyncGenerator<LogEvent, IterationResult[]> {
-    yield { type: 'cost_estimation', message: 'Estimated Cost', data: { apiCalls: this.totalEstimatedApiCalls } };
+    yield {
+      type: 'cost_estimation',
+      message: 'Estimated Cost',
+      data: { apiCalls: this.totalEstimatedApiCalls },
+    };
     yield { type: 'info', message: 'Starting Setup Phase (Adapter Agent)...' };
 
     const setupPrompt = `
@@ -111,7 +123,9 @@ Reply ONLY with valid JSON. Do not include any other text.
     const setupResponse = await this.llmCore.callLLM([
       { role: 'user' as const, content: setupPrompt },
     ]);
-    yield this.updateProgress(this.countWords(setupPrompt) + this.countWords(setupResponse));
+    yield this.updateProgress(
+      this.countWords(setupPrompt) + this.countWords(setupResponse),
+    );
 
     let setupData: SetupData;
     try {
@@ -181,7 +195,10 @@ Reply ONLY with valid JSON. Do not include any other text.
         },
       ];
 
-      const llmResponse = await this.llmCore.callLLMWithTools(implementerMessages, tools);
+      const llmResponse = await this.llmCore.callLLMWithTools(
+        implementerMessages,
+        tools,
+      );
 
       let proposedPrompts: string[] = [];
       let toolCallJsonStr = '';
@@ -193,26 +210,34 @@ Reply ONLY with valid JSON. Do not include any other text.
             toolCallJsonStr = tc.function.arguments;
             const args = JSON.parse(toolCallJsonStr);
             if (args.strategies && Array.isArray(args.strategies)) {
-              proposedPrompts = args.strategies.map((s: any) => s.rewritten_prompt);
+              proposedPrompts = args.strategies.map(
+                (s: any) => s.rewritten_prompt,
+              );
             }
           } catch (e) {
-             yield { type: 'info', message: 'Error parsing strategies', data: e };
+            yield {
+              type: 'info',
+              message: 'Error parsing strategies',
+              data: e,
+            };
           }
         }
       } else if (llmResponse?.content) {
         // Fallback if the LLM refuses to use tools
-         try {
-             const data = extractJSON(llmResponse.content);
-             if (data.strategies && Array.isArray(data.strategies)) {
-               proposedPrompts = data.strategies.map((s: any) => s.rewritten_prompt);
-             } else {
-               proposedPrompts = [llmResponse.content]; // fallback to single
-             }
-             toolCallJsonStr = llmResponse.content;
-         } catch(e) {
-             proposedPrompts = [llmResponse.content];
-             toolCallJsonStr = llmResponse.content;
-         }
+        try {
+          const data = extractJSON(llmResponse.content);
+          if (data.strategies && Array.isArray(data.strategies)) {
+            proposedPrompts = data.strategies.map(
+              (s: any) => s.rewritten_prompt,
+            );
+          } else {
+            proposedPrompts = [llmResponse.content]; // fallback to single
+          }
+          toolCallJsonStr = llmResponse.content;
+        } catch (e) {
+          proposedPrompts = [llmResponse.content];
+          toolCallJsonStr = llmResponse.content;
+        }
       }
 
       // Ensure we have prompts
@@ -223,7 +248,11 @@ Reply ONLY with valid JSON. Do not include any other text.
       // Limit to branch factor
       proposedPrompts = proposedPrompts.slice(0, this.config.branchFactor);
 
-      yield this.updateProgress(this.countWords(implementerMessages[0].content + implementerMessages[1].content) + this.countWords(toolCallJsonStr));
+      yield this.updateProgress(
+        this.countWords(
+          implementerMessages[0].content + implementerMessages[1].content,
+        ) + this.countWords(toolCallJsonStr),
+      );
 
       yield {
         type: 'implementer',
@@ -244,8 +273,7 @@ Reply ONLY with valid JSON. Do not include any other text.
         // 2. Test Subagent
         yield {
           type: 'tester',
-          message:
-            `Running test scenario with branch ${branch + 1} prompt...`,
+          message: `Running test scenario with branch ${branch + 1} prompt...`,
         };
         const scenario = setupData.testScenarios[0] || 'Hello';
         let testerMessages: any[] = [];
@@ -265,9 +293,18 @@ Reply ONLY with valid JSON. Do not include any other text.
         }
 
         const testOutput = await this.llmCore.callLLM(testerMessages);
-        yield this.updateProgress(this.countWords(testerMessages[0].content + (testerMessages[1] ? testerMessages[1].content : '')) + this.countWords(testOutput));
+        yield this.updateProgress(
+          this.countWords(
+            testerMessages[0].content +
+              (testerMessages[1] ? testerMessages[1].content : ''),
+          ) + this.countWords(testOutput),
+        );
 
-        yield { type: 'tester', message: `Branch ${branch + 1} test complete.`, data: testOutput };
+        yield {
+          type: 'tester',
+          message: `Branch ${branch + 1} test complete.`,
+          data: testOutput,
+        };
 
         // 3. Evaluator
         yield {
@@ -302,7 +339,11 @@ Reply ONLY with valid JSON.
         ];
 
         const evalResponse = await this.llmCore.callLLM(evaluatorMessages);
-        yield this.updateProgress(this.countWords(evaluatorMessages[0].content + evaluatorMessages[1].content) + this.countWords(evalResponse));
+        yield this.updateProgress(
+          this.countWords(
+            evaluatorMessages[0].content + evaluatorMessages[1].content,
+          ) + this.countWords(evalResponse),
+        );
 
         let evalData: any;
         try {
@@ -347,7 +388,12 @@ Reply ONLY with valid JSON.
       currentPrompt = bestResult.prompt;
 
       // Create aggregated feedback
-      feedback = roundResults.map((r) => `Branch ${r.branch} Feedback (Score: ${r.score}):\n${r.feedback}`).join('\n\n');
+      feedback = roundResults
+        .map(
+          (r) =>
+            `Branch ${r.branch} Feedback (Score: ${r.score}):\n${r.feedback}`,
+        )
+        .join('\n\n');
       feedback += `\n\nI have selected the prompt from Branch ${bestResult.branch} as the best to continue from. Please learn from the feedback of all branches.`;
     }
 

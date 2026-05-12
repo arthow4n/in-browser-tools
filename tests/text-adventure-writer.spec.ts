@@ -11,7 +11,9 @@ test.describe('Text Adventure Writer Tool', () => {
     await page.goto('/settings');
     await page.fill('#shared-api-key', 'test-api-key');
     await page.fill('#shared-model-input', 'test-model');
-    await page.locator('#shared-api-key').evaluate(node => node.dispatchEvent(new Event('input')));
+    await page
+      .locator('#shared-api-key')
+      .evaluate((node) => node.dispatchEvent(new Event('input')));
 
     await page.goto('/text-adventure-writer');
 
@@ -23,7 +25,9 @@ test.describe('Text Adventure Writer Tool', () => {
 
     await page.waitForTimeout(100);
     await charInput.evaluate((node) => node.dispatchEvent(new Event('input')));
-    await charDescInput.evaluate((node) => node.dispatchEvent(new Event('input')));
+    await charDescInput.evaluate((node) =>
+      node.dispatchEvent(new Event('input')),
+    );
 
     await page.reload();
     await page.waitForTimeout(100);
@@ -33,7 +37,7 @@ test.describe('Text Adventure Writer Tool', () => {
     page,
   }) => {
     let dialogFired = false;
-    page.on('dialog', async dialog => {
+    page.on('dialog', async (dialog) => {
       dialogFired = true;
       expect(dialog.message()).toBe('Please enter your character name.');
       await dialog.dismiss();
@@ -46,8 +50,8 @@ test.describe('Text Adventure Writer Tool', () => {
     const userInputField = page.locator('textarea').nth(2);
     await userInputField.fill('Hello!');
     await page.evaluate(() => {
-      const btns = Array.from(document.querySelectorAll("button"));
-      const sendBtn = btns.find(b => b.textContent === "Send & Continue");
+      const btns = Array.from(document.querySelectorAll('button'));
+      const sendBtn = btns.find((b) => b.textContent === 'Send & Continue');
       if (sendBtn) sendBtn.click();
     });
 
@@ -81,7 +85,9 @@ test.describe('Text Adventure Writer Tool', () => {
     await page.goto('/settings');
     await page.fill('#shared-api-key', 'test-key');
     await page.fill('#shared-model-input', 'test-model');
-    await page.locator('#shared-api-key').evaluate(node => node.dispatchEvent(new Event('input')));
+    await page
+      .locator('#shared-api-key')
+      .evaluate((node) => node.dispatchEvent(new Event('input')));
 
     await page.goto('/text-adventure-writer');
     const charInput = page.locator('input[type="text"]').nth(1);
@@ -92,10 +98,9 @@ test.describe('Text Adventure Writer Tool', () => {
     const storyDirInput = page.locator('textarea').nth(3);
     await storyDirInput.fill('Make it sudden.');
     await page.evaluate(() => {
-      const btns = Array.from(document.querySelectorAll("button"));
-      const sendBtn = btns.find(b => b.textContent === "Send & Continue");
+      const btns = Array.from(document.querySelectorAll('button'));
+      const sendBtn = btns.find((b) => b.textContent === 'Send & Continue');
       if (sendBtn) sendBtn.click();
     });
-
   });
 });

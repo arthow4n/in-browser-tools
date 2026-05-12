@@ -2,7 +2,7 @@
 
 ## Work autonomously
 
-Any task given to you should be treated as final instructions. You should work autonomously to finish it without asking for further input.  
+Any task given to you should be treated as final instructions. You should work autonomously to finish it without asking for further input.
 
 Don't check in with the user, don't ask for clarification unless the user explicitly asks for it.
 
@@ -53,6 +53,7 @@ You MUST run the pre-push checks and fix any issues raised during the pre-push c
 ## Coding conventions
 
 - **Component Reuse**: Actively extract new reusable UI components and styles into `src/shared/components/` when valid to build up a design system.
+  - To ensure discoverability and maintainability, shared components must export only 1 component per file and the file name must match the component name.
 
 - Prefer object parameters (named arguments) to positional arguments for functions to improve readability.
 - Disallow optional arguments with default values. All arguments should be explicitly declared and passed to functions.

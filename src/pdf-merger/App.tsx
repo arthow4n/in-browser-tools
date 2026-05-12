@@ -1,5 +1,10 @@
 import React, { useState } from 'react';
-import { PageLayout, Panel, Button, Input } from '../shared/components/index.js';
+import {
+  PageLayout,
+  Panel,
+  Button,
+  Input,
+} from '../shared/components/index.js';
 import { PDFDocument } from 'pdf-lib';
 import { useAsyncAction } from '../shared/hooks/useAsyncAction.js';
 
@@ -29,27 +34,31 @@ export const App: React.FC = () => {
 
     setOutputUrl(null);
 
-    await runAction('Merging PDFs...', async () => {
-      const mergedPdf = await PDFDocument.create();
+    await runAction(
+      'Merging PDFs...',
+      async () => {
+        const mergedPdf = await PDFDocument.create();
 
-      for (const file of selectedFiles) {
-        const arrayBuffer = await file.arrayBuffer();
-        const pdfDoc = await PDFDocument.load(arrayBuffer);
-        const copiedPages = await mergedPdf.copyPages(
-          pdfDoc,
-          pdfDoc.getPageIndices(),
-        );
-        copiedPages.forEach((page) => {
-          mergedPdf.addPage(page);
-        });
-      }
+        for (const file of selectedFiles) {
+          const arrayBuffer = await file.arrayBuffer();
+          const pdfDoc = await PDFDocument.load(arrayBuffer);
+          const copiedPages = await mergedPdf.copyPages(
+            pdfDoc,
+            pdfDoc.getPageIndices(),
+          );
+          copiedPages.forEach((page) => {
+            mergedPdf.addPage(page);
+          });
+        }
 
-      const mergedPdfBytes = await mergedPdf.save();
-      const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
+        const mergedPdfBytes = await mergedPdf.save();
+        const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
 
-      setOutputUrl(url);
-    }, 'Done merging!');
+        setOutputUrl(url);
+      },
+      'Done merging!',
+    );
   };
 
   return (
@@ -71,21 +80,44 @@ export const App: React.FC = () => {
             {selectedFiles.map((file, index) => (
               <li key={index}>
                 {file.name}
-                <Button variant="danger" style={{ marginLeft: '10px' }} onClick={() => removeFile(index)}>Remove</Button>
+                <Button
+                  variant="danger"
+                  style={{ marginLeft: '10px' }}
+                  onClick={() => removeFile(index)}
+                >
+                  Remove
+                </Button>
               </li>
             ))}
           </ul>
         </div>
 
-        <Button onClick={handleMerge} loading={isLoading} id="merge-btn" style={{ marginTop: '1em' }}>Merge PDFs</Button>
+        <Button
+          onClick={handleMerge}
+          loading={isLoading}
+          id="merge-btn"
+          style={{ marginTop: '1em' }}
+        >
+          Merge PDFs
+        </Button>
 
-        <div id="status" className="status" style={{ marginTop: '1em', wordWrap: 'break-word', color: isError ? 'red' : 'green' }}>
+        <div
+          id="status"
+          className="status"
+          style={{
+            marginTop: '1em',
+            wordWrap: 'break-word',
+            color: isError ? 'red' : 'green',
+          }}
+        >
           {statusText}
         </div>
 
         {outputUrl && (
           <div id="output" style={{ marginTop: '1em' }}>
-            <a href={outputUrl} download="merged.pdf">Download Merged PDF</a>
+            <a href={outputUrl} download="merged.pdf">
+              Download Merged PDF
+            </a>
           </div>
         )}
       </Panel>

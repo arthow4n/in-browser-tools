@@ -11,7 +11,10 @@ const outputLanguageInput = getRequiredElement(
   'output-language',
   HTMLInputElement,
 );
-const sharedLlmSettingsContainer = getRequiredElement('shared-llm-settings-container', HTMLDivElement);
+const sharedLlmSettingsContainer = getRequiredElement(
+  'shared-llm-settings-container',
+  HTMLDivElement,
+);
 
 const characterNameInput = getRequiredElement(
   'character-name',
@@ -82,7 +85,10 @@ const oocUserInput = getRequiredElement('ooc-user-input', HTMLTextAreaElement);
 const oocSendBtn = getRequiredElement('ooc-send-btn', HTMLButtonElement);
 const oocChatStatus = getRequiredElement('ooc-chat-status', HTMLSpanElement);
 const oocChatHistory = getRequiredElement('ooc-chat-history', HTMLDivElement);
-const clearOocHistoryBtn = getRequiredElement('clear-ooc-history-btn', HTMLButtonElement);
+const clearOocHistoryBtn = getRequiredElement(
+  'clear-ooc-history-btn',
+  HTMLButtonElement,
+);
 
 const advancedDetails = getRequiredElement(
   'advanced-details',
@@ -204,17 +210,23 @@ async function handleOOCSend() {
   oocChatHistory.style.display = 'block';
   oocUserInput.value = '';
 
-  await runWithUIState(oocSendBtn, oocChatStatus, 'Thinking...', async () => {
-    const gmMsgDiv = document.createElement('div');
-    gmMsgDiv.className = 'message system';
-    oocChatHistory.appendChild(gmMsgDiv);
+  await runWithUIState(
+    oocSendBtn,
+    oocChatStatus,
+    'Thinking...',
+    async () => {
+      const gmMsgDiv = document.createElement('div');
+      gmMsgDiv.className = 'message system';
+      oocChatHistory.appendChild(gmMsgDiv);
 
-    const generator = core.generateOOCResponse(question);
-    for await (const chunk of generator) {
-      gmMsgDiv.textContent += chunk;
-      oocChatHistory.scrollTop = oocChatHistory.scrollHeight;
-    }
-  }, '');
+      const generator = core.generateOOCResponse(question);
+      for await (const chunk of generator) {
+        gmMsgDiv.textContent += chunk;
+        oocChatHistory.scrollTop = oocChatHistory.scrollHeight;
+      }
+    },
+    '',
+  );
 }
 
 function createAdvancedMessageElement(msg: ChatMessage): HTMLDivElement {
@@ -249,7 +261,9 @@ function createAdvancedMessageElement(msg: ChatMessage): HTMLDivElement {
     toolDiv.style.whiteSpace = 'pre-wrap';
 
     for (const tc of msg.tool_calls) {
-      const tcText = document.createTextNode(`- ${tc.function.name}(${tc.function.arguments})\n`);
+      const tcText = document.createTextNode(
+        `- ${tc.function.name}(${tc.function.arguments})\n`,
+      );
       toolDiv.appendChild(tcText);
     }
     contentDiv.appendChild(toolDiv);
@@ -367,7 +381,9 @@ function createAdvancedMessageElement(msg: ChatMessage): HTMLDivElement {
         toolDiv.style.whiteSpace = 'pre-wrap';
 
         for (const tc of msg.tool_calls) {
-          const tcText = document.createTextNode(`- ${tc.function.name}(${tc.function.arguments})\n`);
+          const tcText = document.createTextNode(
+            `- ${tc.function.name}(${tc.function.arguments})\n`,
+          );
           toolDiv.appendChild(tcText);
         }
         contentDiv.appendChild(toolDiv);
@@ -582,7 +598,8 @@ async function handleElaborate() {
   const elaborateMessage: ChatMessage = {
     id: Date.now().toString(),
     role: 'user',
-    content: '[OOC]: Please rewrite and significantly elaborate on your last response. Make it much more vibrant, detailed, and immersive. Describe the environment, sensory details, and character emotions more deeply, and significantly expand the narrative length by adding more events or richer environmental exposition.',
+    content:
+      '[OOC]: Please rewrite and significantly elaborate on your last response. Make it much more vibrant, detailed, and immersive. Describe the environment, sensory details, and character emotions more deeply, and significantly expand the narrative length by adding more events or richer environmental exposition.',
   };
 
   core.history.push(elaborateMessage);

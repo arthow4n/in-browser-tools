@@ -9,7 +9,12 @@ interface ChatMessageUIProps {
   isStreaming?: boolean;
 }
 
-export const ChatMessageUI: React.FC<ChatMessageUIProps> = ({ msg, core, onUpdate, isStreaming }) => {
+export const ChatMessageUI: React.FC<ChatMessageUIProps> = ({
+  msg,
+  core,
+  onUpdate,
+  isStreaming,
+}) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(msg.content);
 
@@ -58,17 +63,22 @@ export const ChatMessageUI: React.FC<ChatMessageUIProps> = ({ msg, core, onUpdat
   };
 
   const doImprove = async () => {
-    const prompt = 'Please improve the following message to be more detailed. Original Message:\n' + msg.content + (improveInstructions ? '\n\nInstructions:\n' + improveInstructions : '');
+    const prompt =
+      'Please improve the following message to be more detailed. Original Message:\n' +
+      msg.content +
+      (improveInstructions ? '\n\nInstructions:\n' + improveInstructions : '');
     setIsImproving(true);
     setImproveError('');
     msg.content = ''; // Clear for streaming
 
     try {
-      const generator = core.streamChatCompletionWithTools([{
-        id: Date.now().toString(),
-        role: 'user',
-        content: prompt
-      }]);
+      const generator = core.streamChatCompletionWithTools([
+        {
+          id: Date.now().toString(),
+          role: 'user',
+          content: prompt,
+        },
+      ]);
 
       for await (const chunk of generator) {
         if (chunk.type === 'text' && chunk.text) {
@@ -91,8 +101,17 @@ export const ChatMessageUI: React.FC<ChatMessageUIProps> = ({ msg, core, onUpdat
   };
 
   return (
-    <div className={`message ${msg.role} ${isStreaming ? 'streaming' : ''}`} data-id={msg.id}>
-      <div style={{ fontWeight: 'bold', marginBottom: '5px', textTransform: 'capitalize' }}>
+    <div
+      className={`message ${msg.role} ${isStreaming ? 'streaming' : ''}`}
+      data-id={msg.id}
+    >
+      <div
+        style={{
+          fontWeight: 'bold',
+          marginBottom: '5px',
+          textTransform: 'capitalize',
+        }}
+      >
         {msg.role}
       </div>
 
@@ -104,7 +123,9 @@ export const ChatMessageUI: React.FC<ChatMessageUIProps> = ({ msg, core, onUpdat
           onChange={(e) => setEditContent(e.target.value)}
         />
       ) : (
-        <div className="content" style={{ whiteSpace: 'pre-wrap' }}>{displayContent}</div>
+        <div className="content" style={{ whiteSpace: 'pre-wrap' }}>
+          {displayContent}
+        </div>
       )}
 
       <div className="message-controls" style={{ marginTop: '10px' }}>
@@ -115,18 +136,44 @@ export const ChatMessageUI: React.FC<ChatMessageUIProps> = ({ msg, core, onUpdat
       </div>
 
       {showImprove && (
-        <div style={{ marginTop: '10px', padding: '10px', border: '1px solid #ccc', borderRadius: '5px' }}>
+        <div
+          style={{
+            marginTop: '10px',
+            padding: '10px',
+            border: '1px solid #ccc',
+            borderRadius: '5px',
+          }}
+        >
           <input
             type="text"
             placeholder="Optional Instructions (e.g. Make it more professional)"
-            style={{ width: '100%', marginBottom: '10px', padding: '5px', boxSizing: 'border-box' }}
+            style={{
+              width: '100%',
+              marginBottom: '10px',
+              padding: '5px',
+              boxSizing: 'border-box',
+            }}
             value={improveInstructions}
             onChange={(e) => setImproveInstructions(e.target.value)}
           />
-          <button disabled={isImproving} onClick={doImprove}>Improve / Regenerate</button>
-          <button disabled={isImproving} onClick={() => setShowImprove(false)}>Cancel</button>
-          {isImproving && <span style={{ fontWeight: 'bold', marginLeft: '10px' }}>Improving...</span>}
-          {improveError && <span style={{ fontWeight: 'bold', marginLeft: '10px', color: 'red' }}>Error: {improveError}</span>}
+          <button disabled={isImproving} onClick={doImprove}>
+            Improve / Regenerate
+          </button>
+          <button disabled={isImproving} onClick={() => setShowImprove(false)}>
+            Cancel
+          </button>
+          {isImproving && (
+            <span style={{ fontWeight: 'bold', marginLeft: '10px' }}>
+              Improving...
+            </span>
+          )}
+          {improveError && (
+            <span
+              style={{ fontWeight: 'bold', marginLeft: '10px', color: 'red' }}
+            >
+              Error: {improveError}
+            </span>
+          )}
         </div>
       )}
     </div>

@@ -65,7 +65,8 @@ export function createMessageElement(
 
   const instructionsInput = document.createElement('input');
   instructionsInput.type = 'text';
-  instructionsInput.placeholder = 'Optional Instructions (e.g. Make it more professional)';
+  instructionsInput.placeholder =
+    'Optional Instructions (e.g. Make it more professional)';
   instructionsInput.style.width = '100%';
   instructionsInput.style.marginBottom = '10px';
   instructionsInput.style.padding = '5px';
@@ -90,7 +91,8 @@ export function createMessageElement(
   div.appendChild(improveControls);
 
   improveBtn.addEventListener('click', () => {
-    improveControls.style.display = improveControls.style.display === 'none' ? 'block' : 'none';
+    improveControls.style.display =
+      improveControls.style.display === 'none' ? 'block' : 'none';
   });
 
   cancelImproveBtn.addEventListener('click', () => {
@@ -100,7 +102,10 @@ export function createMessageElement(
   doImproveBtn.addEventListener('click', async () => {
     const instructions = instructionsInput.value.trim();
     const originalContent = msg.content;
-    const prompt = 'Please improve the following message to be more detailed. Original Message:\n' + originalContent + (instructions ? '\n\nInstructions:\n' + instructions : '');
+    const prompt =
+      'Please improve the following message to be more detailed. Original Message:\n' +
+      originalContent +
+      (instructions ? '\n\nInstructions:\n' + instructions : '');
 
     doImproveBtn.disabled = true;
     improveStatus.textContent = 'Improving...';
@@ -111,11 +116,13 @@ export function createMessageElement(
 
     try {
       // @ts-ignore
-      const generator = core.streamChatCompletionWithTools([{
-        id: Date.now().toString(),
-        role: 'user',
-        content: prompt
-      }]);
+      const generator = core.streamChatCompletionWithTools([
+        {
+          id: Date.now().toString(),
+          role: 'user',
+          content: prompt,
+        },
+      ]);
 
       for await (const chunk of generator) {
         if (chunk.type === 'text' && chunk.text) {
@@ -141,7 +148,7 @@ export function createMessageElement(
     } finally {
       doImproveBtn.disabled = false;
       if (improveStatus.textContent === 'Improving...') {
-          improveStatus.textContent = '';
+        improveStatus.textContent = '';
       }
     }
   });

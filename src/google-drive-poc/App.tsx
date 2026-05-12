@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { PageLayout, Panel, Button, TextArea, Input } from '../shared/components/index.js';
+import {
+  PageLayout,
+  Panel,
+  Button,
+  TextArea,
+  Input,
+} from '../shared/components/index.js';
 import { useAsyncAction } from '../shared/hooks/useAsyncAction.js';
 
-const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
+const DISCOVERY_DOC =
+  'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
 const SCOPES = 'https://www.googleapis.com/auth/drive.file';
 const POC_FILE_NAME = 'in-browser-tools-poc-data.txt';
 
@@ -61,7 +68,9 @@ export const App: React.FC = () => {
       const files = response.result.files;
       if (files && files.length > 0) {
         setFileId(files[0].id!);
-        setCustomStatus(`Found existing file (ID: ${files[0].id}). Ready to load or overwrite.`);
+        setCustomStatus(
+          `Found existing file (ID: ${files[0].id}). Ready to load or overwrite.`,
+        );
       } else {
         setFileId(null);
         setCustomStatus('No existing file found. Ready to save a new one.');
@@ -126,7 +135,9 @@ export const App: React.FC = () => {
     await runAction('Saving to Google Drive...', async () => {
       const fileMetadata = { name: POC_FILE_NAME, mimeType: 'text/plain' };
       const fileBlob = new Blob([dataContent], { type: 'text/plain' });
-      const metadataBlob = new Blob([JSON.stringify(fileMetadata)], { type: 'application/json' });
+      const metadataBlob = new Blob([JSON.stringify(fileMetadata)], {
+        type: 'application/json',
+      });
 
       const form = new FormData();
       form.append('metadata', metadataBlob);
@@ -136,7 +147,8 @@ export const App: React.FC = () => {
       const token = gapi.client.getToken()?.access_token;
       if (!token) throw new Error('No access token available.');
 
-      let url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+      let url =
+        'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
       let method = 'POST';
 
       if (fileId) {
@@ -172,9 +184,12 @@ export const App: React.FC = () => {
       const token = gapi.client.getToken()?.access_token;
       if (!token) throw new Error('No access token available.');
 
-      const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await fetch(
+        `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -193,14 +208,32 @@ export const App: React.FC = () => {
           <h3>Setup Instructions</h3>
           <p>To use this POC, you need to configure a Google Cloud Project:</p>
           <ol>
-            <li>Go to the <a href="https://console.cloud.google.com/" target="_blank" rel="noreferrer">Google Cloud Console</a>.</li>
+            <li>
+              Go to the{' '}
+              <a
+                href="https://console.cloud.google.com/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Google Cloud Console
+              </a>
+              .
+            </li>
             <li>Create a new project or select an existing one.</li>
-            <li>Enable the <strong>Google Drive API</strong> in "APIs & Services" &gt; "Library".</li>
+            <li>
+              Enable the <strong>Google Drive API</strong> in "APIs & Services"
+              &gt; "Library".
+            </li>
             <li>Go to "APIs & Services" &gt; "Credentials".</li>
             <li>Click "Create Credentials" &gt; "OAuth client ID".</li>
             <li>Choose "Web application" as the Application type.</li>
-            <li>Under "Authorized JavaScript origins", add the URL of this page (e.g., <code>http://localhost:3000</code>).</li>
-            <li>Click "Create" and copy your <strong>Client ID</strong>.</li>
+            <li>
+              Under "Authorized JavaScript origins", add the URL of this page
+              (e.g., <code>http://localhost:3000</code>).
+            </li>
+            <li>
+              Click "Create" and copy your <strong>Client ID</strong>.
+            </li>
           </ol>
         </div>
 
@@ -215,9 +248,13 @@ export const App: React.FC = () => {
             id="clientId"
           />
           {!isAuthorized ? (
-            <Button onClick={handleAuth} id="authBtn">Authorize / Initialize</Button>
+            <Button onClick={handleAuth} id="authBtn">
+              Authorize / Initialize
+            </Button>
           ) : (
-            <Button onClick={handleSignOut} id="signoutBtn" variant="secondary">Sign Out</Button>
+            <Button onClick={handleSignOut} id="signoutBtn" variant="secondary">
+              Sign Out
+            </Button>
           )}
         </div>
 
@@ -230,13 +267,41 @@ export const App: React.FC = () => {
             onChange={(e) => setDataContent(e.target.value)}
             rows={5}
           />
-          <div className="action-buttons" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '10px' }}>
-            <Button onClick={handleSave} disabled={!isAuthorized || isLoading} id="saveBtn">Save to Drive</Button>
-            <Button onClick={handleLoad} disabled={!isAuthorized || !fileId || isLoading} id="loadBtn">Load from Drive</Button>
+          <div
+            className="action-buttons"
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '10px',
+              marginTop: '10px',
+            }}
+          >
+            <Button
+              onClick={handleSave}
+              disabled={!isAuthorized || isLoading}
+              id="saveBtn"
+            >
+              Save to Drive
+            </Button>
+            <Button
+              onClick={handleLoad}
+              disabled={!isAuthorized || !fileId || isLoading}
+              id="loadBtn"
+            >
+              Load from Drive
+            </Button>
           </div>
         </div>
 
-        <div id="status" style={{ marginTop: '15px', fontWeight: 'bold', wordWrap: 'break-word', color: isError ? 'red' : 'green' }}>
+        <div
+          id="status"
+          style={{
+            marginTop: '15px',
+            fontWeight: 'bold',
+            wordWrap: 'break-word',
+            color: isError ? 'red' : 'green',
+          }}
+        >
           {statusText || customStatus}
         </div>
       </Panel>

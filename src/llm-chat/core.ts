@@ -39,8 +39,7 @@ export class ChatCore extends LLMCore {
 
   loadChatState() {
     this.systemPrompt =
-      getStorage('llm-chat-systemPrompt') ||
-      'You are a helpful assistant.';
+      getStorage('llm-chat-systemPrompt') || 'You are a helpful assistant.';
 
     try {
       this.savedPrompts = JSON.parse(
@@ -51,18 +50,14 @@ export class ChatCore extends LLMCore {
     }
 
     try {
-      this.history = JSON.parse(
-        getStorage('llm-chat-history') || '[]',
-      );
+      this.history = JSON.parse(getStorage('llm-chat-history') || '[]');
     } catch {
       this.history = [];
     }
 
     this.toolsEnabled = getStorage('llm-chat-toolsEnabled') === 'true';
     try {
-      const disabled = JSON.parse(
-        getStorage('llm-chat-disabledTools') || '[]',
-      );
+      const disabled = JSON.parse(getStorage('llm-chat-disabledTools') || '[]');
       this.disabledTools = new Set(disabled);
     } catch {
       this.disabledTools = new Set();
@@ -71,13 +66,13 @@ export class ChatCore extends LLMCore {
 
   saveChatState() {
     setStorage('llm-chat-systemPrompt', this.systemPrompt);
-    setStorage(
-      'llm-chat-savedPrompts',
-      JSON.stringify(this.savedPrompts),
-    );
+    setStorage('llm-chat-savedPrompts', JSON.stringify(this.savedPrompts));
     setStorage('llm-chat-history', JSON.stringify(this.history));
     setStorage('llm-chat-toolsEnabled', this.toolsEnabled.toString());
-    setStorage('llm-chat-disabledTools', JSON.stringify(Array.from(this.disabledTools)));
+    setStorage(
+      'llm-chat-disabledTools',
+      JSON.stringify(Array.from(this.disabledTools)),
+    );
   }
 
   isToolEnabled(name: string): boolean {
@@ -125,7 +120,7 @@ export class ChatCore extends LLMCore {
 
     let toolsToPass = undefined;
     if (this.toolsEnabled) {
-      toolsToPass = this.tools.filter(t => this.isToolEnabled(t.name));
+      toolsToPass = this.tools.filter((t) => this.isToolEnabled(t.name));
       if (toolsToPass.length === 0) {
         toolsToPass = undefined;
       }

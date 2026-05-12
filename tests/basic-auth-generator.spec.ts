@@ -18,9 +18,9 @@ test.describe('Basic Auth Generator', () => {
 
   test('should generate encoded credentials correctly', async ({ page }) => {
     const usernameInput = page.locator('input[placeholder="Enter username"]');
-await usernameInput.fill('user@name');
+    await usernameInput.fill('user@name');
     const passwordInput = page.locator('input[placeholder="Enter password"]');
-await passwordInput.fill('pass:word');
+    await passwordInput.fill('pass:word');
 
     await expect(page.locator('.output-field').nth(0)).toHaveText(
       'user%40name:pass%3Aword',
@@ -29,11 +29,13 @@ await passwordInput.fill('pass:word');
 
   test('should generate full URL with basic auth', async ({ page }) => {
     const usernameInput = page.locator('input[placeholder="Enter username"]');
-await usernameInput.fill('user@name');
+    await usernameInput.fill('user@name');
     const passwordInput = page.locator('input[placeholder="Enter password"]');
-await passwordInput.fill('pass:word');
-    const urlInput = page.locator('input[placeholder="https://example.com/api"]');
-await urlInput.fill('https://example.com/api');
+    await passwordInput.fill('pass:word');
+    const urlInput = page.locator(
+      'input[placeholder="https://example.com/api"]',
+    );
+    await urlInput.fill('https://example.com/api');
 
     await expect(page.locator('.output-field').nth(1)).toHaveText(
       'https://user%40name:pass%3Aword@example.com/api',
@@ -42,19 +44,23 @@ await urlInput.fill('https://example.com/api');
 
   test('should handle missing URL gracefully', async ({ page }) => {
     const usernameInput = page.locator('input[placeholder="Enter username"]');
-await usernameInput.fill('user');
+    await usernameInput.fill('user');
     const passwordInput = page.locator('input[placeholder="Enter password"]');
-await passwordInput.fill('pass');
+    await passwordInput.fill('pass');
 
     await expect(page.locator('.output-field').nth(0)).toHaveText('user:pass');
     await expect(page.locator('.output-field').nth(1)).toBeEmpty();
   });
 
   test('should show error for invalid URL', async ({ page }) => {
-    const urlInput = page.locator('input[placeholder="https://example.com/api"]');
-await urlInput.fill('not-a-url');
+    const urlInput = page.locator(
+      'input[placeholder="https://example.com/api"]',
+    );
+    await urlInput.fill('not-a-url');
 
-    await expect(page.locator('.error-text').nth(0)).toHaveText('Invalid URL format');
+    await expect(page.locator('.error-text').nth(0)).toHaveText(
+      'Invalid URL format',
+    );
     await expect(page.locator('.output-field').nth(1)).toBeEmpty();
   });
 
@@ -62,9 +68,11 @@ await urlInput.fill('not-a-url');
     page,
   }) => {
     const usernameInput = page.locator('input[placeholder="Enter username"]');
-await usernameInput.fill('user@name');
-    const urlInput = page.locator('input[placeholder="https://example.com/api"]');
-await urlInput.fill('https://example.com/api');
+    await usernameInput.fill('user@name');
+    const urlInput = page.locator(
+      'input[placeholder="https://example.com/api"]',
+    );
+    await urlInput.fill('https://example.com/api');
 
     await expect(page.locator('.output-field').nth(0)).toHaveText(
       'user%40name:',
@@ -78,9 +86,11 @@ await urlInput.fill('https://example.com/api');
     page,
   }) => {
     const passwordInput = page.locator('input[placeholder="Enter password"]');
-await passwordInput.fill('pass:word');
-    const urlInput = page.locator('input[placeholder="https://example.com/api"]');
-await urlInput.fill('https://example.com/api');
+    await passwordInput.fill('pass:word');
+    const urlInput = page.locator(
+      'input[placeholder="https://example.com/api"]',
+    );
+    await urlInput.fill('https://example.com/api');
 
     await expect(page.locator('.output-field').nth(0)).toHaveText(
       ':pass%3Aword',

@@ -1,5 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { PageLayout, Panel, Button, Input, TextArea, LlmSettings, ChatMessageUI } from '../shared/components/index.js';
+import {
+  PageLayout,
+  Panel,
+  Button,
+  Input,
+  TextArea,
+  LlmSettings,
+  ChatMessageUI,
+} from '../shared/components/index.js';
 import { ChatCore, ChatMessage } from './core.js';
 import { browserAlertTool } from './tools/browser-alert.js';
 import { useAsyncAction } from '../shared/hooks/useAsyncAction.js';
@@ -10,10 +18,14 @@ export const App: React.FC = () => {
 
   const [systemPrompt, setSystemPrompt] = useState(core.systemPrompt);
   const [history, setHistory] = useState<ChatMessage[]>([]);
-  const [savedPrompts, setSavedPrompts] = useState<{ id: string; name: string; content: string }[]>([]);
+  const [savedPrompts, setSavedPrompts] = useState<
+    { id: string; name: string; content: string }[]
+  >([]);
   const [selectedPromptId, setSelectedPromptId] = useState<string>('');
   const [toolsEnabled, setToolsEnabled] = useState(core.toolsEnabled);
-  const [disabledTools, setDisabledTools] = useState<Set<string>>(new Set(core.disabledTools));
+  const [disabledTools, setDisabledTools] = useState<Set<string>>(
+    new Set(core.disabledTools),
+  );
 
   const [promptIntention, setPromptIntention] = useState('');
   const [promptHowToImprove, setPromptHowToImprove] = useState('');
@@ -23,7 +35,12 @@ export const App: React.FC = () => {
   const [isSending, setIsSending] = useState(false);
   const [chatStatus, setChatStatus] = useState({ text: '', isError: false });
 
-  const { isLoading: isImproving, statusText: improveStatusText, isError: improveIsError, runAction: runImproveAction } = useAsyncAction();
+  const {
+    isLoading: isImproving,
+    statusText: improveStatusText,
+    isError: improveIsError,
+    runAction: runImproveAction,
+  } = useAsyncAction();
 
   // Streaming assistant message state
   const [streamingMsg, setStreamingMsg] = useState<ChatMessage | null>(null);
@@ -38,7 +55,9 @@ export const App: React.FC = () => {
     setDisabledTools(new Set(core.disabledTools));
   }, []);
 
-  const handleSystemPromptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleSystemPromptChange = (
+    e: React.ChangeEvent<HTMLTextAreaElement>,
+  ) => {
     setSystemPrompt(e.target.value);
     core.systemPrompt = e.target.value;
     core.saveChatState();
@@ -54,7 +73,7 @@ export const App: React.FC = () => {
       const improved = await core.improveSystemPrompt(
         promptIntention,
         promptHowToImprove,
-        promptEvaluationFocus
+        promptEvaluationFocus,
       );
       setSystemPrompt(improved);
       core.systemPrompt = improved;
@@ -76,7 +95,7 @@ export const App: React.FC = () => {
     const id = e.target.value;
     setSelectedPromptId(id);
     if (!id) return;
-    const sp = core.savedPrompts.find(p => p.id === id);
+    const sp = core.savedPrompts.find((p) => p.id === id);
     if (sp) {
       setSystemPrompt(sp.content);
       core.systemPrompt = sp.content;
@@ -87,7 +106,9 @@ export const App: React.FC = () => {
   const handleDeletePrompt = () => {
     if (!selectedPromptId) return;
     if (confirm('Delete this saved prompt?')) {
-      core.savedPrompts = core.savedPrompts.filter(p => p.id !== selectedPromptId);
+      core.savedPrompts = core.savedPrompts.filter(
+        (p) => p.id !== selectedPromptId,
+      );
       core.saveChatState();
       setSavedPrompts([...core.savedPrompts]);
       setSelectedPromptId('');
@@ -172,13 +193,20 @@ export const App: React.FC = () => {
         setStreamingMsg({ ...currentAssistantMsg });
       } finally {
         setStreamingMsg(null);
-        if (currentAssistantMsg.content || (currentAssistantMsg.tool_calls && currentAssistantMsg.tool_calls.length > 0)) {
+        if (
+          currentAssistantMsg.content ||
+          (currentAssistantMsg.tool_calls &&
+            currentAssistantMsg.tool_calls.length > 0)
+        ) {
           core.history.push(currentAssistantMsg);
         }
         core.saveChatState();
         setHistory([...core.history]);
 
-        if (currentAssistantMsg.tool_calls && currentAssistantMsg.tool_calls.length > 0) {
+        if (
+          currentAssistantMsg.tool_calls &&
+          currentAssistantMsg.tool_calls.length > 0
+        ) {
           for (const tc of currentAssistantMsg.tool_calls) {
             const tool = core.tools.find((t) => t.name === tc.function.name);
             let resultStr = '';
@@ -188,7 +216,8 @@ export const App: React.FC = () => {
               try {
                 const args = JSON.parse(tc.function.arguments);
                 const result = await tool.execute(args);
-                resultStr = typeof result === 'string' ? result : JSON.stringify(result);
+                resultStr =
+                  typeof result === 'string' ? result : JSON.stringify(result);
               } catch (e: any) {
                 resultStr = `Error executing tool: ${e.message}`;
               }
@@ -242,53 +271,158 @@ export const App: React.FC = () => {
         />
 
         <div className="flex-row" style={{ marginTop: '10px' }}>
-          <select id="saved-prompts-select" value={selectedPromptId} onChange={handlePromptSelect}>
+          <select
+            id="saved-prompts-select"
+            value={selectedPromptId}
+            onChange={handlePromptSelect}
+          >
             <option value="">-- Load Saved Prompt --</option>
-            {savedPrompts.map(sp => (
-              <option key={sp.id} value={sp.id}>{sp.name}</option>
+            {savedPrompts.map((sp) => (
+              <option key={sp.id} value={sp.id}>
+                {sp.name}
+              </option>
             ))}
           </select>
-          <Button onClick={handleSavePrompt} id="save-prompt-btn">Save Current As...</Button>
-          {selectedPromptId && <Button variant="danger" onClick={handleDeletePrompt} id="delete-prompt-btn">Delete</Button>}
+          <Button onClick={handleSavePrompt} id="save-prompt-btn">
+            Save Current As...
+          </Button>
+          {selectedPromptId && (
+            <Button
+              variant="danger"
+              onClick={handleDeletePrompt}
+              id="delete-prompt-btn"
+            >
+              Delete
+            </Button>
+          )}
         </div>
 
-        <details style={{ marginTop: '10px', background: '#f9f9f9', padding: '10px', border: '1px solid #ccc', borderRadius: '4px' }}>
-          <summary style={{ cursor: 'pointer', fontWeight: 'bold' }}>Prompt Improver (Auto-generate better prompt)</summary>
+        <details
+          style={{
+            marginTop: '10px',
+            background: '#f9f9f9',
+            padding: '10px',
+            border: '1px solid #ccc',
+            borderRadius: '4px',
+          }}
+        >
+          <summary style={{ cursor: 'pointer', fontWeight: 'bold' }}>
+            Prompt Improver (Auto-generate better prompt)
+          </summary>
           <div style={{ marginTop: '10px' }}>
-            <Input label="Intention (Optional):" type="text" placeholder="What is the goal of this prompt?" value={promptIntention} onChange={(e) => setPromptIntention(e.target.value)} />
-            <Input label="How to improve (Optional):" type="text" placeholder="e.g. Make it more professional" value={promptHowToImprove} onChange={(e) => setPromptHowToImprove(e.target.value)} />
-            <Input label="Evaluation Focus (Optional):" type="text" placeholder="What to verify?" value={promptEvaluationFocus} onChange={(e) => setPromptEvaluationFocus(e.target.value)} />
-            <Button onClick={handleImprovePrompt} loading={isImproving} id="improve-prompt-btn">Improve System Prompt</Button>
-            <span id="improve-prompt-status" className="status" style={{ color: improveIsError ? 'red' : 'green' }}>{improveStatusText}</span>
+            <Input
+              label="Intention (Optional):"
+              type="text"
+              placeholder="What is the goal of this prompt?"
+              value={promptIntention}
+              onChange={(e) => setPromptIntention(e.target.value)}
+            />
+            <Input
+              label="How to improve (Optional):"
+              type="text"
+              placeholder="e.g. Make it more professional"
+              value={promptHowToImprove}
+              onChange={(e) => setPromptHowToImprove(e.target.value)}
+            />
+            <Input
+              label="Evaluation Focus (Optional):"
+              type="text"
+              placeholder="What to verify?"
+              value={promptEvaluationFocus}
+              onChange={(e) => setPromptEvaluationFocus(e.target.value)}
+            />
+            <Button
+              onClick={handleImprovePrompt}
+              loading={isImproving}
+              id="improve-prompt-btn"
+            >
+              Improve System Prompt
+            </Button>
+            <span
+              id="improve-prompt-status"
+              className="status"
+              style={{ color: improveIsError ? 'red' : 'green' }}
+            >
+              {improveStatusText}
+            </span>
           </div>
         </details>
       </Panel>
 
       <Panel title="Chat History">
-        <div id="history-container" style={{ maxHeight: '500px', overflowY: 'auto', marginBottom: '15px', border: '1px solid #ccc', padding: '10px', borderRadius: '4px', background: '#fafafa' }}>
-          {history.map(msg => (
-            <ChatMessageUI key={msg.id} msg={msg} core={core} onUpdate={triggerUpdate} />
+        <div
+          id="history-container"
+          style={{
+            maxHeight: '500px',
+            overflowY: 'auto',
+            marginBottom: '15px',
+            border: '1px solid #ccc',
+            padding: '10px',
+            borderRadius: '4px',
+            background: '#fafafa',
+          }}
+        >
+          {history.map((msg) => (
+            <ChatMessageUI
+              key={msg.id}
+              msg={msg}
+              core={core}
+              onUpdate={triggerUpdate}
+            />
           ))}
           {streamingMsg && (
-            <ChatMessageUI msg={streamingMsg} core={core} onUpdate={triggerUpdate} isStreaming={true} />
+            <ChatMessageUI
+              msg={streamingMsg}
+              core={core}
+              onUpdate={triggerUpdate}
+              isStreaming={true}
+            />
           )}
         </div>
 
         <div className="flex-row">
           <label className="checkbox-label" style={{ marginRight: '15px' }}>
-            <input type="checkbox" id="enable-tools-checkbox" checked={toolsEnabled} onChange={handleToolEnableToggle} />
+            <input
+              type="checkbox"
+              id="enable-tools-checkbox"
+              checked={toolsEnabled}
+              onChange={handleToolEnableToggle}
+            />
             Enable Tools
           </label>
         </div>
 
         {toolsEnabled && (
-          <div id="tool-list-container" style={{ display: 'flex', flexDirection: 'column', gap: '5px', padding: '10px', background: '#f0f0f0', border: '1px solid #ccc', borderRadius: '4px', marginBottom: '10px' }}>
-            {core.tools.map(tool => (
-              <label key={tool.name} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 'normal', fontSize: '0.9em' }}>
+          <div
+            id="tool-list-container"
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '5px',
+              padding: '10px',
+              background: '#f0f0f0',
+              border: '1px solid #ccc',
+              borderRadius: '4px',
+              marginBottom: '10px',
+            }}
+          >
+            {core.tools.map((tool) => (
+              <label
+                key={tool.name}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  fontWeight: 'normal',
+                  fontSize: '0.9em',
+                }}
+              >
                 <input
                   type="checkbox"
                   checked={!disabledTools.has(tool.name)}
-                  onChange={(e) => handleToolToggle(tool.name, e.target.checked)}
+                  onChange={(e) =>
+                    handleToolToggle(tool.name, e.target.checked)
+                  }
                 />
                 {tool.name}: {tool.description}
               </label>
@@ -305,9 +439,23 @@ export const App: React.FC = () => {
         />
 
         <div className="flex-row" style={{ marginTop: '10px' }}>
-          <Button onClick={handleSend} disabled={isSending} id="send-btn">Send</Button>
-          <Button variant="danger" onClick={handleClearHistory} id="clear-history-btn">Clear History</Button>
-          <span id="chat-status" className="status" style={{ color: chatStatus.isError ? 'red' : 'green' }}>{chatStatus.text}</span>
+          <Button onClick={handleSend} disabled={isSending} id="send-btn">
+            Send
+          </Button>
+          <Button
+            variant="danger"
+            onClick={handleClearHistory}
+            id="clear-history-btn"
+          >
+            Clear History
+          </Button>
+          <span
+            id="chat-status"
+            className="status"
+            style={{ color: chatStatus.isError ? 'red' : 'green' }}
+          >
+            {chatStatus.text}
+          </span>
         </div>
       </Panel>
     </PageLayout>
