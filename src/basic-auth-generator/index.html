@@ -4,77 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Basic Auth Generator</title>
-    <style>
-      body {
-        font-family: sans-serif;
-        line-height: 1.6;
-        margin: 0 auto;
-        padding: 20px;
-        max-width: 800px;
-        box-sizing: border-box;
-      }
-      *,
-      *:before,
-      *:after {
-        box-sizing: inherit;
-      }
-      .input-group {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        margin-bottom: 20px;
-      }
-      input[type='text'],
-      input[type='password'] {
-        width: 100%;
-        padding: 10px;
-        font-family: inherit;
-      }
-      .output-group {
-        margin-top: 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-      }
-      .output-field {
-        width: 100%;
-        padding: 15px;
-        border: 1px solid #ccc;
-        background-color: #f9f9f9;
-        font-family: Consolas, 'Courier New', monospace;
-        border-radius: 4px;
-        word-break: break-all;
-      }
-      .error-text {
-        color: red;
-        font-size: 0.9em;
-      }
-    </style>
   </head>
   <body>
-    <h1>Basic Auth Generator</h1>
-    <a href="./" style="display: inline-block; margin-bottom: 1em"
-      >← Back to Tools</a
-    >
-
-    <div class="input-group">
-      <label for="input-username">Username:</label>
-      <input type="text" id="input-username" placeholder="Enter username" />
-
-      <label for="input-password">Password:</label>
-      <input type="password" id="input-password" placeholder="Enter password" />
-
-      <label for="input-url">URL (Optional):</label>
-      <input type="text" id="input-url" placeholder="https://example.com/api" />
-      <span id="url-error" class="error-text"></span>
-    </div>
-
-    <div class="output-group">
-      <label for="output-credentials">Encoded Credentials:</label>
-      <div id="output-credentials" class="output-field"></div>
-
-      <label for="output-full-url">Full URL with Basic Auth:</label>
-      <div id="output-full-url" class="output-field"></div>
-    </div>
+    <div id="root"></div>
   </body>
 </html>

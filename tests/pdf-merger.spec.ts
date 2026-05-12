@@ -34,7 +34,7 @@ test.describe('PDF Merger', () => {
     const pdfPath2 = path.join(tempDir, 'dummy2.pdf');
     fs.writeFileSync(pdfPath2, pdfBytes2);
 
-    await page.goto('/pdf-merger.html');
+    await page.goto('/pdf-merger');
 
     const fileInput = page.locator('#pdf-files');
     await fileInput.setInputFiles([pdfPath1, pdfPath2]);

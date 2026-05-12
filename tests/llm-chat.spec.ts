@@ -10,7 +10,7 @@ test.describe('LLM Chat Tool', () => {
     page,
   }) => {
     // Navigate to tool
-    await page.goto('/llm-chat.html');
+    await page.goto('/llm-chat');
 
     // Check title and inputs exist
     await expect(page.locator('h1')).toHaveText('LLM Chat');
@@ -43,7 +43,7 @@ test.describe('LLM Chat Tool', () => {
     // Mock alert to prevent it from blocking the test
     page.on('dialog', (dialog) => dialog.accept());
 
-    await page.goto('/settings.html');
+    await page.goto('/settings');
     await page.fill('#shared-api-key', 'test-key');
 
     // Click fetch
@@ -93,11 +93,11 @@ test.describe('LLM Chat Tool', () => {
       },
     );
 
-    await page.goto('/settings.html');
+    await page.goto('/settings');
     await page.fill('#shared-api-key', 'test-key');
     await page.fill('#shared-model-input', 'test-model');
 
-    await page.goto('/llm-chat.html');
+    await page.goto('/llm-chat');
 
     // Send a message
     await page.fill('#user-input', 'Hi there');
@@ -163,11 +163,11 @@ test.describe('LLM Chat Tool', () => {
       },
     );
 
-    await page.goto('/settings.html');
+    await page.goto('/settings');
     await page.fill('#shared-api-key', 'test-key');
     await page.fill('#shared-model-input', 'test-model');
 
-    await page.goto('/llm-chat.html');
+    await page.goto('/llm-chat');
 
     // Send first message
     await page.fill('#user-input', 'Message 1');
@@ -225,11 +225,11 @@ test.describe('LLM Chat Tool', () => {
       },
     );
 
-    await page.goto('/settings.html');
+    await page.goto('/settings');
     await page.fill('#shared-api-key', 'test-key');
     await page.fill('#shared-model-input', 'test-model');
 
-    await page.goto('/llm-chat.html');
+    await page.goto('/llm-chat');
 
     // Try sending empty text with empty history - should do nothing
     await page.click('#send-btn');

@@ -3,10 +3,10 @@ import { test, expect } from '@playwright/test';
 test('MP3 Splitter page has expected elements and default values', async ({
   page,
 }) => {
-  await page.goto('/mp3-splitter.html');
+  await page.goto('/mp3-splitter');
 
   await expect(page).toHaveTitle('MP3 Splitter');
-  await expect(page.locator('h1')).toHaveText('MP3 Splitter');
+  await expect(page.locator('h2')).toHaveText('MP3 Splitter');
 
   const fileInput = page.locator('#mp3-file');
   await expect(fileInput).toBeAttached();

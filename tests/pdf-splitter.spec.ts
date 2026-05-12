@@ -3,10 +3,10 @@ import { test, expect } from '@playwright/test';
 test('PDF Splitter page has expected elements and default values', async ({
   page,
 }) => {
-  await page.goto('/pdf-splitter.html');
+  await page.goto('/pdf-splitter');
 
   await expect(page).toHaveTitle('PDF Splitter');
-  await expect(page.locator('h1')).toHaveText('PDF Splitter');
+  await expect(page.locator('h2')).toHaveText('PDF Splitter');
 
   const fileInput = page.locator('#pdf-file');
   await expect(fileInput).toBeAttached();
