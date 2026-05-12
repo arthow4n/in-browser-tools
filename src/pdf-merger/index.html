@@ -4,50 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PDF Merger</title>
-    <style>
-      body {
-        font-family: sans-serif;
-        line-height: 1.6;
-        margin: 0 auto;
-        padding: 20px;
-        max-width: 800px;
-        box-sizing: border-box;
-      }
-      *,
-      *:before,
-      *:after {
-        box-sizing: inherit;
-      }
-      .input-group {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        align-items: center;
-        margin-bottom: 15px;
-      }
-      input {
-        max-width: 100%;
-      }
-      button {
-        padding: 8px 16px;
-      }
-    </style>
   </head>
   <body>
-    <h1>PDF Merger</h1>
-    <a href="./" style="display: inline-block; margin-bottom: 1em"
-      >← Back to Tools</a
-    >
-    <div class="input-group">
-      <label for="pdf-files">Upload PDF files:</label>
-      <input type="file" id="pdf-files" accept="application/pdf" multiple />
-    </div>
-    <div style="margin-top: 1em">
-      <ul id="file-list"></ul>
-    </div>
-    <button id="merge-btn" style="margin-top: 1em">Merge PDFs</button>
-
-    <div id="status" style="margin-top: 1em; word-wrap: break-word"></div>
-    <div id="output" style="margin-top: 1em"></div>
+    <div id="root"></div>
   </body>
 </html>

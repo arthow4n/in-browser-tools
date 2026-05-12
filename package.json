@@ -24,7 +24,10 @@
   "devDependencies": {
     "@playwright/test": "^1.59.1",
     "@rsbuild/core": "^2.0.3",
+    "@rsbuild/plugin-react": "^2.0.0",
     "@types/node": "^25.6.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
     "prettier": "^3.8.3",
     "typescript": "^6.0.3"
   },
@@ -34,9 +37,14 @@
     "@ffmpeg/ffmpeg": "^0.12.15",
     "@ffmpeg/util": "^0.12.2",
     "@rsbuild/plugin-node-polyfill": "^1.4.4",
+    "@types/gapi": "^0.0.47",
+    "@types/gapi.client.drive": "^3.0.15",
+    "@types/google.accounts": "^0.0.18",
     "isomorphic-git": "^1.37.6",
     "memfs": "^4.57.2",
     "pdf-lib": "^1.17.1",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
     "serve-handler": "^6.1.7"
   }
 }

@@ -1,23 +1,24 @@
 import { defineConfig } from '@rsbuild/core';
 import { pluginNodePolyfill } from '@rsbuild/plugin-node-polyfill';
+import { pluginReact } from '@rsbuild/plugin-react';
 
 export default defineConfig({
-  plugins: [pluginNodePolyfill()],
+  plugins: [pluginNodePolyfill(), pluginReact()],
   source: {
     entry: {
-      index: './src/index.ts',
-      'repo-chat': './src/repo-chat/index.ts',
-      'mp3-splitter': './src/mp3-splitter/index.ts',
-      'pdf-merger': './src/pdf-merger/index.ts',
-      'pdf-splitter': './src/pdf-splitter/index.ts',
-      'google-drive-poc': './src/google-drive-poc/index.ts',
-      'llm-chat': './src/llm-chat/index.ts',
-      'prompt-improver': './src/prompt-improver/index.ts',
-      'text-inspector': './src/text-inspector/index.ts',
-      'agent-workflow-designer': './src/agent-workflow-designer/index.ts',
-      'text-adventure-writer': './src/text-adventure-writer/index.ts',
-      'basic-auth-generator': './src/basic-auth-generator/index.ts',
-      'settings': './src/settings/index.ts',
+      index: './src/index.tsx',
+      'repo-chat': './src/repo-chat/index.tsx',
+      'mp3-splitter': './src/mp3-splitter/index.tsx',
+      'pdf-merger': './src/pdf-merger/index.tsx',
+      'pdf-splitter': './src/pdf-splitter/index.tsx',
+      'google-drive-poc': './src/google-drive-poc/index.tsx',
+      'llm-chat': './src/llm-chat/index.tsx',
+      'prompt-improver': './src/prompt-improver/index.tsx',
+      'text-inspector': './src/text-inspector/index.tsx',
+      'agent-workflow-designer': './src/agent-workflow-designer/index.tsx',
+      'text-adventure-writer': './src/text-adventure-writer/index.tsx',
+      'basic-auth-generator': './src/basic-auth-generator/index.tsx',
+      'settings': './src/settings/index.tsx',
     },
   },
   html: {

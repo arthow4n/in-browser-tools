@@ -5,7 +5,8 @@
     "moduleResolution": "bundler",
     "strict": true,
     "skipLibCheck": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+    "jsx": "react-jsx"
   },
-  "include": ["src", "tests", "rsbuild.config.ts", "playwright.config.ts"]
+  "include": ["src", "tests", "rsbuild.config.ts", "playwright.config.ts", "global.d.ts"]
 }
