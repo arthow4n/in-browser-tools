@@ -1,5 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { PageLayout, Panel, Button, Input, TextArea, LlmSettings } from '../shared/components/index.js';
+import {
+  PageLayout,
+  Panel,
+  Button,
+  Input,
+  TextArea,
+  LlmSettings,
+} from '../shared/components/index.js';
 import { TextAdventureCore } from './core.js';
 import { useAsyncAction } from '../shared/hooks/useAsyncAction.js';
 
@@ -9,7 +16,9 @@ export const App: React.FC = () => {
 
   const [scenarioRequest, setScenarioRequest] = useState(core.scenarioRequest);
   const [characterName, setCharacterName] = useState(core.characterName);
-  const [characterDescription, setCharacterDescription] = useState(core.characterDescription);
+  const [characterDescription, setCharacterDescription] = useState(
+    core.characterDescription,
+  );
 
   const [history, setHistory] = useState<any[]>([]);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -23,9 +32,24 @@ export const App: React.FC = () => {
 
   const [streamingMsg, setStreamingMsg] = useState<any | null>(null);
 
-  const { isLoading: isGeneratingChar, statusText: charStatus, isError: charIsError, runAction: runCharAction } = useAsyncAction();
-  const { isLoading: isGeneratingAction, statusText: actionStatus, isError: actionIsError, runAction: runActionAction } = useAsyncAction();
-  const { isLoading: isGeneratingResponse, statusText: responseStatus, isError: responseIsError, runAction: runResponseAction } = useAsyncAction();
+  const {
+    isLoading: isGeneratingChar,
+    statusText: charStatus,
+    isError: charIsError,
+    runAction: runCharAction,
+  } = useAsyncAction();
+  const {
+    isLoading: isGeneratingAction,
+    statusText: actionStatus,
+    isError: actionIsError,
+    runAction: runActionAction,
+  } = useAsyncAction();
+  const {
+    isLoading: isGeneratingResponse,
+    statusText: responseStatus,
+    isError: responseIsError,
+    runAction: runResponseAction,
+  } = useAsyncAction();
 
   useEffect(() => {
     setHistory([...core.history]);
@@ -58,27 +82,34 @@ export const App: React.FC = () => {
       alert('Please enter a scenario request first.');
       return;
     }
-    await runCharAction('Generating character...', async () => {
-      const generator = core.generateCharacter({ scenarioRequest: scenarioRequest.trim(), guidance: charGuidance.trim() });
-      let toolArgs = '';
-      for await (const chunk of generator) {
-        if (chunk.type === 'tool_call' && chunk.toolCall) {
-          toolArgs = chunk.toolCall.arguments;
+    await runCharAction(
+      'Generating character...',
+      async () => {
+        const generator = core.generateCharacter({
+          scenarioRequest: scenarioRequest.trim(),
+          guidance: charGuidance.trim(),
+        });
+        let toolArgs = '';
+        for await (const chunk of generator) {
+          if (chunk.type === 'tool_call' && chunk.toolCall) {
+            toolArgs = chunk.toolCall.arguments;
+          }
         }
-      }
-      if (toolArgs) {
-        const parsed = JSON.parse(toolArgs);
-        if (parsed.characterName) {
-          setCharacterName(parsed.characterName);
-          core.characterName = parsed.characterName;
+        if (toolArgs) {
+          const parsed = JSON.parse(toolArgs);
+          if (parsed.characterName) {
+            setCharacterName(parsed.characterName);
+            core.characterName = parsed.characterName;
+          }
+          if (parsed.characterDescription) {
+            setCharacterDescription(parsed.characterDescription);
+            core.characterDescription = parsed.characterDescription;
+          }
+          core.saveChatState();
         }
-        if (parsed.characterDescription) {
-          setCharacterDescription(parsed.characterDescription);
-          core.characterDescription = parsed.characterDescription;
-        }
-        core.saveChatState();
-      }
-    }, 'Character generated.');
+      },
+      'Character generated.',
+    );
   };
 
   const handleGenerateIntro = async () => {
@@ -91,7 +122,11 @@ export const App: React.FC = () => {
     if (introGuidance.trim()) {
       introPrompt += `\n\n[OOC - Guidance for Intro]: ${introGuidance.trim()}`;
     }
-    core.history.push({ id: Date.now().toString(), role: 'user', content: introPrompt });
+    core.history.push({
+      id: Date.now().toString(),
+      role: 'user',
+      content: introPrompt,
+    });
     core.saveChatState();
     triggerUpdate();
     await generateResponse();
@@ -105,7 +140,8 @@ export const App: React.FC = () => {
     core.history.push({
       id: Date.now().toString(),
       role: 'user',
-      content: '[OOC]: Please rewrite and significantly elaborate on your last response. Make it much more vibrant, detailed, and immersive. Describe the environment, sensory details, and character emotions more deeply, and significantly expand the narrative length by adding more events or richer environmental exposition.',
+      content:
+        '[OOC]: Please rewrite and significantly elaborate on your last response. Make it much more vibrant, detailed, and immersive. Describe the environment, sensory details, and character emotions more deeply, and significantly expand the narrative length by adding more events or richer environmental exposition.',
     });
     core.saveChatState();
     triggerUpdate();
@@ -113,14 +149,18 @@ export const App: React.FC = () => {
   };
 
   const handleGenerateAction = async () => {
-    await runActionAction('Generating next action...', async () => {
-      const generator = core.generateNextAction(actionGuidance.trim());
-      let fullText = '';
-      for await (const chunk of generator) {
-        fullText += chunk;
-        setUserInput(fullText);
-      }
-    }, 'Action suggested.');
+    await runActionAction(
+      'Generating next action...',
+      async () => {
+        const generator = core.generateNextAction(actionGuidance.trim());
+        let fullText = '';
+        for await (const chunk of generator) {
+          fullText += chunk;
+          setUserInput(fullText);
+        }
+      },
+      'Action suggested.',
+    );
   };
 
   const handleSend = async () => {
@@ -133,10 +173,18 @@ export const App: React.FC = () => {
     }
 
     if (directionText) {
-      core.history.push({ id: Date.now().toString() + '-sys', role: 'system', content: `[OOC - Story Direction]: ${directionText}` });
+      core.history.push({
+        id: Date.now().toString() + '-sys',
+        role: 'system',
+        content: `[OOC - Story Direction]: ${directionText}`,
+      });
     }
     const finalContent = `[${core.characterName}]: ${userText || '*Waits silently*'}`;
-    core.history.push({ id: Date.now().toString(), role: 'user', content: finalContent });
+    core.history.push({
+      id: Date.now().toString(),
+      role: 'user',
+      content: finalContent,
+    });
     core.saveChatState();
     triggerUpdate();
     setUserInput('');
@@ -147,7 +195,12 @@ export const App: React.FC = () => {
 
   const generateResponse = async () => {
     await runResponseAction('Generating...', async () => {
-      const assistantMessage: any = { id: Date.now().toString(), role: 'assistant', content: '', tool_calls: [] };
+      const assistantMessage: any = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: '',
+        tool_calls: [],
+      };
       setStreamingMsg(assistantMessage);
 
       const generator = core.streamChatCompletionWithTools([]);
@@ -155,9 +208,18 @@ export const App: React.FC = () => {
         if (chunk.type === 'text' && chunk.text) {
           assistantMessage.content += chunk.text;
         } else if (chunk.type === 'tool_call' && chunk.toolCall) {
-          let tc = assistantMessage.tool_calls.find((t: any) => t.id === chunk.toolCall!.id);
+          let tc = assistantMessage.tool_calls.find(
+            (t: any) => t.id === chunk.toolCall!.id,
+          );
           if (!tc) {
-            tc = { id: chunk.toolCall.id, type: 'function', function: { name: chunk.toolCall.name, arguments: chunk.toolCall.arguments } };
+            tc = {
+              id: chunk.toolCall.id,
+              type: 'function',
+              function: {
+                name: chunk.toolCall.name,
+                arguments: chunk.toolCall.arguments,
+              },
+            };
             assistantMessage.tool_calls.push(tc);
           } else {
             tc.function.arguments = chunk.toolCall.arguments;
@@ -167,9 +229,17 @@ export const App: React.FC = () => {
       }
 
       core.history.push(assistantMessage);
-      if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
+      if (
+        assistantMessage.tool_calls &&
+        assistantMessage.tool_calls.length > 0
+      ) {
         for (const tc of assistantMessage.tool_calls) {
-          core.history.push({ id: Date.now().toString() + '-tool-' + tc.id, role: 'tool', content: JSON.stringify({ success: true }), tool_call_id: tc.id });
+          core.history.push({
+            id: Date.now().toString() + '-tool-' + tc.id,
+            role: 'tool',
+            content: JSON.stringify({ success: true }),
+            tool_call_id: tc.id,
+          });
         }
       }
       core.saveChatState();
@@ -193,10 +263,15 @@ export const App: React.FC = () => {
               const args = JSON.parse(tc.function.arguments);
               const isNarrator = args.character?.toLowerCase() === 'narrator';
               elements.push(
-                <div key={i} className={`message ${isNarrator ? 'narrator' : 'character'} ${isStream ? 'streaming' : ''}`}>
-                  <span className="character-name">{args.character || '...'}</span>
+                <div
+                  key={i}
+                  className={`message ${isNarrator ? 'narrator' : 'character'} ${isStream ? 'streaming' : ''}`}
+                >
+                  <span className="character-name">
+                    {args.character || '...'}
+                  </span>
                   {args.message || '...'}
-                </div>
+                </div>,
               );
             } catch (e) {
               // still streaming JSON
@@ -207,10 +282,13 @@ export const App: React.FC = () => {
 
       if (!hasToolCalls && msg.content && msg.content.trim()) {
         elements.push(
-          <div key="fallback" className={`message narrator ${isStream ? 'streaming' : ''}`}>
+          <div
+            key="fallback"
+            className={`message narrator ${isStream ? 'streaming' : ''}`}
+          >
             <span className="character-name">Narrator</span>
             {msg.content}
-          </div>
+          </div>,
         );
       }
 
@@ -243,8 +321,15 @@ export const App: React.FC = () => {
             value={charGuidance}
             onChange={(e) => setCharGuidance(e.target.value)}
           />
-          <Button onClick={handleGenerateCharacter} loading={isGeneratingChar}>2. Auto-Generate Character</Button>
-          <span className="status" style={{ color: charIsError ? 'red' : 'green', marginLeft: '10px' }}>{charStatus}</span>
+          <Button onClick={handleGenerateCharacter} loading={isGeneratingChar}>
+            2. Auto-Generate Character
+          </Button>
+          <span
+            className="status"
+            style={{ color: charIsError ? 'red' : 'green', marginLeft: '10px' }}
+          >
+            {charStatus}
+          </span>
         </div>
 
         <Input
@@ -267,40 +352,70 @@ export const App: React.FC = () => {
             value={introGuidance}
             onChange={(e) => setIntroGuidance(e.target.value)}
           />
-          <Button onClick={handleGenerateIntro} loading={isGeneratingResponse}>3. Generate / Restart Intro</Button>
+          <Button onClick={handleGenerateIntro} loading={isGeneratingResponse}>
+            3. Generate / Restart Intro
+          </Button>
         </div>
       </Panel>
 
       <Panel title="Story">
         <div style={{ marginBottom: '10px' }}>
           <label className="checkbox-label">
-            <input type="checkbox" checked={showAdvanced} onChange={(e) => setShowAdvanced(e.target.checked)} />
+            <input
+              type="checkbox"
+              checked={showAdvanced}
+              onChange={(e) => setShowAdvanced(e.target.checked)}
+            />
             Show Advanced OOC Chat History
           </label>
         </div>
 
         {showAdvanced && (
-          <div style={{ border: '1px solid #ccc', padding: '10px', height: '300px', overflowY: 'auto', marginBottom: '15px', borderRadius: '4px', background: '#fafafa', fontFamily: "Consolas, 'Courier New', monospace", fontSize: '0.9em' }}>
+          <div
+            style={{
+              border: '1px solid #ccc',
+              padding: '10px',
+              height: '300px',
+              overflowY: 'auto',
+              marginBottom: '15px',
+              borderRadius: '4px',
+              background: '#fafafa',
+              fontFamily: "Consolas, 'Courier New', monospace",
+              fontSize: '0.9em',
+            }}
+          >
             {history.map((msg, i) => (
-               <div key={i} style={{ marginBottom: '5px' }}>
-                 <strong>{msg.role}: </strong>
-                 {msg.role === 'assistant' && msg.tool_calls ? JSON.stringify(msg.tool_calls) : msg.content}
-               </div>
+              <div key={i} style={{ marginBottom: '5px' }}>
+                <strong>{msg.role}: </strong>
+                {msg.role === 'assistant' && msg.tool_calls
+                  ? JSON.stringify(msg.tool_calls)
+                  : msg.content}
+              </div>
             ))}
             {streamingMsg && (
               <div style={{ marginBottom: '5px' }}>
-                 <strong>assistant: </strong>
-                 {streamingMsg.tool_calls ? JSON.stringify(streamingMsg.tool_calls) : streamingMsg.content}
+                <strong>assistant: </strong>
+                {streamingMsg.tool_calls
+                  ? JSON.stringify(streamingMsg.tool_calls)
+                  : streamingMsg.content}
               </div>
             )}
           </div>
         )}
 
-        <div style={{ border: '1px solid #ccc', padding: '10px', height: '400px', overflowY: 'auto', marginBottom: '15px', borderRadius: '4px', background: '#fafafa' }}>
+        <div
+          style={{
+            border: '1px solid #ccc',
+            padding: '10px',
+            height: '400px',
+            overflowY: 'auto',
+            marginBottom: '15px',
+            borderRadius: '4px',
+            background: '#fafafa',
+          }}
+        >
           {history.map((msg, i) => (
-             <React.Fragment key={i}>
-               {renderMessageContent(msg)}
-             </React.Fragment>
+            <React.Fragment key={i}>{renderMessageContent(msg)}</React.Fragment>
           ))}
           {streamingMsg && renderMessageContent(streamingMsg, true)}
         </div>
@@ -318,8 +433,18 @@ export const App: React.FC = () => {
             value={actionGuidance}
             onChange={(e) => setActionGuidance(e.target.value)}
           />
-          <Button onClick={handleGenerateAction} loading={isGeneratingAction}>Suggest Action</Button>
-          <span className="status" style={{ color: actionIsError ? 'red' : 'green', marginLeft: '10px' }}>{actionStatus}</span>
+          <Button onClick={handleGenerateAction} loading={isGeneratingAction}>
+            Suggest Action
+          </Button>
+          <span
+            className="status"
+            style={{
+              color: actionIsError ? 'red' : 'green',
+              marginLeft: '10px',
+            }}
+          >
+            {actionStatus}
+          </span>
         </div>
 
         <TextArea
@@ -330,9 +455,29 @@ export const App: React.FC = () => {
         />
 
         <div style={{ marginTop: '10px' }}>
-          <Button onClick={handleSend} loading={isGeneratingResponse} id="send-continue-btn">Send & Continue</Button>
-          <Button variant="secondary" onClick={handleElaborate} loading={isGeneratingResponse}>Elaborate Last Response</Button>
-          <span className="status" style={{ color: responseIsError ? 'red' : 'green', marginLeft: '10px' }}>{responseStatus}</span>
+          <Button
+            onClick={handleSend}
+            loading={isGeneratingResponse}
+            id="send-continue-btn"
+          >
+            Send & Continue
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={handleElaborate}
+            loading={isGeneratingResponse}
+          >
+            Elaborate Last Response
+          </Button>
+          <span
+            className="status"
+            style={{
+              color: responseIsError ? 'red' : 'green',
+              marginLeft: '10px',
+            }}
+          >
+            {responseStatus}
+          </span>
         </div>
       </Panel>
     </PageLayout>

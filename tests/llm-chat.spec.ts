@@ -25,7 +25,9 @@ test.describe('LLM Chat Tool', () => {
     );
   });
 
-  test('should allow fetching models from OpenRouter from settings', async ({ page }) => {
+  test('should allow fetching models from OpenRouter from settings', async ({
+    page,
+  }) => {
     // Intercept the API call to mock response
     await page.route('https://openrouter.ai/api/v1/models', async (route) => {
       await route.fulfill({

@@ -4,7 +4,8 @@ import http from 'isomorphic-git/http/web';
 import { fs, vol } from 'memfs';
 import { getStorage, setStorage } from '../shared/storage.js';
 
-const DEFAULT_SYSTEM_PROMPT = 'You are a chat agent helping the user generate an execution plan to be delegated to an autonomous coding agent. The plan should outline the approach but not be overly detailed. Entrust the coding agent to handle the implementation details. You do not have access to any tools. You must rely on the files provided in your context to answer questions and generate the plan.';
+const DEFAULT_SYSTEM_PROMPT =
+  'You are a chat agent helping the user generate an execution plan to be delegated to an autonomous coding agent. The plan should outline the approach but not be overly detailed. Entrust the coding agent to handle the implementation details. You do not have access to any tools. You must rely on the files provided in your context to answer questions and generate the plan.';
 
 export class RepoChatCore extends ChatCore {
   constructor() {
@@ -18,9 +19,7 @@ export class RepoChatCore extends ChatCore {
       getStorage('repo-chat-systemPrompt') || DEFAULT_SYSTEM_PROMPT;
 
     try {
-      this.history = JSON.parse(
-        getStorage('repo-chat-history') || '[]',
-      );
+      this.history = JSON.parse(getStorage('repo-chat-history') || '[]');
     } catch {
       this.history = [];
     }
@@ -88,7 +87,11 @@ export class RepoChatCore extends ChatCore {
           await readDirRecursive(fullPath);
         } else {
           // Exclude likely binary files to prevent context corruption
-          if (!fullPath.match(/\.(png|jpe?g|gif|webp|ico|mp3|mp4|webm|pdf|woff2?|ttf|eot)$/i)) {
+          if (
+            !fullPath.match(
+              /\.(png|jpe?g|gif|webp|ico|mp3|mp4|webm|pdf|woff2?|ttf|eot)$/i,
+            )
+          ) {
             filesToRead.push(fullPath);
           }
         }
@@ -116,7 +119,8 @@ export class RepoChatCore extends ChatCore {
     const questionMsg: ChatMessage = {
       id: 'msg_seed_question_' + Date.now(),
       role: 'assistant',
-      content: 'I have read the repository files into my context. What changes do you want to make to the repo?',
+      content:
+        'I have read the repository files into my context. What changes do you want to make to the repo?',
     };
     this.history.push(questionMsg);
   }

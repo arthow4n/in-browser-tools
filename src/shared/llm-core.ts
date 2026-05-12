@@ -37,7 +37,14 @@ export interface ProviderPrefs {
   allowFallbacks: boolean;
   dataCollection: 'allow' | 'deny';
   zdr: boolean;
-  reasoningEffort: 'xhigh' | 'high' | 'medium' | 'low' | 'minimal' | 'none' | '';
+  reasoningEffort:
+    | 'xhigh'
+    | 'high'
+    | 'medium'
+    | 'low'
+    | 'minimal'
+    | 'none'
+    | '';
 }
 
 export interface OpenRouterPreset {
@@ -58,27 +65,27 @@ export class LLMCore {
 
   // Proxies for backwards compatibility
   get apiKey(): string {
-    const active = this.presets.find(p => p.id === this.activePresetId);
+    const active = this.presets.find((p) => p.id === this.activePresetId);
     return active ? active.apiKey : '';
   }
 
   set apiKey(val: string) {
-    const active = this.presets.find(p => p.id === this.activePresetId);
+    const active = this.presets.find((p) => p.id === this.activePresetId);
     if (active) active.apiKey = val;
   }
 
   get model(): string {
-    const active = this.presets.find(p => p.id === this.activePresetId);
+    const active = this.presets.find((p) => p.id === this.activePresetId);
     return active ? active.model : 'google/gemini-2.5-flash';
   }
 
   set model(val: string) {
-    const active = this.presets.find(p => p.id === this.activePresetId);
+    const active = this.presets.find((p) => p.id === this.activePresetId);
     if (active) active.model = val;
   }
 
   get providerPrefs(): ProviderPrefs {
-    const active = this.presets.find(p => p.id === this.activePresetId);
+    const active = this.presets.find((p) => p.id === this.activePresetId);
     if (active) return active.providerPrefs;
     // Return dummy if not found, though should not happen if state is loaded
     return {
@@ -91,7 +98,7 @@ export class LLMCore {
   }
 
   set providerPrefs(val: ProviderPrefs) {
-    const active = this.presets.find(p => p.id === this.activePresetId);
+    const active = this.presets.find((p) => p.id === this.activePresetId);
     if (active) active.providerPrefs = val;
   }
 
@@ -107,7 +114,7 @@ export class LLMCore {
         dataCollection: 'deny',
         zdr: true,
         reasoningEffort: '',
-      }
+      },
     };
     this.presets.push(newPreset);
     this.activePresetId = newPreset.id;
@@ -116,7 +123,7 @@ export class LLMCore {
   }
 
   public renamePreset(id: string, newName: string) {
-    const preset = this.presets.find(p => p.id === id);
+    const preset = this.presets.find((p) => p.id === id);
     if (preset) {
       preset.name = newName;
       this.saveState();
@@ -125,7 +132,7 @@ export class LLMCore {
 
   public deletePreset(id: string) {
     if (this.presets.length <= 1) return; // Must have at least one preset
-    this.presets = this.presets.filter(p => p.id !== id);
+    this.presets = this.presets.filter((p) => p.id !== id);
     if (this.activePresetId === id) {
       this.activePresetId = this.presets[0].id;
     }
@@ -133,7 +140,7 @@ export class LLMCore {
   }
 
   public switchPreset(id: string) {
-    if (this.presets.find(p => p.id === id)) {
+    if (this.presets.find((p) => p.id === id)) {
       this.activePresetId = id;
       this.saveState();
     }
@@ -154,7 +161,8 @@ export class LLMCore {
     // Migration from old single-config layout if presets are empty
     if (!this.presets || this.presets.length === 0) {
       const legacyApiKey = getStorage('shared-openrouter-apiKey') || '';
-      const legacyModel = getStorage('shared-openrouter-model') || 'google/gemini-2.5-flash';
+      const legacyModel =
+        getStorage('shared-openrouter-model') || 'google/gemini-2.5-flash';
       let legacyPrefs: ProviderPrefs = {
         order: ['deepinfra'],
         allowFallbacks: true,
@@ -184,7 +192,7 @@ export class LLMCore {
       this.saveState();
     }
 
-    if (!this.presets.find(p => p.id === this.activePresetId)) {
+    if (!this.presets.find((p) => p.id === this.activePresetId)) {
       this.activePresetId = this.presets[0].id;
     }
   }
@@ -194,11 +202,14 @@ export class LLMCore {
     setStorage('shared-openrouter-activePresetId', this.activePresetId);
 
     // Also save legacy keys for backwards compatibility in case any old logic still reads them directly without core (shouldn't happen but safe)
-    const active = this.presets.find(p => p.id === this.activePresetId);
+    const active = this.presets.find((p) => p.id === this.activePresetId);
     if (active) {
       setStorage('shared-openrouter-apiKey', active.apiKey);
       setStorage('shared-openrouter-model', active.model);
-      setStorage('shared-openrouter-providerPrefs', JSON.stringify(active.providerPrefs));
+      setStorage(
+        'shared-openrouter-providerPrefs',
+        JSON.stringify(active.providerPrefs),
+      );
     }
   }
 
@@ -267,7 +278,11 @@ export class LLMCore {
     throw lastError;
   }
 
-  public async callLLMWithTools(messages: ChatMessage[], tools: any[], retries = 2): Promise<any> {
+  public async callLLMWithTools(
+    messages: ChatMessage[],
+    tools: any[],
+    retries = 2,
+  ): Promise<any> {
     let attempt = 0;
     let lastError: any;
 

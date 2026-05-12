@@ -18,11 +18,16 @@ const tools = [
 
 export const App: React.FC = () => {
   return (
-    <div className="container" style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
+    <div
+      className="container"
+      style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}
+    >
       <h1>In-Browser Tools</h1>
-      <p>Disclaimer: mostly vibe-coded and not well-defined hobby level tools.</p>
+      <p>
+        Disclaimer: mostly vibe-coded and not well-defined hobby level tools.
+      </p>
       <ul>
-        {tools.map(tool => (
+        {tools.map((tool) => (
           <li key={tool.path}>
             <a href={tool.path}>{tool.name}</a>
           </li>

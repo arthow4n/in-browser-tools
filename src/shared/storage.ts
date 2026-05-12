@@ -55,7 +55,11 @@ export function clearToolSettings(): void {
   const keysToRemove: string[] = [];
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-    if (key && key.startsWith(PREFIX) && !key.startsWith(PREFIX + 'shared-openrouter-')) {
+    if (
+      key &&
+      key.startsWith(PREFIX) &&
+      !key.startsWith(PREFIX + 'shared-openrouter-')
+    ) {
       keysToRemove.push(key);
     }
   }

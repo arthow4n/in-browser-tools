@@ -94,10 +94,7 @@ class DesignerChat extends ChatCore {
 
   saveChatState() {
     super.saveChatState();
-    setStorage(
-      'agent-workflow-designer-history',
-      JSON.stringify(this.history),
-    );
+    setStorage('agent-workflow-designer-history', JSON.stringify(this.history));
     if (undoManager) {
       undoManager.save([...this.history]);
     }

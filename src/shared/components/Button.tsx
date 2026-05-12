@@ -5,7 +5,14 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   loading?: boolean;
 }
 
-export const Button: React.FC<ButtonProps> = ({ variant = 'primary', loading, children, disabled, className, ...props }) => {
+export const Button: React.FC<ButtonProps> = ({
+  variant = 'primary',
+  loading,
+  children,
+  disabled,
+  className,
+  ...props
+}) => {
   const baseClass = `btn btn-${variant}`;
   const combinedClass = className ? `${baseClass} ${className}` : baseClass;
 

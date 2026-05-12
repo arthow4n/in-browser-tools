@@ -61,16 +61,55 @@ export const App: React.FC = () => {
           value={url}
           onChange={(e) => setUrl(e.target.value)}
         />
-        {urlError && <span className="error-text" style={{ color: 'red', fontSize: '0.9em' }}>{urlError}</span>}
+        {urlError && (
+          <span
+            className="error-text"
+            style={{ color: 'red', fontSize: '0.9em' }}
+          >
+            {urlError}
+          </span>
+        )}
 
-        <div className="output-group" style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div
+          className="output-group"
+          style={{
+            marginTop: '20px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px',
+          }}
+        >
           <label style={{ fontWeight: 'bold' }}>Encoded Credentials:</label>
-          <div className="output-field" style={{ width: '100%', padding: '15px', border: '1px solid #ccc', backgroundColor: '#f9f9f9', fontFamily: "Consolas, 'Courier New', monospace", borderRadius: '4px', wordBreak: 'break-all' }}>
+          <div
+            className="output-field"
+            style={{
+              width: '100%',
+              padding: '15px',
+              border: '1px solid #ccc',
+              backgroundColor: '#f9f9f9',
+              fontFamily: "Consolas, 'Courier New', monospace",
+              borderRadius: '4px',
+              wordBreak: 'break-all',
+            }}
+          >
             {encodedCredentials}
           </div>
 
-          <label style={{ fontWeight: 'bold', marginTop: '10px' }}>Full URL with Basic Auth:</label>
-          <div className="output-field" style={{ width: '100%', padding: '15px', border: '1px solid #ccc', backgroundColor: '#f9f9f9', fontFamily: "Consolas, 'Courier New', monospace", borderRadius: '4px', wordBreak: 'break-all' }}>
+          <label style={{ fontWeight: 'bold', marginTop: '10px' }}>
+            Full URL with Basic Auth:
+          </label>
+          <div
+            className="output-field"
+            style={{
+              width: '100%',
+              padding: '15px',
+              border: '1px solid #ccc',
+              backgroundColor: '#f9f9f9',
+              fontFamily: "Consolas, 'Courier New', monospace",
+              borderRadius: '4px',
+              wordBreak: 'break-all',
+            }}
+          >
             {fullUrl}
           </div>
         </div>

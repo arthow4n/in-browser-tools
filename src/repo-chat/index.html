@@ -61,7 +61,12 @@
     <section>
       <h2>Repository</h2>
       <label for="repo-url">GitHub Repo URL:</label>
-      <input type="text" id="repo-url" placeholder="https://github.com/user/repo" value="https://github.com/arthow4n/in-browser-tools.git" />
+      <input
+        type="text"
+        id="repo-url"
+        placeholder="https://github.com/user/repo"
+        value="https://github.com/arthow4n/in-browser-tools.git"
+      />
       <button id="clone-btn" class="btn btn-primary">Clone Repository</button>
       <span id="clone-status" class="status"></span>
     </section>
@@ -69,7 +74,9 @@
     <section>
       <h2>Chat</h2>
       <div class="flex-row mb-2">
-        <button id="restart-chat-btn" class="btn btn-secondary">Restart Chat</button>
+        <button id="restart-chat-btn" class="btn btn-secondary">
+          Restart Chat
+        </button>
         <button id="clear-all-btn" class="btn btn-danger">Clear All</button>
       </div>
       <div id="history-container"></div>

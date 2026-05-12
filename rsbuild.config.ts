@@ -18,7 +18,7 @@ export default defineConfig({
       'agent-workflow-designer': './src/agent-workflow-designer/index.tsx',
       'text-adventure-writer': './src/text-adventure-writer/index.tsx',
       'basic-auth-generator': './src/basic-auth-generator/index.tsx',
-      'settings': './src/settings/index.tsx',
+      settings: './src/settings/index.tsx',
     },
   },
   html: {
