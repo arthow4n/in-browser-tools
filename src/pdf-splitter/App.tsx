@@ -93,15 +93,13 @@ export const App: React.FC = () => {
   return (
     <PageLayout>
       <Panel title="PDF Splitter">
-        <div className="input-group">
-          <label htmlFor="pdf-file">Upload PDF file:</label>
-          <input
-            type="file"
-            id="pdf-file"
-            accept="application/pdf"
-            onChange={handleFileChange}
-          />
-        </div>
+        <Input
+          type="file"
+          id="pdf-file"
+          label="Upload PDF file:"
+          accept="application/pdf"
+          onChange={handleFileChange}
+        />
         <Input
           label="Split every X pages:"
           type="number"

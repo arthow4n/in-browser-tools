@@ -359,31 +359,23 @@ export const App: React.FC = () => {
           <option value="allow">Allow</option>
         </select>
 
-        <label
-          className="checkbox-label"
-          style={{ display: 'block', marginTop: '15px' }}
-        >
-          <input
-            type="checkbox"
-            id="provider-allow-fallbacks"
-            checked={allowFallbacks}
-            onChange={(e) => setAllowFallbacks(e.target.checked)}
-          />
-          Allow Fallbacks
-        </label>
+        <Input
+          type="checkbox"
+          id="provider-allow-fallbacks"
+          label="Allow Fallbacks"
+          checked={allowFallbacks}
+          onChange={(e) => setAllowFallbacks(e.target.checked)}
+          containerStyle={{ display: 'block', marginTop: '15px' }}
+        />
 
-        <label
-          className="checkbox-label"
-          style={{ display: 'block', marginTop: '15px' }}
-        >
-          <input
-            type="checkbox"
-            id="provider-zdr"
-            checked={zdr}
-            onChange={(e) => setZdr(e.target.checked)}
-          />
-          Zero Data Retention (ZDR)
-        </label>
+        <Input
+          type="checkbox"
+          id="provider-zdr"
+          label="Zero Data Retention (ZDR)"
+          checked={zdr}
+          onChange={(e) => setZdr(e.target.checked)}
+          containerStyle={{ display: 'block', marginTop: '15px' }}
+        />
       </div>
 
       <hr

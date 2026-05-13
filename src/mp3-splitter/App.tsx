@@ -114,15 +114,13 @@ export const App: React.FC = () => {
   return (
     <PageLayout>
       <Panel title="MP3 Splitter">
-        <div className="input-group">
-          <label htmlFor="mp3-file">Upload MP3 or M4A file:</label>
-          <input
-            type="file"
-            id="mp3-file"
-            accept="audio/mpeg,audio/mp4,audio/x-m4a,.m4a"
-            onChange={(e) => setFile(e.target.files?.[0] || null)}
-          />
-        </div>
+        <Input
+          type="file"
+          id="mp3-file"
+          label="Upload MP3 or M4A file:"
+          accept="audio/mpeg,audio/mp4,audio/x-m4a,.m4a"
+          onChange={(e) => setFile(e.target.files?.[0] || null)}
+        />
         <Input
           label="Split every X minutes:"
           type="number"
