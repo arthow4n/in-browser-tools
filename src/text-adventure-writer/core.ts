@@ -16,19 +16,19 @@ export class TextAdventureCore extends ChatCore {
     // which won't initialize characterName and characterDescription yet.
     this.loadChatState();
     this.registerTool({
-      name: 'speak',
+      name: 'write_action',
       description:
-        "Speak as a character or the narrator. You MUST use this tool to communicate anything to the user. Your regular text response is hidden. You MUST NOT interleave multiple characters or narration in a single tool call. Make a SEPARATE tool call for each character's speech and for each piece of narration.",
+        "Write as a character or the narrator to perform an action or dialogue. You MUST use this tool to communicate anything to the user or write the story. Your regular text response is hidden. You MUST NOT interleave multiple characters or narration in a single tool call. Make a SEPARATE tool call for each character's speech/action and for each piece of narration.",
       parameters: {
         type: 'object',
         properties: {
           character: {
             type: 'string',
-            description: "The name of the character speaking, or 'Narrator'.",
+            description: "The name of the character, or 'Narrator'.",
           },
           message: {
             type: 'string',
-            description: 'The message they say or the narration.',
+            description: 'The action they perform, the dialogue they say, or the narration.',
           },
         },
         required: ['character', 'message'],
@@ -38,10 +38,52 @@ export class TextAdventureCore extends ChatCore {
         return { success: true };
       },
     });
+
+    this.registerTool({
+      name: 'wait_for_user_input',
+      description:
+        "Wait for the user's character to take their turn. You MUST use this as your final tool call each turn after you are done writing the narrator and NPC actions. The result of this tool call will be the user's action or dialogue.",
+      parameters: {
+        type: 'object',
+        properties: {},
+        required: [],
+      },
+      execute: () => {
+        return { success: true };
+      },
+    });
   }
 
   override loadChatState() {
     const defaultPrompt = `You are an expert text adventure game master and writer. You must drive the story forward autonomously, acting as the narrator and all non-player characters.
+
+CRITICAL INSTRUCTIONS FOR YOUR OUTPUT:
+1. You MUST FIRST think out loud about how to progress the story, what characters should do, and how to keep the player immersed. Write this as plain text. (This will be hidden from the player and serves as your internal plan).
+2. After your plain text thoughts, you MUST perform MULTIPLE \`write_action\` tool calls to write the story and dialogue for the narrator and various characters.
+3. You MUST make a SEPARATE \`write_action\` tool call for EACH character's dialogue/action and EACH piece of narration. Do NOT combine multiple characters or narration into a single tool call.
+4. You MUST NOT act or speak for the user's character. Wait for the user to specify their own actions.
+5. As your FINAL action for the turn, you MUST call the \`wait_for_user_input\` tool to receive the user's action or dialogue in response to your progression.
+
+EXAMPLE GOOD RESPONSE:
+(Plain text)
+I need to introduce the dark wizard and set a spooky atmosphere. I will first have the Narrator describe the room, then the Dark Wizard will speak. Then I'll wait for the user.
+
+(Tool calls)
+- Call \`write_action\` with character: "Narrator", message: "You step into a dimly lit room, the air thick with the smell of sulfur. Shadows dance on the walls."
+- Call \`write_action\` with character: "Dark Wizard", message: "Ah, I have been expecting you, foolish mortal."
+- Call \`write_action\` with character: "Narrator", message: "The wizard raises his staff, glowing with an eerie green light."
+- Call \`wait_for_user_input\` with empty arguments.
+
+EXAMPLE BAD RESPONSE:
+(Plain text)
+I will narrate and have the wizard speak.
+(Tool call)
+- Call \`write_action\` with character: "Narrator", message: "You step into the room. The Dark Wizard says 'I have been expecting you.'" (THIS IS BAD! DO NOT COMBINE!)
+- Call \`write_action\` with character: "User", message: "I draw my sword!" (THIS IS BAD! DO NOT ACT FOR THE USER!)
+
+Your responses MUST be substantial, detailed progressions (at least 3-4 paragraphs) that unfold the narrative organically. Do not wait for the player to initiate every single micro-action. Instead, advance the plot, describe the environment with rich, vibrant sensory details, and deeply convey character emotions. At the end of your lengthy progression, present the player with an engaging hook, a cliffhanger, or a meaningful choice to respond to, and then call \`wait_for_user_input\`.`;
+
+    const oldDefaultPrompt5 = `You are an expert text adventure game master and writer. You must drive the story forward autonomously, acting as the narrator and all non-player characters.
 
 CRITICAL INSTRUCTIONS FOR YOUR OUTPUT:
 1. You MUST FIRST think out loud about how to progress the story, what characters should do, and how to keep the player immersed. Write this as plain text. (This will be hidden from the player and serves as your internal plan).
@@ -82,7 +124,8 @@ Your responses MUST be substantial, detailed progressions (at least 3-4 paragrap
       savedPrompt === oldDefaultPrompt1 ||
       savedPrompt === oldDefaultPrompt2 ||
       savedPrompt === oldDefaultPrompt3 ||
-      savedPrompt === oldDefaultPrompt4
+      savedPrompt === oldDefaultPrompt4 ||
+      savedPrompt === oldDefaultPrompt5
     ) {
       this.systemPrompt = defaultPrompt;
     } else {
@@ -128,7 +171,7 @@ Your responses MUST be substantial, detailed progressions (at least 3-4 paragrap
           msg.tool_calls.length > 0
         ) {
           for (const tc of msg.tool_calls) {
-            if (tc.function.name === 'speak') {
+            if (tc.function.name === 'speak' || tc.function.name === 'write_action') {
               try {
                 const args = JSON.parse(tc.function.arguments);
                 content += `\n[${args.character}]: ${args.message}`;
@@ -138,9 +181,20 @@ Your responses MUST be substantial, detailed progressions (at least 3-4 paragrap
             }
           }
         }
+
+        let role = msg.role;
+        // Tool results for wait_for_user_input contain the actual user input
+        if (msg.role === 'tool') {
+          if (msg.content === '{"success":true}') {
+             role = 'system';
+          } else {
+             role = 'user';
+          }
+        }
+
         return {
           id: msg.id,
-          role: msg.role === 'tool' ? 'system' : msg.role, // Tools don't make sense in plain text, just treat as system or strip
+          role: role,
           content: content.trim(),
         };
       })
@@ -234,7 +288,7 @@ ${this.outputLanguage ? `[OOC - Output Language]: You must output the action/dia
           msg.tool_calls.length > 0
         ) {
           for (const tc of msg.tool_calls) {
-            if (tc.function.name === 'speak') {
+            if (tc.function.name === 'speak' || tc.function.name === 'write_action') {
               try {
                 const args = JSON.parse(tc.function.arguments);
                 content += `\n[${args.character}]: ${args.message}`;
@@ -244,9 +298,19 @@ ${this.outputLanguage ? `[OOC - Output Language]: You must output the action/dia
             }
           }
         }
+
+        let role = msg.role;
+        if (msg.role === 'tool') {
+          if (msg.content === '{"success":true}') {
+             role = 'system';
+          } else {
+             role = 'user';
+          }
+        }
+
         return {
           id: msg.id,
-          role: msg.role === 'tool' ? 'system' : msg.role,
+          role: role,
           content: content.trim(),
         };
       })
