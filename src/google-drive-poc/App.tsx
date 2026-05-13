@@ -82,12 +82,12 @@ export const App: React.FC = () => {
 
   const handleAuth = async () => {
     if (!clientId.trim()) {
-      alert('Please enter a Client ID first.');
+      setCustomStatus('Error: Please enter a Client ID first.');
       return;
     }
 
     if (!gapiLoaded || !gisLoaded) {
-      alert('Libraries are still loading, please wait.');
+      setCustomStatus('Error: Libraries are still loading, please wait.');
       return;
     }
 
@@ -174,12 +174,10 @@ export const App: React.FC = () => {
   };
 
   const handleLoad = async () => {
-    if (!fileId) {
-      alert('No file found to load. Save one first!');
-      return;
-    }
-
     await runAction('Loading from Google Drive...', async () => {
+      if (!fileId) {
+        throw new Error('No file found to load. Save one first!');
+      }
       // @ts-ignore
       const token = gapi.client.getToken()?.access_token;
       if (!token) throw new Error('No access token available.');

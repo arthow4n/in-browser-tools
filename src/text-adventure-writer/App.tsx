@@ -22,6 +22,7 @@ export const App: React.FC = () => {
 
   const [history, setHistory] = useState<any[]>([]);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [formError, setFormError] = useState('');
 
   const [userInput, setUserInput] = useState('');
   const [storyDirection, setStoryDirection] = useState('');
@@ -78,13 +79,12 @@ export const App: React.FC = () => {
   };
 
   const handleGenerateCharacter = async () => {
-    if (!scenarioRequest.trim()) {
-      alert('Please enter a scenario request first.');
-      return;
-    }
     await runCharAction(
       'Generating character...',
       async () => {
+        if (!scenarioRequest.trim()) {
+          throw new Error('Please enter a scenario request first.');
+        }
         const generator = core.generateCharacter({
           scenarioRequest: scenarioRequest.trim(),
           guidance: charGuidance.trim(),
@@ -114,9 +114,10 @@ export const App: React.FC = () => {
 
   const handleGenerateIntro = async () => {
     if (!scenarioRequest.trim()) {
-      alert('Please enter a scenario request first.');
+      setFormError('Please enter a scenario request first.');
       return;
     }
+    setFormError('');
     core.history = [];
     let introPrompt = `[OOC - Initial Scenario]: The user requested the following scenario to begin: ${scenarioRequest.trim()}`;
     if (introGuidance.trim()) {
@@ -134,9 +135,10 @@ export const App: React.FC = () => {
 
   const handleElaborate = async () => {
     if (core.history.length === 0) {
-      alert('No history to elaborate on.');
+      setFormError('No history to elaborate on.');
       return;
     }
+    setFormError('');
     core.history.push({
       id: Date.now().toString(),
       role: 'user',
@@ -168,9 +170,10 @@ export const App: React.FC = () => {
     const directionText = storyDirection.trim();
     if (!userText && !directionText) return;
     if (!core.characterName) {
-      alert('Please enter your character name.');
+      setFormError('Please enter your character name.');
       return;
     }
+    setFormError('');
 
     if (directionText) {
       core.history.push({
@@ -355,6 +358,11 @@ export const App: React.FC = () => {
           <Button onClick={handleGenerateIntro} loading={isGeneratingResponse}>
             3. Generate / Restart Intro
           </Button>
+          {formError && (
+            <span className="status" style={{ color: 'red', marginLeft: '10px' }}>
+              {formError}
+            </span>
+          )}
         </div>
       </Panel>
 
@@ -478,6 +486,11 @@ export const App: React.FC = () => {
           >
             {responseStatus}
           </span>
+          {formError && (
+            <span className="status" style={{ color: 'red', marginLeft: '10px' }}>
+              {formError}
+            </span>
+          )}
         </div>
       </Panel>
     </PageLayout>

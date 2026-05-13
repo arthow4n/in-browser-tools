@@ -38,7 +38,7 @@ Adopt a mobile-first design:
 - Ensure layouts wrap properly on small screens (e.g. use `display: flex; flex-wrap: wrap;` or media queries for CSS grids). Input fields and buttons should wrap to the next line on mobile rather than overflowing.
 - Use `box-sizing: border-box` globally or for sizing elements to prevent padding/borders from breaking width limits.
 - Avoid hardcoded fixed widths (e.g. `width: 300px`); use `width: 100%; max-width: 300px;` instead.
-- Avoid using browser `alert()` for errors or notifications because it force disturbs the user. Always display loading, streaming, and error states gracefully using inline UI elements (e.g., status spans or specific UI containers).
+- Avoid using browser `alert()` for errors or notifications because it force disturbs the user. Always display loading, streaming, and error states gracefully using inline UI elements (e.g., status spans or specific UI containers) as close to the related action button as possible. Note that LLM returning an empty response should also be treated as an error state, as it could mean the provider blocked the output.
 - When a button triggers an asynchronous action, use the `useAsyncAction` hook from `src/shared/hooks/useAsyncAction.ts` to manage the loading state, button disablement, and error/success status automatically.
 
 ## Pre-push checks

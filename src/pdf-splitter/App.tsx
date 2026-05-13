@@ -31,22 +31,19 @@ export const App: React.FC = () => {
   };
 
   const handleSplit = async () => {
-    if (!file) {
-      alert('Please select a PDF file first.');
-      return;
-    }
-
-    const pagesPerSplit = parseInt(pages, 10);
-    if (isNaN(pagesPerSplit) || pagesPerSplit <= 0) {
-      alert('Please enter a valid number of pages.');
-      return;
-    }
-
     setOutputs([]);
 
     await runAction(
-      `Processing ${file.name} (${formatBytes(file.size)})...`,
+      `Processing ${file ? file.name : ''}...`,
       async () => {
+        if (!file) {
+          throw new Error('Please select a PDF file first.');
+        }
+        const pagesPerSplit = parseInt(pages, 10);
+        if (isNaN(pagesPerSplit) || pagesPerSplit <= 0) {
+          throw new Error('Please enter a valid number of pages.');
+        }
+
         const arrayBuffer = await file.arrayBuffer();
         const pdfDoc = await PDFDocument.load(arrayBuffer);
         const totalPages = pdfDoc.getPageCount();

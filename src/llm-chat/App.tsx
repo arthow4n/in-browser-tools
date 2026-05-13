@@ -64,12 +64,10 @@ export const App: React.FC = () => {
   };
 
   const handleImprovePrompt = async () => {
-    if (!core.apiKey || !core.model) {
-      alert('API Key and Model are required to improve prompt.');
-      return;
-    }
-
     await runImproveAction('Improving...', async () => {
+      if (!core.apiKey || !core.model) {
+        throw new Error('API Key and Model are required to improve prompt.');
+      }
       const improved = await core.improveSystemPrompt(
         promptIntention,
         promptHowToImprove,
