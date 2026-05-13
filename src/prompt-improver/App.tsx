@@ -195,26 +195,22 @@ export const App: React.FC = () => {
           onChange={(e) => updateState('evaluationFocus', e.target.value)}
         />
 
-        <div className="input-group">
-          <label>Max Loops:</label>
-          <input
-            type="number"
-            min="1"
-            max="10"
-            value={state.maxRounds}
-            onChange={(e) => updateState('maxRounds', e.target.value)}
-          />
-        </div>
-        <div className="input-group">
-          <label>Branch Factor (Best of N per loop):</label>
-          <input
-            type="number"
-            min="1"
-            max="5"
-            value={state.branchFactor}
-            onChange={(e) => updateState('branchFactor', e.target.value)}
-          />
-        </div>
+        <Input
+          type="number"
+          label="Max Loops:"
+          min="1"
+          max="10"
+          value={state.maxRounds}
+          onChange={(e) => updateState('maxRounds', e.target.value)}
+        />
+        <Input
+          type="number"
+          label="Branch Factor (Best of N per loop):"
+          min="1"
+          max="5"
+          value={state.branchFactor}
+          onChange={(e) => updateState('branchFactor', e.target.value)}
+        />
 
         <div style={{ marginTop: '10px', fontSize: '0.9em', color: '#666' }}>
           <strong>Estimations:</strong>

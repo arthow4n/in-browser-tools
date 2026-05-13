@@ -540,7 +540,7 @@ export const App: React.FC = () => {
         <div style={{ borderTop: '1px solid #ccc', paddingTop: '15px', display: 'flex', gap: '10px' }}>
           <Button onClick={handleExport}>Export JSON</Button>
           <Button onClick={() => fileInputRef.current?.click()}>Import JSON</Button>
-          <input
+          <Input
             type="file"
             accept=".json"
             ref={fileInputRef}
@@ -610,14 +610,12 @@ export const App: React.FC = () => {
 
       <Panel title="Story">
         <div style={{ marginBottom: '10px' }}>
-          <label className="checkbox-label">
-            <input
-              type="checkbox"
-              checked={showAdvanced}
-              onChange={(e) => setShowAdvanced(e.target.checked)}
-            />
-            Show Advanced OOC Chat History
-          </label>
+          <Input
+            type="checkbox"
+            label="Show Advanced OOC Chat History"
+            checked={showAdvanced}
+            onChange={(e) => setShowAdvanced(e.target.checked)}
+          />
         </div>
 
         {showAdvanced && (

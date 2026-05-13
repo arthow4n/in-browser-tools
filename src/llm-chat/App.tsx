@@ -379,15 +379,14 @@ export const App: React.FC = () => {
         </div>
 
         <div className="flex-row">
-          <label className="checkbox-label" style={{ marginRight: '15px' }}>
-            <input
-              type="checkbox"
-              id="enable-tools-checkbox"
-              checked={toolsEnabled}
-              onChange={handleToolEnableToggle}
-            />
-            Enable Tools
-          </label>
+          <Input
+            type="checkbox"
+            id="enable-tools-checkbox"
+            label="Enable Tools"
+            checked={toolsEnabled}
+            onChange={handleToolEnableToggle}
+            containerStyle={{ marginRight: '15px' }}
+          />
         </div>
 
         {toolsEnabled && (
@@ -405,25 +404,19 @@ export const App: React.FC = () => {
             }}
           >
             {core.tools.map((tool) => (
-              <label
+              <Input
                 key={tool.name}
+                type="checkbox"
+                label={`${tool.name}: ${tool.description}`}
+                checked={!disabledTools.has(tool.name)}
+                onChange={(e) =>
+                  handleToolToggle(tool.name, e.target.checked)
+                }
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '5px',
                   fontWeight: 'normal',
                   fontSize: '0.9em',
                 }}
-              >
-                <input
-                  type="checkbox"
-                  checked={!disabledTools.has(tool.name)}
-                  onChange={(e) =>
-                    handleToolToggle(tool.name, e.target.checked)
-                  }
-                />
-                {tool.name}: {tool.description}
-              </label>
+              />
             ))}
           </div>
         )}

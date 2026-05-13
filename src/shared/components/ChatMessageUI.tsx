@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { ChatMessage } from '../llm-core.js';
 import { ChatCore } from '../../llm-chat/core.js';
+import { Input } from './Input.js';
+import { TextArea } from './TextArea.js';
 
 interface ChatMessageUIProps {
   msg: ChatMessage & { id?: string };
@@ -116,7 +118,7 @@ export const ChatMessageUI: React.FC<ChatMessageUIProps> = ({
       </div>
 
       {isEditing ? (
-        <textarea
+        <TextArea
           rows={4}
           style={{ width: '100%' }}
           value={editContent}
@@ -144,7 +146,7 @@ export const ChatMessageUI: React.FC<ChatMessageUIProps> = ({
             borderRadius: '5px',
           }}
         >
-          <input
+          <Input
             type="text"
             placeholder="Optional Instructions (e.g. Make it more professional)"
             style={{

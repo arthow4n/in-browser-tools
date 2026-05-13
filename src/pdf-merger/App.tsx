@@ -62,16 +62,14 @@ export const App: React.FC = () => {
   return (
     <PageLayout>
       <Panel title="PDF Merger">
-        <div className="input-group">
-          <label htmlFor="pdf-files">Upload PDF files:</label>
-          <input
-            type="file"
-            id="pdf-files"
-            accept="application/pdf"
-            multiple
-            onChange={handleFileChange}
-          />
-        </div>
+        <Input
+          type="file"
+          id="pdf-files"
+          label="Upload PDF files:"
+          accept="application/pdf"
+          multiple
+          onChange={handleFileChange}
+        />
 
         <div style={{ marginTop: '1em' }}>
           <ul id="file-list">
