@@ -37,22 +37,19 @@ export const App: React.FC = () => {
   };
 
   const handleSplit = async () => {
-    if (!file) {
-      alert('Please select a file first.');
-      return;
-    }
-
-    const parsedMinutes = parseInt(minutes, 10);
-    if (isNaN(parsedMinutes) || parsedMinutes <= 0) {
-      alert('Please enter a valid number of minutes.');
-      return;
-    }
-
     setOutputs([]);
 
     await runAction(
       'Loading FFmpeg...',
       async () => {
+        if (!file) {
+          throw new Error('Please select a file first.');
+        }
+        const parsedMinutes = parseInt(minutes, 10);
+        if (isNaN(parsedMinutes) || parsedMinutes <= 0) {
+          throw new Error('Please enter a valid number of minutes.');
+        }
+
         const ffmpeg = await loadFfmpeg();
 
         const extMatch = file.name.match(/\.([^.]+)$/);

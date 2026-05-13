@@ -65,7 +65,8 @@ clearAllBtn.addEventListener('click', () => {
 cloneBtn.addEventListener('click', async () => {
   const url = repoUrlInput.value.trim();
   if (!url) {
-    alert('Please enter a repository URL');
+    cloneStatus.textContent = 'Please enter a repository URL';
+    cloneStatus.style.color = 'red';
     return;
   }
 

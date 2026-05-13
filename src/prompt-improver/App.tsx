@@ -86,11 +86,6 @@ export const App: React.FC = () => {
   };
 
   const handleStart = async () => {
-    if (!llmCore.apiKey || !llmCore.model || !state.originalPrompt) {
-      alert('Please fill out API Key, Model, and Original Prompt.');
-      return;
-    }
-
     const config: PromptImproverConfig = {
       originalPrompt: state.originalPrompt,
       intention: state.intention,
@@ -108,6 +103,9 @@ export const App: React.FC = () => {
     await runAction(
       'Running...',
       async () => {
+        if (!llmCore.apiKey || !llmCore.model || !state.originalPrompt) {
+          throw new Error('Please fill out API Key, Model, and Original Prompt.');
+        }
         const core = new PromptImproverCore(config, llmCore);
         const generator = core.run();
         let finalResults: IterationResult[] = [];

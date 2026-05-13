@@ -27,16 +27,14 @@ export const App: React.FC = () => {
   };
 
   const handleMerge = async () => {
-    if (selectedFiles.length === 0) {
-      alert('Please select at least one PDF file.');
-      return;
-    }
-
     setOutputUrl(null);
 
     await runAction(
       'Merging PDFs...',
       async () => {
+        if (selectedFiles.length === 0) {
+          throw new Error('Please select at least one PDF file.');
+        }
         const mergedPdf = await PDFDocument.create();
 
         for (const file of selectedFiles) {

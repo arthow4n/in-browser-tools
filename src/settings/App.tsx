@@ -107,7 +107,8 @@ export const App: React.FC = () => {
 
   const handleDeletePreset = () => {
     if (core.presets.length <= 1) {
-      alert('Cannot delete the last preset.');
+      setResetStatus('Cannot delete the last preset.');
+      setTimeout(() => setResetStatus(''), 3000);
       return;
     }
     if (confirm('Are you sure you want to delete this preset?')) {
@@ -123,13 +124,12 @@ export const App: React.FC = () => {
   };
 
   const fetchModels = async () => {
-    if (!apiKey) {
-      alert('Please enter an OpenRouter API Key first.');
-      return;
-    }
     await runAction(
       'Fetching...',
       async () => {
+        if (!apiKey) {
+          throw new Error('Please enter an OpenRouter API Key first.');
+        }
         const models = await core.fetchModels();
         setAvailableModels(models);
         setShowDropdown(true);
