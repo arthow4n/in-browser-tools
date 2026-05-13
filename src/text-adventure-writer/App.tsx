@@ -33,6 +33,142 @@ export const App: React.FC = () => {
 
   const [streamingMsg, setStreamingMsg] = useState<any | null>(null);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleExport = () => {
+    const data = {
+      scenarioRequest: core.scenarioRequest,
+      characterName: core.characterName,
+      characterDescription: core.characterDescription,
+      history: core.history,
+      systemPrompt: core.systemPrompt,
+      outputLanguage: core.outputLanguage,
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `adventure-${core.characterName || 'export'}-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const [saveName, setSaveName] = useState('');
+  const [savedAdventures, setSavedAdventures] = useState<Record<string, any>>({});
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('in-browser-tools:text-adventure-savedAdventures');
+      if (saved) {
+        setSavedAdventures(JSON.parse(saved));
+      }
+    } catch (e) {
+      console.error('Failed to load saved adventures list', e);
+    }
+  }, []);
+
+  const handleSaveToBrowser = () => {
+    if (!saveName.trim()) {
+      setFormError('Please enter a name for your save.');
+      return;
+    }
+    const data = {
+      scenarioRequest: core.scenarioRequest,
+      characterName: core.characterName,
+      characterDescription: core.characterDescription,
+      history: core.history,
+      systemPrompt: core.systemPrompt,
+      outputLanguage: core.outputLanguage,
+      savedAt: new Date().toISOString(),
+    };
+
+    const newSaved = { ...savedAdventures, [saveName.trim()]: data };
+    setSavedAdventures(newSaved);
+    localStorage.setItem('in-browser-tools:text-adventure-savedAdventures', JSON.stringify(newSaved));
+    setSaveName('');
+    setFormError('');
+  };
+
+  const handleLoadFromBrowser = (name: string) => {
+    const data = savedAdventures[name];
+    if (!data) return;
+
+    if (data.scenarioRequest !== undefined) {
+      core.scenarioRequest = data.scenarioRequest;
+      setScenarioRequest(data.scenarioRequest);
+    }
+    if (data.characterName !== undefined) {
+      core.characterName = data.characterName;
+      setCharacterName(data.characterName);
+    }
+    if (data.characterDescription !== undefined) {
+      core.characterDescription = data.characterDescription;
+      setCharacterDescription(data.characterDescription);
+    }
+    if (data.history !== undefined) {
+      core.history = data.history;
+      triggerUpdate();
+    }
+    if (data.systemPrompt !== undefined) {
+      core.systemPrompt = data.systemPrompt;
+    }
+    if (data.outputLanguage !== undefined) {
+      core.outputLanguage = data.outputLanguage;
+    }
+    core.saveChatState();
+    setFormError('');
+  };
+
+  const handleDeleteFromBrowser = (name: string) => {
+    const newSaved = { ...savedAdventures };
+    delete newSaved[name];
+    setSavedAdventures(newSaved);
+    localStorage.setItem('in-browser-tools:text-adventure-savedAdventures', JSON.stringify(newSaved));
+  };
+
+  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target?.result as string);
+        if (data.scenarioRequest !== undefined) {
+          core.scenarioRequest = data.scenarioRequest;
+          setScenarioRequest(data.scenarioRequest);
+        }
+        if (data.characterName !== undefined) {
+          core.characterName = data.characterName;
+          setCharacterName(data.characterName);
+        }
+        if (data.characterDescription !== undefined) {
+          core.characterDescription = data.characterDescription;
+          setCharacterDescription(data.characterDescription);
+        }
+        if (data.history !== undefined) {
+          core.history = data.history;
+          triggerUpdate();
+        }
+        if (data.systemPrompt !== undefined) {
+          core.systemPrompt = data.systemPrompt;
+        }
+        if (data.outputLanguage !== undefined) {
+          core.outputLanguage = data.outputLanguage;
+        }
+        core.saveChatState();
+        setFormError('');
+      } catch (err) {
+        console.error('Failed to parse adventure JSON', err);
+        setFormError('Failed to parse imported adventure file.');
+      }
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    };
+    reader.readAsText(file);
+  };
+
   const {
     isLoading: isGeneratingChar,
     statusText: charStatus,
@@ -366,6 +502,53 @@ export const App: React.FC = () => {
       </div>
 
       <LlmSettings core={core} />
+
+      <Panel title="Adventure Management">
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end', marginBottom: '15px' }}>
+          <div style={{ flex: 1 }}>
+            <Input
+              label="Save Name"
+              type="text"
+              placeholder="e.g. Cyberpunk City Save 1"
+              value={saveName}
+              onChange={(e) => setSaveName(e.target.value)}
+            />
+          </div>
+          <Button onClick={handleSaveToBrowser}>Save</Button>
+        </div>
+
+        {Object.keys(savedAdventures).length > 0 && (
+          <div style={{ marginBottom: '15px' }}>
+            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Load / Delete Save</label>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, border: '1px solid #ccc', borderRadius: '4px' }}>
+              {Object.entries(savedAdventures).map(([name, data]) => (
+                <li key={name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', borderBottom: '1px solid #eee' }}>
+                  <div>
+                    <strong>{name}</strong>
+                    <div style={{ fontSize: '0.8em', color: '#666' }}>Saved: {new Date(data.savedAt).toLocaleString()}</div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '5px' }}>
+                    <Button onClick={() => handleLoadFromBrowser(name)}>Load</Button>
+                    <Button variant="danger" onClick={() => handleDeleteFromBrowser(name)}>Delete</Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <div style={{ borderTop: '1px solid #ccc', paddingTop: '15px', display: 'flex', gap: '10px' }}>
+          <Button onClick={handleExport}>Export JSON</Button>
+          <Button onClick={() => fileInputRef.current?.click()}>Import JSON</Button>
+          <input
+            type="file"
+            accept=".json"
+            ref={fileInputRef}
+            style={{ display: 'none' }}
+            onChange={handleImport}
+          />
+        </div>
+      </Panel>
 
       <Panel title="Scenario & Character Setup">
         <TextArea

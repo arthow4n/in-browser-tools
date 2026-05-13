@@ -27,6 +27,7 @@ export type StorageKey =
   | 'text-adventure-characterDescription'
   | 'text-adventure-scenarioRequest'
   | 'text-adventure-outputLanguage'
+  | 'text-adventure-savedAdventures'
   | 'repo-chat-systemPrompt'
   | 'repo-chat-history';
 
