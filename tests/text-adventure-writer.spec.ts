@@ -66,10 +66,12 @@ test.describe('Text Adventure Writer Tool', () => {
       'https://openrouter.ai/api/v1/chat/completions',
       async (route) => {
         const toolCallId = 'call_123';
+        const toolCallIdWait = 'call_wait_456';
         const chunks = [
-          `data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"${toolCallId}","type":"function","function":{"name":"speak","arguments":""}}]}}]}\n\n`,
+          `data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"${toolCallId}","type":"function","function":{"name":"write_action","arguments":""}}]}}]}\n\n`,
           `data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":"{\\"character\\": \\"Narrator\\", "}}]}}]}\n\n`,
           `data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":"\\"message\\": \\"The journey begins.\\"}"}}]}}]}\n\n`,
+          `data: {"choices":[{"delta":{"tool_calls":[{"index":1,"id":"${toolCallIdWait}","type":"function","function":{"name":"wait_for_user_input","arguments":"{}"}}]}}]}\n\n`,
           'data: [DONE]\n\n',
         ];
 

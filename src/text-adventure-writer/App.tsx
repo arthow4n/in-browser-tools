@@ -139,12 +139,41 @@ export const App: React.FC = () => {
       return;
     }
     setFormError('');
-    core.history.push({
-      id: Date.now().toString(),
-      role: 'user',
-      content:
-        '[OOC]: Please rewrite and significantly elaborate on your last response. Make it much more vibrant, detailed, and immersive. Describe the environment, sensory details, and character emotions more deeply, and significantly expand the narrative length by adding more events or richer environmental exposition.',
-    });
+
+    const content = '[OOC]: Please rewrite and significantly elaborate on your last response. Make it much more vibrant, detailed, and immersive. Describe the environment, sensory details, and character emotions more deeply, and significantly expand the narrative length by adding more events or richer environmental exposition.';
+
+    // Find the last assistant message
+    let unresolvedWaitToolId: string | null = null;
+    for (let i = core.history.length - 1; i >= 0; i--) {
+      const msg = core.history[i];
+      if (msg.role === 'assistant' && msg.tool_calls) {
+        for (const tc of msg.tool_calls) {
+          if (tc.function.name === 'wait_for_user_input') {
+            const hasResult = core.history.some(m => m.role === 'tool' && m.tool_call_id === tc.id);
+            if (!hasResult) {
+              unresolvedWaitToolId = tc.id;
+            }
+          }
+        }
+        break; // Found the last assistant message, don't look further back
+      }
+    }
+
+    if (unresolvedWaitToolId) {
+      core.history.push({
+        id: Date.now().toString() + '-tool-' + unresolvedWaitToolId,
+        role: 'tool',
+        content: content,
+        tool_call_id: unresolvedWaitToolId,
+      });
+    } else {
+      core.history.push({
+        id: Date.now().toString(),
+        role: 'user',
+        content: content,
+      });
+    }
+
     core.saveChatState();
     triggerUpdate();
     await generateResponse();
@@ -175,6 +204,39 @@ export const App: React.FC = () => {
     }
     setFormError('');
 
+    const finalContent = `[${core.characterName}]: ${userText || '*Waits silently*'}`;
+
+    let unresolvedWaitToolId: string | null = null;
+    for (let i = core.history.length - 1; i >= 0; i--) {
+      const msg = core.history[i];
+      if (msg.role === 'assistant' && msg.tool_calls) {
+        for (const tc of msg.tool_calls) {
+          if (tc.function.name === 'wait_for_user_input') {
+            const hasResult = core.history.some(m => m.role === 'tool' && m.tool_call_id === tc.id);
+            if (!hasResult) {
+              unresolvedWaitToolId = tc.id;
+            }
+          }
+        }
+        break; // Found the last assistant message, don't look further back
+      }
+    }
+
+    if (unresolvedWaitToolId) {
+      core.history.push({
+        id: Date.now().toString() + '-tool-' + unresolvedWaitToolId,
+        role: 'tool',
+        content: finalContent,
+        tool_call_id: unresolvedWaitToolId,
+      });
+    } else {
+      core.history.push({
+        id: Date.now().toString(),
+        role: 'user',
+        content: finalContent,
+      });
+    }
+
     if (directionText) {
       core.history.push({
         id: Date.now().toString() + '-sys',
@@ -182,12 +244,7 @@ export const App: React.FC = () => {
         content: `[OOC - Story Direction]: ${directionText}`,
       });
     }
-    const finalContent = `[${core.characterName}]: ${userText || '*Waits silently*'}`;
-    core.history.push({
-      id: Date.now().toString(),
-      role: 'user',
-      content: finalContent,
-    });
+
     core.saveChatState();
     triggerUpdate();
     setUserInput('');
@@ -237,12 +294,14 @@ export const App: React.FC = () => {
         assistantMessage.tool_calls.length > 0
       ) {
         for (const tc of assistantMessage.tool_calls) {
-          core.history.push({
-            id: Date.now().toString() + '-tool-' + tc.id,
-            role: 'tool',
-            content: JSON.stringify({ success: true }),
-            tool_call_id: tc.id,
-          });
+          if (tc.function.name !== 'wait_for_user_input') {
+            core.history.push({
+              id: Date.now().toString() + '-tool-' + tc.id,
+              role: 'tool',
+              content: JSON.stringify({ success: true }),
+              tool_call_id: tc.id,
+            });
+          }
         }
       }
       core.saveChatState();
@@ -256,12 +315,12 @@ export const App: React.FC = () => {
       return <div className="message user">{msg.content}</div>;
     } else if (msg.role === 'assistant') {
       let hasToolCalls = false;
-      const elements: JSX.Element[] = [];
+      const elements: React.ReactElement[] = [];
 
       if (msg.tool_calls && msg.tool_calls.length > 0) {
+        hasToolCalls = true;
         msg.tool_calls.forEach((tc: any, i: number) => {
-          if (tc.function.name === 'speak') {
-            hasToolCalls = true;
+          if (tc.function.name === 'speak' || tc.function.name === 'write_action') {
             try {
               const args = JSON.parse(tc.function.arguments);
               const isNarrator = args.character?.toLowerCase() === 'narrator';
