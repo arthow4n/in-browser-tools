@@ -31,6 +31,10 @@ export const App: React.FC = () => {
   const [introGuidance, setIntroGuidance] = useState('');
   const [actionGuidance, setActionGuidance] = useState('');
 
+  const [scenarioGuidance, setScenarioGuidance] = useState('');
+  const [scenarioSuggestions, setScenarioSuggestions] = useState<string[]>([]);
+  const [previousScenarioSuggestions, setPreviousScenarioSuggestions] = useState<string[]>([]);
+
   const [streamingMsg, setStreamingMsg] = useState<any | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -187,6 +191,12 @@ export const App: React.FC = () => {
     isError: responseIsError,
     runAction: runResponseAction,
   } = useAsyncAction();
+  const {
+    isLoading: isGeneratingScenarios,
+    statusText: scenarioStatus,
+    isError: scenarioIsError,
+    runAction: runScenarioAction,
+  } = useAsyncAction();
 
   useEffect(() => {
     setHistory([...core.history]);
@@ -214,6 +224,40 @@ export const App: React.FC = () => {
     core.saveChatState();
   };
 
+  const handleSuggestScenarios = async () => {
+    await runScenarioAction(
+      'Suggesting scenarios...',
+      async () => {
+        const generator = core.generateScenarioSuggestions({
+          currentScenario: scenarioRequest.trim(),
+          guidance: scenarioGuidance.trim(),
+          previousSuggestions: previousScenarioSuggestions,
+        });
+
+        let toolArgs = '';
+        for await (const chunk of generator) {
+          if (chunk.type === 'tool_call' && chunk.toolCall) {
+            toolArgs += chunk.toolCall.arguments;
+          }
+        }
+
+        if (toolArgs) {
+          try {
+            const parsed = JSON.parse(toolArgs);
+            if (parsed.suggestions && Array.isArray(parsed.suggestions)) {
+              setScenarioSuggestions(parsed.suggestions);
+              setPreviousScenarioSuggestions((prev) => [...prev, ...parsed.suggestions]);
+            }
+          } catch (e) {
+            console.error('Failed to parse scenario suggestions', e);
+            throw new Error('Failed to parse suggestions from the AI.');
+          }
+        }
+      },
+      'Scenarios suggested.',
+    );
+  };
+
   const handleGenerateCharacter = async () => {
     await runCharAction(
       'Generating character...',
@@ -228,7 +272,7 @@ export const App: React.FC = () => {
         let toolArgs = '';
         for await (const chunk of generator) {
           if (chunk.type === 'tool_call' && chunk.toolCall) {
-            toolArgs = chunk.toolCall.arguments;
+            toolArgs += chunk.toolCall.arguments;
           }
         }
         if (toolArgs) {
@@ -558,6 +602,42 @@ export const App: React.FC = () => {
           value={scenarioRequest}
           onChange={(e) => handleScenarioChange(e.target.value)}
         />
+
+        <div style={{ marginTop: '10px' }}>
+          <Input
+            type="text"
+            placeholder="Optional Guidance for Scenario (e.g. Needs to be a horror setting)"
+            value={scenarioGuidance}
+            onChange={(e) => setScenarioGuidance(e.target.value)}
+          />
+          <Button onClick={handleSuggestScenarios} loading={isGeneratingScenarios}>
+            {scenarioSuggestions.length > 0 ? 'Regenerate Suggestions' : 'Suggest Scenarios'}
+          </Button>
+          <span
+            className="status"
+            style={{ color: scenarioIsError ? 'red' : 'green', marginLeft: '10px' }}
+          >
+            {scenarioStatus}
+          </span>
+
+          {scenarioSuggestions.length > 0 && (
+            <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              {scenarioSuggestions.map((suggestion, idx) => (
+                <Button
+                  key={idx}
+                  variant="secondary"
+                  onClick={() => {
+                    handleScenarioChange(suggestion);
+                    setScenarioSuggestions([]);
+                  }}
+                  style={{ textAlign: 'left', whiteSpace: 'normal', height: 'auto', padding: '10px' }}
+                >
+                  {suggestion}
+                </Button>
+              ))}
+            </div>
+          )}
+        </div>
 
         <div style={{ marginTop: '10px' }}>
           <Input

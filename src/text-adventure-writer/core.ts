@@ -52,6 +52,27 @@ export class TextAdventureCore extends ChatCore {
         return { success: true };
       },
     });
+
+    this.registerTool({
+      name: 'suggest_scenarios',
+      description: 'Suggest 3 different text adventure scenario ideas.',
+      parameters: {
+        type: 'object',
+        properties: {
+          suggestions: {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+            description: 'An array of exactly 3 different scenario ideas.',
+          },
+        },
+        required: ['suggestions'],
+      },
+      execute: () => {
+        return { success: true };
+      },
+    });
   }
 
   override loadChatState() {
@@ -380,5 +401,78 @@ ${this.outputLanguage ? `[OOC - Output Language]: You must use the following lan
     };
 
     yield* this.streamCompletionWithTools(messages, [characterTool]);
+  }
+
+  public async *generateScenarioSuggestions(params: {
+    currentScenario: string;
+    guidance: string;
+    previousSuggestions: string[];
+  }): AsyncGenerator<StreamChunk, void, unknown> {
+    const originalHistory = this.history;
+    const originalSystemPrompt = this.systemPrompt;
+
+    try {
+      this.history = [];
+      this.systemPrompt = `You are a creative writing assistant for a text adventure game. Your job is to generate exactly 3 highly diverse, interesting, and engaging scenario ideas based on the user's input.
+You MUST use the \`suggest_scenarios\` tool to output your suggestions.
+${this.outputLanguage ? `[OOC - Output Language]: You must use the following language for all your outputs and tool calls: ${this.outputLanguage}.` : ''}`;
+
+      let userPrompt = '';
+      if (params.currentScenario.trim()) {
+        userPrompt += `Current Scenario Ideas: ${params.currentScenario}\n\n`;
+      }
+      if (params.guidance.trim()) {
+        userPrompt += `Guidance/Requirements: ${params.guidance}\n\n`;
+      }
+      if (params.previousSuggestions.length > 0) {
+        userPrompt += `Previous Suggestions (DO NOT repeat these or make anything too similar):\n`;
+        params.previousSuggestions.forEach((s, i) => {
+          userPrompt += `${i + 1}. ${s}\n`;
+        });
+        userPrompt += `\nGenerate 3 completely NEW and DIFFERENT scenario ideas.\n`;
+      } else {
+        userPrompt += `Generate 3 completely different scenario ideas.\n`;
+      }
+
+      if (!userPrompt.trim()) {
+        userPrompt = 'Generate 3 completely different, creative text adventure scenario ideas.';
+      }
+
+      const suggestTool = {
+        name: 'suggest_scenarios',
+        description: 'Suggest 3 different text adventure scenario ideas.',
+        parameters: {
+          type: 'object',
+          properties: {
+            suggestions: {
+              type: 'array',
+              items: {
+                type: 'string',
+              },
+              description: 'An array of exactly 3 different scenario ideas.',
+            },
+          },
+          required: ['suggestions'],
+        },
+      };
+
+      const messages: ChatMessage[] = [
+        {
+          id: 'sys-scenario-gen',
+          role: 'system',
+          content: this.systemPrompt,
+        },
+        {
+          id: 'user-scenario-gen',
+          role: 'user',
+          content: userPrompt,
+        },
+      ];
+
+      yield* this.streamCompletionWithTools(messages, [suggestTool]);
+    } finally {
+      this.history = originalHistory;
+      this.systemPrompt = originalSystemPrompt;
+    }
   }
 }
