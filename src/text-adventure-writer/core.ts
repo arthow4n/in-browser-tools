@@ -28,7 +28,8 @@ export class TextAdventureCore extends ChatCore {
           },
           message: {
             type: 'string',
-            description: 'The action they perform, the dialogue they say, or the narration.',
+            description:
+              'The action they perform, the dialogue they say, or the narration.',
           },
         },
         required: ['character', 'message'],
@@ -171,7 +172,10 @@ Your responses MUST be substantial, detailed progressions (at least 3-4 paragrap
           msg.tool_calls.length > 0
         ) {
           for (const tc of msg.tool_calls) {
-            if (tc.function.name === 'speak' || tc.function.name === 'write_action') {
+            if (
+              tc.function.name === 'speak' ||
+              tc.function.name === 'write_action'
+            ) {
               try {
                 const args = JSON.parse(tc.function.arguments);
                 content += `\n[${args.character}]: ${args.message}`;
@@ -186,9 +190,9 @@ Your responses MUST be substantial, detailed progressions (at least 3-4 paragrap
         // Tool results for wait_for_user_input contain the actual user input
         if (msg.role === 'tool') {
           if (msg.content === '{"success":true}') {
-             role = 'system';
+            role = 'system';
           } else {
-             role = 'user';
+            role = 'user';
           }
         }
 
@@ -288,7 +292,10 @@ ${this.outputLanguage ? `[OOC - Output Language]: You must output the action/dia
           msg.tool_calls.length > 0
         ) {
           for (const tc of msg.tool_calls) {
-            if (tc.function.name === 'speak' || tc.function.name === 'write_action') {
+            if (
+              tc.function.name === 'speak' ||
+              tc.function.name === 'write_action'
+            ) {
               try {
                 const args = JSON.parse(tc.function.arguments);
                 content += `\n[${args.character}]: ${args.message}`;
@@ -302,9 +309,9 @@ ${this.outputLanguage ? `[OOC - Output Language]: You must output the action/dia
         let role = msg.role;
         if (msg.role === 'tool') {
           if (msg.content === '{"success":true}') {
-             role = 'system';
+            role = 'system';
           } else {
-             role = 'user';
+            role = 'user';
           }
         }
 
@@ -339,6 +346,63 @@ ${this.outputLanguage ? `[OOC - Output Language]: You must output your answer in
     } finally {
       this.toolsEnabled = originalToolsEnabled;
     }
+  }
+
+  public async *generateScenarioIdeas(params: {
+    guidance: string;
+    previousIdeas: string[];
+  }): AsyncGenerator<StreamChunk, void, unknown> {
+    const messages: ChatMessage[] = [
+      {
+        id: 'sys-scenario-gen',
+        role: 'system',
+        content: `You are a creative assistant helping a player brainstorm an initial scenario for a text adventure. You MUST use the \`setup_scenarios\` tool to output EXACTLY 3 different, unique scenario ideas. Do not output normal text.${
+          this.outputLanguage
+            ? '\\n[OOC - Output Language]: You must use the following language for all your outputs and tool calls: ' +
+              this.outputLanguage +
+              '. Note: "the user" here refers to the human playing the game, not your "user" role in this chat thread.'
+            : ''
+        }`,
+      },
+    ];
+
+    let userContent =
+      'Please generate 3 different scenario ideas for a text adventure.';
+    if (params.guidance) {
+      userContent += `\n\nGuidance: ${params.guidance}`;
+    }
+    if (params.previousIdeas && params.previousIdeas.length > 0) {
+      userContent += `\n\nHere are some ideas you previously generated. You MUST generate completely new and different ideas:\n- ${params.previousIdeas.join('\n- ')}`;
+    }
+
+    messages.push({
+      id: 'user-scenario-gen',
+      role: 'user',
+      content: userContent,
+    });
+
+    const scenarioTool = {
+      name: 'setup_scenarios',
+      description: 'Set up 3 different scenario ideas.',
+      parameters: {
+        type: 'object',
+        properties: {
+          ideas: {
+            type: 'array',
+            items: {
+              type: 'string',
+              description: 'A scenario idea.',
+            },
+            minItems: 3,
+            maxItems: 3,
+            description: 'Exactly 3 different scenario ideas.',
+          },
+        },
+        required: ['ideas'],
+      },
+    };
+
+    yield* this.streamCompletionWithTools(messages, [scenarioTool]);
   }
 
   public async *generateCharacter(params: {

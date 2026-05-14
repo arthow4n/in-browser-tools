@@ -27,7 +27,9 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           'value',
         )?.set;
         nativeInputValueSetter?.call(internalRef.current, '');
-        internalRef.current.dispatchEvent(new Event('input', { bubbles: true }));
+        internalRef.current.dispatchEvent(
+          new Event('input', { bubbles: true }),
+        );
       }
     };
 

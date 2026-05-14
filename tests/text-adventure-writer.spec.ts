@@ -17,10 +17,10 @@ test.describe('Text Adventure Writer Tool', () => {
 
     await page.goto('/text-adventure-writer');
 
-    const charInput = page.locator('input[type="text"]').nth(1);
+    const charInput = page.locator('#character-name');
     await expect(charInput).toBeVisible();
     await charInput.fill('Arthur Dent');
-    const charDescInput = page.locator('textarea').nth(1);
+    const charDescInput = page.locator('#character-description');
     await charDescInput.fill('A bewildered Englishman.');
 
     await page.waitForTimeout(100);
@@ -44,10 +44,10 @@ test.describe('Text Adventure Writer Tool', () => {
     });
 
     await page.goto('/text-adventure-writer');
-    const charInput = page.locator('input[type="text"]').nth(1);
+    const charInput = page.locator('#character-name');
     await charInput.fill('');
 
-    const userInputField = page.locator('textarea').nth(2);
+    const userInputField = page.locator('#user-input');
     await userInputField.fill('Hello!');
     await page.evaluate(() => {
       const btns = Array.from(document.querySelectorAll('button'));
@@ -92,12 +92,12 @@ test.describe('Text Adventure Writer Tool', () => {
       .evaluate((node) => node.dispatchEvent(new Event('input')));
 
     await page.goto('/text-adventure-writer');
-    const charInput = page.locator('input[type="text"]').nth(1);
+    const charInput = page.locator('#character-name');
     await charInput.fill('Arthur Dent');
 
-    const userInputField = page.locator('textarea').nth(2);
+    const userInputField = page.locator('#user-input');
     await userInputField.fill('I wake up.');
-    const storyDirInput = page.locator('textarea').nth(3);
+    const storyDirInput = page.locator('#story-direction');
     await storyDirInput.fill('Make it sudden.');
     await page.evaluate(() => {
       const btns = Array.from(document.querySelectorAll('button'));

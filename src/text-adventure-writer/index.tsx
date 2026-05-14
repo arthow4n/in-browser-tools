@@ -30,6 +30,24 @@ const scenarioRequestInput = getRequiredElement(
   HTMLTextAreaElement,
 );
 
+const scenarioGuidanceInput = getRequiredElement(
+  'scenario-guidance',
+  HTMLInputElement,
+);
+const generateScenariosBtn = getRequiredElement(
+  'generate-scenarios-btn',
+  HTMLButtonElement,
+);
+const scenarioIdeasContainer = getRequiredElement(
+  'scenario-ideas-container',
+  HTMLDivElement,
+);
+const scenarioIdea1 = getRequiredElement('scenario-idea-1', HTMLDivElement);
+const scenarioIdea2 = getRequiredElement('scenario-idea-2', HTMLDivElement);
+const scenarioIdea3 = getRequiredElement('scenario-idea-3', HTMLDivElement);
+
+let previousScenarioIdeas: string[] = [];
+
 const characterGuidanceInput = getRequiredElement(
   'character-guidance',
   HTMLInputElement,
@@ -146,6 +164,26 @@ function init() {
   });
 
   generateActionBtn.addEventListener('click', handleGenerateAction);
+
+  setupRegenerationUI({
+    btnElement: generateScenariosBtn,
+    inputElement: scenarioGuidanceInput,
+    callback: handleGenerateScenarios,
+  });
+
+  const attachScenarioClick = (el: HTMLDivElement) => {
+    el.addEventListener('click', () => {
+      const text = el.textContent || '';
+      if (text) {
+        scenarioRequestInput.value = text;
+        core.scenarioRequest = text;
+        core.saveChatState();
+      }
+    });
+  };
+  attachScenarioClick(scenarioIdea1);
+  attachScenarioClick(scenarioIdea2);
+  attachScenarioClick(scenarioIdea3);
 
   elaborateBtn.addEventListener('click', handleElaborate);
 
@@ -751,3 +789,47 @@ async function generateResponse() {
 }
 
 init();
+
+async function handleGenerateScenarios(params: { guidance: string }) {
+  await runWithUIState(
+    generateScenariosBtn,
+    chatStatus,
+    'Generating scenarios...',
+    async () => {
+      const generator = core.generateScenarioIdeas({
+        guidance: params.guidance,
+        previousIdeas: previousScenarioIdeas,
+      });
+
+      let toolArgs = '';
+
+      for await (const chunk of generator) {
+        if (chunk.type === 'tool_call' && chunk.toolCall) {
+          toolArgs = chunk.toolCall.arguments;
+        }
+      }
+
+      if (toolArgs) {
+        try {
+          const parsed = JSON.parse(toolArgs);
+          if (
+            parsed.ideas &&
+            Array.isArray(parsed.ideas) &&
+            parsed.ideas.length >= 3
+          ) {
+            scenarioIdea1.textContent = parsed.ideas[0];
+            scenarioIdea2.textContent = parsed.ideas[1];
+            scenarioIdea3.textContent = parsed.ideas[2];
+            scenarioIdeasContainer.style.display = 'flex';
+
+            // Add to previous ideas to avoid duplicates next time
+            previousScenarioIdeas.push(...parsed.ideas);
+          }
+        } catch (e) {
+          console.error('Failed to parse scenario ideas:', e);
+        }
+      }
+    },
+    'Scenarios generated.',
+  );
+}

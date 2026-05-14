@@ -130,6 +130,57 @@
         rows="3"
         placeholder="Describe the scenario you want the LLM to start with..."
       ></textarea>
+
+      <div
+        style="margin-top: 10px; border-top: 1px dashed #ccc; padding-top: 10px"
+      >
+        <label for="scenario-guidance"
+          >Optional: Guidance for generating scenario ideas:</label
+        >
+        <input
+          type="text"
+          id="scenario-guidance"
+          placeholder="e.g., A sci-fi setting with a mystery..."
+        />
+        <button
+          id="generate-scenarios-btn"
+          style="
+            width: 100%;
+            padding: 10px;
+            font-weight: bold;
+            background-color: #2196f3;
+            color: white;
+            border: none;
+          "
+        >
+          Generate 3 Scenario Ideas
+        </button>
+        <div
+          id="scenario-ideas-container"
+          style="
+            display: none;
+            margin-top: 10px;
+            gap: 10px;
+            flex-direction: column;
+          "
+        >
+          <div
+            class="message system"
+            style="cursor: pointer"
+            id="scenario-idea-1"
+          ></div>
+          <div
+            class="message system"
+            style="cursor: pointer"
+            id="scenario-idea-2"
+          ></div>
+          <div
+            class="message system"
+            style="cursor: pointer"
+            id="scenario-idea-3"
+          ></div>
+        </div>
+      </div>
     </section>
 
     <section id="character-setup-section">

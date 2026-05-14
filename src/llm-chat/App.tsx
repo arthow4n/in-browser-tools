@@ -409,9 +409,7 @@ export const App: React.FC = () => {
                 type="checkbox"
                 label={`${tool.name}: ${tool.description}`}
                 checked={!disabledTools.has(tool.name)}
-                onChange={(e) =>
-                  handleToolToggle(tool.name, e.target.checked)
-                }
+                onChange={(e) => handleToolToggle(tool.name, e.target.checked)}
                 style={{
                   fontWeight: 'normal',
                   fontSize: '0.9em',
