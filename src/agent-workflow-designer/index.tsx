@@ -200,7 +200,10 @@ function updateUndoRedoButtons() {
 }
 
 // --- Chat Logic ---
-function createMessageElement(msg: ChatMessage): HTMLDivElement {
+function createMessageElement(
+  msg: ChatMessage,
+  titleOverride?: string,
+): HTMLDivElement {
   const div = document.createElement('div');
   div.className = `message ${msg.role}`;
   div.dataset.id = msg.id;
@@ -209,7 +212,7 @@ function createMessageElement(msg: ChatMessage): HTMLDivElement {
   roleLabel.style.fontWeight = 'bold';
   roleLabel.style.marginBottom = '5px';
   roleLabel.style.textTransform = 'capitalize';
-  roleLabel.textContent = msg.role;
+  roleLabel.textContent = titleOverride || msg.role;
 
   const contentDiv = document.createElement('div');
   contentDiv.className = 'content';
@@ -719,9 +722,34 @@ runTestBtn.addEventListener('click', async () => {
   }
 
   const markdown = getConcatenatedMarkdown();
-  testCore.systemPrompt = `You are simulating the following multi-agent workflow. Behave as the orchestrator and sub-agents as necessary to fulfill the user's request. Always respond directly to the user based on these prompts:\n\n${markdown}`;
+  testCore.systemPrompt = `You are the orchestrator in the following multi-agent workflow. Fulfill the user's request by calling the appropriate sub-agent tools as necessary.\n\n${markdown}`;
   testCore.apiKey = core.apiKey;
   testCore.model = core.model;
+  testCore.toolsEnabled = true;
+  testCore.tools = [];
+
+  if (currentWorkflow && currentWorkflow.agents) {
+    currentWorkflow.agents.forEach((agent) => {
+      const toolName = `call_agent_${agent.name.toLowerCase().replace(/[^a-z0-9]+/g, '_')}`;
+      testCore.registerTool({
+        name: toolName,
+        description: `Call sub-agent ${agent.name}`,
+        parameters: {
+          type: 'object',
+          properties: {
+            message: {
+              type: 'string',
+              description: `The message to send to sub-agent ${agent.name}.`,
+            },
+          },
+          required: ['message'],
+        },
+        execute: (args: any) => {
+          return { success: true };
+        },
+      });
+    });
+  }
 
   const userMsg: ChatMessage = {
     id: Date.now().toString(),
@@ -742,26 +770,117 @@ runTestBtn.addEventListener('click', async () => {
     role: 'assistant',
     content: '',
   };
-  const assistantEl = createMessageElement(assistantMsg);
-  assistantEl.classList.add('streaming');
-  testOutputContainer.appendChild(assistantEl);
-  const contentDiv = assistantEl.querySelector('.content') as HTMLDivElement;
-
   try {
-    const generator = testCore.streamChatCompletion([]);
-    for await (const chunk of generator) {
-      assistantMsg.content += chunk;
-      contentDiv.textContent = assistantMsg.content;
-      testOutputContainer.scrollTop = testOutputContainer.scrollHeight;
+    let isLooping = true;
+    while (isLooping) {
+      const assistantMsg: ChatMessage = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: '',
+      };
+      const assistantEl = createMessageElement(assistantMsg, 'Orchestrator');
+      assistantEl.classList.add('streaming');
+      testOutputContainer.appendChild(assistantEl);
+      const contentDiv = assistantEl.querySelector('.content') as HTMLDivElement;
+
+      let pendingToolCalls: any[] = [];
+      try {
+        const generator = testCore.streamChatCompletionWithTools([]);
+        for await (const chunk of generator) {
+          if (chunk.type === 'text' && chunk.text) {
+            assistantMsg.content += chunk.text;
+            contentDiv.textContent = assistantMsg.content;
+            testOutputContainer.scrollTop = testOutputContainer.scrollHeight;
+          } else if (chunk.type === 'tool_call' && chunk.toolCall) {
+            if (!assistantMsg.tool_calls) {
+              assistantMsg.tool_calls = [];
+            }
+            assistantMsg.tool_calls.push({
+              id: chunk.toolCall.id,
+              type: 'function',
+              function: {
+                name: chunk.toolCall.name,
+                arguments: chunk.toolCall.arguments,
+              },
+            });
+            pendingToolCalls.push(chunk.toolCall);
+          }
+        }
+      } finally {
+        assistantEl.classList.remove('streaming');
+      }
+
+      testCore.history.push(assistantMsg);
+
+      if (pendingToolCalls.length > 0) {
+        for (const pendingToolCall of pendingToolCalls) {
+          // Find corresponding agent
+          const agentNameMatch = pendingToolCall.name.replace('call_agent_', '');
+          const agent = currentWorkflow?.agents.find((a) => a.name.toLowerCase().replace(/[^a-z0-9]+/g, '_') === agentNameMatch);
+
+          let toolResponseContent = '';
+          if (agent) {
+            try {
+              const args = JSON.parse(pendingToolCall.arguments);
+
+              // Subagent ChatCore
+              const subAgentCore = new TestChat();
+              subAgentCore.apiKey = core.apiKey;
+              subAgentCore.model = core.model;
+              subAgentCore.systemPrompt = agent.content;
+
+              const subAgentUserMsg: ChatMessage = {
+                id: Date.now().toString(),
+                role: 'user',
+                content: args.message || '',
+              };
+              subAgentCore.history.push(subAgentUserMsg);
+
+              const subAssistantMsg: ChatMessage = {
+                id: (Date.now() + 1).toString(),
+                role: 'assistant',
+                content: '',
+              };
+              const subAssistantEl = createMessageElement(subAssistantMsg, `Sub-Agent: ${agent.name}`);
+              subAssistantEl.classList.add('streaming');
+              testOutputContainer.appendChild(subAssistantEl);
+              const subContentDiv = subAssistantEl.querySelector('.content') as HTMLDivElement;
+              testOutputContainer.scrollTop = testOutputContainer.scrollHeight;
+
+              try {
+                const subGenerator = subAgentCore.streamChatCompletion([]);
+                for await (const chunk of subGenerator) {
+                   subAssistantMsg.content += chunk;
+                   subContentDiv.textContent = subAssistantMsg.content;
+                   testOutputContainer.scrollTop = testOutputContainer.scrollHeight;
+                }
+                toolResponseContent = subAssistantMsg.content;
+              } finally {
+                subAssistantEl.classList.remove('streaming');
+              }
+            } catch (err: any) {
+              toolResponseContent = `Error running sub-agent: ${err.message}`;
+            }
+          } else {
+            toolResponseContent = `Error: Sub-agent for tool ${pendingToolCall.name} not found.`;
+          }
+
+          const toolMsg: ChatMessage = {
+            id: Date.now().toString(),
+            role: 'tool',
+            content: toolResponseContent,
+            tool_call_id: pendingToolCall.id,
+          };
+          testCore.history.push(toolMsg);
+        }
+      } else {
+        isLooping = false; // No more tool calls, exit loop
+      }
     }
   } catch (e: any) {
     testStatus.textContent = `Test Chat Error: ${e.message}`;
     testStatus.style.color = 'red';
-    assistantMsg.content += `\n[Error: ${e.message}]`;
-    contentDiv.textContent = assistantMsg.content;
   } finally {
-    assistantEl.classList.remove('streaming');
-    testCore.history.push(assistantMsg);
     runTestBtn.disabled = false;
     evalTestBtn.disabled = false;
   }
