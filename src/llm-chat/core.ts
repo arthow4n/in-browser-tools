@@ -21,6 +21,7 @@ export interface SavedPrompt {
 }
 
 export class ChatCore extends LLMCore {
+  public storagePrefix: string;
   public systemPrompt: string = 'You are a helpful assistant.';
   public savedPrompts: SavedPrompt[] = [];
   public history: ChatMessage[] = [];
@@ -28,8 +29,9 @@ export class ChatCore extends LLMCore {
   public disabledTools: Set<string> = new Set();
   public tools: AgentTool[] = [];
 
-  constructor() {
+  constructor(storagePrefix: string = 'llm-chat-') {
     super();
+    this.storagePrefix = storagePrefix;
     this.loadChatState();
   }
 
@@ -39,25 +41,25 @@ export class ChatCore extends LLMCore {
 
   loadChatState() {
     this.systemPrompt =
-      getStorage('llm-chat-systemPrompt') || 'You are a helpful assistant.';
+      getStorage(`${this.storagePrefix}systemPrompt` as import('../shared/storage.js').StorageKey) || 'You are a helpful assistant.';
 
     try {
       this.savedPrompts = JSON.parse(
-        getStorage('llm-chat-savedPrompts') || '[]',
+        getStorage(`${this.storagePrefix}savedPrompts` as import('../shared/storage.js').StorageKey) || '[]',
       );
     } catch {
       this.savedPrompts = [];
     }
 
     try {
-      this.history = JSON.parse(getStorage('llm-chat-history') || '[]');
+      this.history = JSON.parse(getStorage(`${this.storagePrefix}history` as import('../shared/storage.js').StorageKey) || '[]');
     } catch {
       this.history = [];
     }
 
-    this.toolsEnabled = getStorage('llm-chat-toolsEnabled') === 'true';
+    this.toolsEnabled = getStorage(`${this.storagePrefix}toolsEnabled` as import('../shared/storage.js').StorageKey) === 'true';
     try {
-      const disabled = JSON.parse(getStorage('llm-chat-disabledTools') || '[]');
+      const disabled = JSON.parse(getStorage(`${this.storagePrefix}disabledTools` as import('../shared/storage.js').StorageKey) || '[]');
       this.disabledTools = new Set(disabled);
     } catch {
       this.disabledTools = new Set();
@@ -65,12 +67,11 @@ export class ChatCore extends LLMCore {
   }
 
   saveChatState() {
-    setStorage('llm-chat-systemPrompt', this.systemPrompt);
-    setStorage('llm-chat-savedPrompts', JSON.stringify(this.savedPrompts));
-    setStorage('llm-chat-history', JSON.stringify(this.history));
-    setStorage('llm-chat-toolsEnabled', this.toolsEnabled.toString());
-    setStorage(
-      'llm-chat-disabledTools',
+    setStorage(`${this.storagePrefix}systemPrompt` as import('../shared/storage.js').StorageKey, this.systemPrompt);
+    setStorage(`${this.storagePrefix}savedPrompts` as import('../shared/storage.js').StorageKey, JSON.stringify(this.savedPrompts));
+    setStorage(`${this.storagePrefix}history` as import('../shared/storage.js').StorageKey, JSON.stringify(this.history));
+    setStorage(`${this.storagePrefix}toolsEnabled` as import('../shared/storage.js').StorageKey, this.toolsEnabled.toString());
+    setStorage(`${this.storagePrefix}disabledTools` as import('../shared/storage.js').StorageKey,
       JSON.stringify(Array.from(this.disabledTools)),
     );
   }

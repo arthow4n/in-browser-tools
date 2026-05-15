@@ -9,12 +9,61 @@ import {
   ChatMessageUI,
 } from '../shared/components/index.js';
 import { ChatCore, ChatMessage } from './core.js';
+import { getStorage, setStorage } from '../shared/storage.js';
 import { browserAlertTool } from './tools/browser-alert.js';
 import { useAsyncAction } from '../shared/hooks/useAsyncAction.js';
 
 export const App: React.FC = () => {
-  const coreRef = useRef(new ChatCore());
+  const [threads, setThreads] = useState<{id: string, name: string}[]>([]);
+  const [activeThreadId, setActiveThreadId] = useState<string>('');
+
+  const coreRef = useRef(new ChatCore('llm-chat-'));
   const core = coreRef.current;
+
+  // Initialize Threads
+  useEffect(() => {
+    let savedThreads: {id: string, name: string}[] = [];
+    try {
+      savedThreads = JSON.parse(getStorage('llm-chat-threads') || '[]');
+    } catch {
+      // ignore
+    }
+
+    if (savedThreads.length === 0) {
+      const newThreadId = Date.now().toString();
+      savedThreads = [{ id: newThreadId, name: 'New Thread' }];
+      setStorage('llm-chat-threads', JSON.stringify(savedThreads));
+      setStorage('llm-chat-activeThreadId', newThreadId);
+    }
+
+    setThreads(savedThreads);
+
+    // ALWAYS default to opening a new thread on load
+    const startThreadId = Date.now().toString();
+    const isNewStart = savedThreads.every(t => t.id !== startThreadId);
+    if (isNewStart) {
+      savedThreads = [...savedThreads, { id: startThreadId, name: 'New Session' }];
+      setThreads(savedThreads);
+      setStorage('llm-chat-threads', JSON.stringify(savedThreads));
+    }
+    setActiveThreadId(startThreadId);
+  }, []);
+
+  // Update Core when Active Thread Changes
+  useEffect(() => {
+    if (!activeThreadId) return;
+    core.storagePrefix = `llm-chat-thread-${activeThreadId}-`;
+    core.loadChatState();
+
+    setSystemPrompt(core.systemPrompt);
+    setHistory([...core.history]);
+    setSavedPrompts([...core.savedPrompts]);
+    setToolsEnabled(core.toolsEnabled);
+    setDisabledTools(new Set(core.disabledTools));
+
+    setStorage('llm-chat-activeThreadId', activeThreadId);
+  }, [activeThreadId]);
+
 
   const [systemPrompt, setSystemPrompt] = useState(core.systemPrompt);
   const [history, setHistory] = useState<ChatMessage[]>([]);
@@ -258,7 +307,48 @@ export const App: React.FC = () => {
         <h1>LLM Chat</h1>
       </div>
 
+
+      <Panel title="Thread Management">
+        <div className="flex-row">
+          <select
+            id="thread-select"
+            value={activeThreadId}
+            onChange={(e) => setActiveThreadId(e.target.value)}
+            style={{ flexGrow: 1, marginRight: '10px', padding: '5px' }}
+          >
+            {threads.map(t => (
+              <option key={t.id} value={t.id}>{t.name}</option>
+            ))}
+          </select>
+          <Button id="new-thread-btn" onClick={() => {
+            const newThreadId = Date.now().toString();
+            const newThreads = [...threads, { id: newThreadId, name: `Thread ${threads.length + 1}` }];
+            setThreads(newThreads);
+            setStorage('llm-chat-threads', JSON.stringify(newThreads));
+            setActiveThreadId(newThreadId);
+          }}>New Thread</Button>
+          <Button id="rename-thread-btn" onClick={() => {
+             const currentName = threads.find(t => t.id === activeThreadId)?.name || '';
+             const newName = prompt('Enter new thread name:', currentName);
+             if (newName && newName.trim()) {
+                const newThreads = threads.map(t => t.id === activeThreadId ? { ...t, name: newName.trim() } : t);
+                setThreads(newThreads);
+                setStorage('llm-chat-threads', JSON.stringify(newThreads));
+             }
+          }}>Rename</Button>
+          <Button id="delete-thread-btn" variant="danger" disabled={threads.length <= 1} onClick={() => {
+             if (confirm('Are you sure you want to delete this thread?')) {
+                const newThreads = threads.filter(t => t.id !== activeThreadId);
+                setThreads(newThreads);
+                setStorage('llm-chat-threads', JSON.stringify(newThreads));
+                setActiveThreadId(newThreads[0].id);
+             }
+          }}>Delete</Button>
+        </div>
+      </Panel>
+
       <LlmSettings core={core} />
+
 
       <Panel title="System Prompt">
         <TextArea

@@ -2,6 +2,16 @@ import { ChatCore, ChatMessage } from '../llm-chat/core.js';
 import { StreamChunk } from '../shared/llm-core.js';
 import { getStorage, setStorage } from '../shared/storage.js';
 
+
+function getTabSessionId(): string {
+  let sessionId = sessionStorage.getItem('tab-session-id');
+  if (!sessionId) {
+    sessionId = Date.now().toString() + Math.random().toString(36).substring(2, 9);
+    sessionStorage.setItem('tab-session-id', sessionId);
+  }
+  return sessionId;
+}
+
 export class TextAdventureCore extends ChatCore {
   public characterName: string = '';
   public characterDescription: string = '';
@@ -9,7 +19,7 @@ export class TextAdventureCore extends ChatCore {
   public outputLanguage: string = 'Same as the user input language';
 
   constructor() {
-    super();
+    super(`text-adventure-${getTabSessionId()}-`);
     this.toolsEnabled = true;
 
     // Explicitly call loadChatState here again because super() calls the parent's loadChatState

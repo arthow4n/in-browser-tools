@@ -28,9 +28,19 @@ export interface ParsedWorkflow {
 export let currentWorkflow: ParsedWorkflow | null = null;
 let undoManager: UndoRedoManager<ChatMessage[]> | null = null;
 
+
+function getTabSessionId(): string {
+  let sessionId = sessionStorage.getItem('tab-session-id');
+  if (!sessionId) {
+    sessionId = Date.now().toString() + Math.random().toString(36).substring(2, 9);
+    sessionStorage.setItem('tab-session-id', sessionId);
+  }
+  return sessionId;
+}
+
 class DesignerChat extends ChatCore {
   constructor() {
-    super();
+    super(`agent-workflow-designer-${getTabSessionId()}-`);
     this.systemPrompt = SYSTEM_PROMPT;
     this.toolsEnabled = true;
     this.registerTool({
@@ -102,6 +112,9 @@ class DesignerChat extends ChatCore {
 }
 
 class TestChat extends ChatCore {
+  constructor() {
+    super(`test-workflow-chat-${getTabSessionId()}-`);
+  }
   loadChatState() {
     // Ephemeral, do nothing
   }
