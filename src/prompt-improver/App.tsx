@@ -43,7 +43,8 @@ export const App: React.FC = () => {
         'Ensure the LLM is considerate and fills in details the original vague prompt might not have thought about.',
       evaluationFocus: getStorage('prompt-improver-evaluationFocus') || '',
       testInput: getStorage('prompt-improver-testInput') || '',
-      testExpectedOutput: getStorage('prompt-improver-testExpectedOutput') || '',
+      testExpectedOutput:
+        getStorage('prompt-improver-testExpectedOutput') || '',
       maxRounds: getStorage('prompt-improver-maxRounds') || '3',
       branchFactor: getStorage('prompt-improver-branchFactor') || '3',
       promptType: getStorage('prompt-improver-promptType') || 'system',

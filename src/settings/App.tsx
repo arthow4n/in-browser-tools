@@ -27,6 +27,12 @@ export const App: React.FC = () => {
     core.providerPrefs.allowFallbacks,
   );
   const [zdr, setZdr] = useState(core.providerPrefs.zdr);
+  const [rateLimitRetries, setRateLimitRetries] = useState(
+    core.providerPrefs.rateLimitRetries ?? 1,
+  );
+  const [rateLimitWaitSeconds, setRateLimitWaitSeconds] = useState(
+    core.providerPrefs.rateLimitWaitSeconds ?? 3,
+  );
   const [availableModels, setAvailableModels] = useState<
     { id: string; name: string }[]
   >([]);
@@ -44,6 +50,8 @@ export const App: React.FC = () => {
     setDataCollection(core.providerPrefs.dataCollection);
     setAllowFallbacks(core.providerPrefs.allowFallbacks);
     setZdr(core.providerPrefs.zdr);
+    setRateLimitRetries(core.providerPrefs.rateLimitRetries ?? 1);
+    setRateLimitWaitSeconds(core.providerPrefs.rateLimitWaitSeconds ?? 3);
   }, [activePresetId]);
 
   // Update core and save state when inputs change
@@ -73,6 +81,8 @@ export const App: React.FC = () => {
       dataCollection: dataCollection as 'allow' | 'deny',
       allowFallbacks,
       zdr,
+      rateLimitRetries,
+      rateLimitWaitSeconds,
     };
     core.saveState();
   }, [
@@ -83,6 +93,8 @@ export const App: React.FC = () => {
     dataCollection,
     allowFallbacks,
     zdr,
+    rateLimitRetries,
+    rateLimitWaitSeconds,
   ]);
 
   const handleCreatePreset = () => {
@@ -163,6 +175,8 @@ export const App: React.FC = () => {
     setDataCollection(core.providerPrefs.dataCollection);
     setAllowFallbacks(core.providerPrefs.allowFallbacks);
     setZdr(core.providerPrefs.zdr);
+    setRateLimitRetries(core.providerPrefs.rateLimitRetries ?? 1);
+    setRateLimitWaitSeconds(core.providerPrefs.rateLimitWaitSeconds ?? 3);
     setResetStatus('All settings reset to defaults.');
     setTimeout(() => setResetStatus(''), 3000);
   };
@@ -376,6 +390,39 @@ export const App: React.FC = () => {
           onChange={(e) => setZdr(e.target.checked)}
           containerStyle={{ display: 'block', marginTop: '15px' }}
         />
+
+        <div style={{ marginTop: '15px' }}>
+          <Input
+            label="Rate Limit Retries (429):"
+            type="number"
+            id="provider-rate-limit-retries"
+            min={0}
+            value={rateLimitRetries}
+            onChange={(e) => setRateLimitRetries(parseInt(e.target.value) || 0)}
+          />
+          <small
+            style={{ color: '#666', display: 'block', marginBottom: '10px' }}
+          >
+            Max times to retry when encountering a 429 rate limit (0 to
+            disable).
+          </small>
+
+          <Input
+            label="Rate Limit Wait (seconds):"
+            type="number"
+            id="provider-rate-limit-wait-seconds"
+            min={1}
+            value={rateLimitWaitSeconds}
+            onChange={(e) =>
+              setRateLimitWaitSeconds(parseInt(e.target.value) || 1)
+            }
+          />
+          <small
+            style={{ color: '#666', display: 'block', marginBottom: '10px' }}
+          >
+            Seconds to wait before retrying a 429 rate limit.
+          </small>
+        </div>
       </div>
 
       <hr
