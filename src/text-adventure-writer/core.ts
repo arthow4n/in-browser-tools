@@ -2,11 +2,11 @@ import { ChatCore, ChatMessage } from '../llm-chat/core.js';
 import { StreamChunk } from '../shared/llm-core.js';
 import { getStorage, setStorage } from '../shared/storage.js';
 
-
 function getTabSessionId(): string {
   let sessionId = sessionStorage.getItem('tab-session-id');
   if (!sessionId) {
-    sessionId = Date.now().toString() + Math.random().toString(36).substring(2, 9);
+    sessionId =
+      Date.now().toString() + Math.random().toString(36).substring(2, 9);
     sessionStorage.setItem('tab-session-id', sessionId);
   }
   return sessionId;
@@ -38,7 +38,8 @@ export class TextAdventureCore extends ChatCore {
           },
           message: {
             type: 'string',
-            description: 'The action they perform, the dialogue they say, or the narration.',
+            description:
+              'The action they perform, the dialogue they say, or the narration.',
           },
         },
         required: ['character', 'message'],
@@ -202,7 +203,10 @@ Your responses MUST be substantial, detailed progressions (at least 3-4 paragrap
           msg.tool_calls.length > 0
         ) {
           for (const tc of msg.tool_calls) {
-            if (tc.function.name === 'speak' || tc.function.name === 'write_action') {
+            if (
+              tc.function.name === 'speak' ||
+              tc.function.name === 'write_action'
+            ) {
               try {
                 const args = JSON.parse(tc.function.arguments);
                 content += `\n[${args.character}]: ${args.message}`;
@@ -217,9 +221,9 @@ Your responses MUST be substantial, detailed progressions (at least 3-4 paragrap
         // Tool results for wait_for_user_input contain the actual user input
         if (msg.role === 'tool') {
           if (msg.content === '{"success":true}') {
-             role = 'system';
+            role = 'system';
           } else {
-             role = 'user';
+            role = 'user';
           }
         }
 
@@ -319,7 +323,10 @@ ${this.outputLanguage ? `[OOC - Output Language]: You must output the action/dia
           msg.tool_calls.length > 0
         ) {
           for (const tc of msg.tool_calls) {
-            if (tc.function.name === 'speak' || tc.function.name === 'write_action') {
+            if (
+              tc.function.name === 'speak' ||
+              tc.function.name === 'write_action'
+            ) {
               try {
                 const args = JSON.parse(tc.function.arguments);
                 content += `\n[${args.character}]: ${args.message}`;
@@ -333,9 +340,9 @@ ${this.outputLanguage ? `[OOC - Output Language]: You must output the action/dia
         let role = msg.role;
         if (msg.role === 'tool') {
           if (msg.content === '{"success":true}') {
-             role = 'system';
+            role = 'system';
           } else {
-             role = 'user';
+            role = 'user';
           }
         }
 
@@ -445,7 +452,8 @@ ${this.outputLanguage ? `[OOC - Output Language]: You must use the following lan
       }
 
       if (!userPrompt.trim()) {
-        userPrompt = 'Generate 3 completely different, creative text adventure scenario ideas.';
+        userPrompt =
+          'Generate 3 completely different, creative text adventure scenario ideas.';
       }
 
       const suggestTool = {

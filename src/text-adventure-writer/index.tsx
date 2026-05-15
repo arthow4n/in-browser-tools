@@ -279,11 +279,14 @@ function createAdvancedMessageElement(msg: ChatMessage): HTMLDivElement {
   controls.className = 'message-controls';
 
   const editBtn = document.createElement('button');
+  editBtn.className = 'btn btn-secondary';
   editBtn.textContent = 'Edit';
   const deleteBtn = document.createElement('button');
+  deleteBtn.className = 'btn btn-danger';
   deleteBtn.textContent = 'Delete';
 
   const regenerateBelowBtn = document.createElement('button');
+  regenerateBelowBtn.className = 'btn btn-warning';
   regenerateBelowBtn.textContent = 'Regenerate ↓';
 
   controls.appendChild(editBtn);

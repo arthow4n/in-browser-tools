@@ -3,6 +3,7 @@ import { ChatMessage } from '../llm-core.js';
 import { ChatCore } from '../../llm-chat/core.js';
 import { Input } from './Input.js';
 import { TextArea } from './TextArea.js';
+import { Button } from './Button.js';
 
 interface ChatMessageUIProps {
   msg: ChatMessage & { id?: string };
@@ -131,10 +132,21 @@ export const ChatMessageUI: React.FC<ChatMessageUIProps> = ({
       )}
 
       <div className="message-controls" style={{ marginTop: '10px' }}>
-        <button onClick={() => setShowImprove(!showImprove)}>Improve</button>
-        <button onClick={handleEdit}>{isEditing ? 'Save' : 'Edit'}</button>
-        <button onClick={handleDelete}>Delete</button>
-        <button onClick={handleDeleteBelow}>Delete ↓</button>
+        <Button
+          variant="secondary"
+          onClick={() => setShowImprove(!showImprove)}
+        >
+          Improve
+        </Button>
+        <Button variant="secondary" onClick={handleEdit}>
+          {isEditing ? 'Save' : 'Edit'}
+        </Button>
+        <Button variant="danger" onClick={handleDelete}>
+          Delete
+        </Button>
+        <Button variant="danger" onClick={handleDeleteBelow}>
+          Delete ↓
+        </Button>
       </div>
 
       {showImprove && (
@@ -158,12 +170,16 @@ export const ChatMessageUI: React.FC<ChatMessageUIProps> = ({
             value={improveInstructions}
             onChange={(e) => setImproveInstructions(e.target.value)}
           />
-          <button disabled={isImproving} onClick={doImprove}>
+          <Button disabled={isImproving} onClick={doImprove}>
             Improve / Regenerate
-          </button>
-          <button disabled={isImproving} onClick={() => setShowImprove(false)}>
+          </Button>
+          <Button
+            variant="secondary"
+            disabled={isImproving}
+            onClick={() => setShowImprove(false)}
+          >
             Cancel
-          </button>
+          </Button>
           {isImproving && (
             <span style={{ fontWeight: 'bold', marginLeft: '10px' }}>
               Improving...

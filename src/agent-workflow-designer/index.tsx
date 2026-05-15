@@ -4,6 +4,7 @@ import { setupLLMSettings } from '../shared/llm-settings.js';
 import { getRequiredElement } from '../shared/dom-utils.js';
 import { runWithUIState } from '../shared/ui-utils.js';
 import { getStorage, setStorage } from '../shared/storage.js';
+import '../shared/components/styles.css';
 
 const SYSTEM_PROMPT = `You are a multi-agent workflow designer. The user will interactively chat with you to design and improve an agent workflow.
 
@@ -28,11 +29,11 @@ export interface ParsedWorkflow {
 export let currentWorkflow: ParsedWorkflow | null = null;
 let undoManager: UndoRedoManager<ChatMessage[]> | null = null;
 
-
 function getTabSessionId(): string {
   let sessionId = sessionStorage.getItem('tab-session-id');
   if (!sessionId) {
-    sessionId = Date.now().toString() + Math.random().toString(36).substring(2, 9);
+    sessionId =
+      Date.now().toString() + Math.random().toString(36).substring(2, 9);
     sessionStorage.setItem('tab-session-id', sessionId);
   }
   return sessionId;
@@ -441,8 +442,8 @@ export function renderWorkflow(workflow: ParsedWorkflow | null) {
     <h3>Workflow Driving Prompt</h3>
     <textarea rows="6" readonly>${workflow.orchestrator}</textarea>
     <div class="card-actions">
-      <button class="copy-btn" data-type="orchestrator">Copy</button>
-      <button class="download-btn" data-type="orchestrator">Download</button>
+      <button class="copy-btn btn btn-secondary" data-type="orchestrator">Copy</button>
+      <button class="download-btn btn btn-secondary" data-type="orchestrator">Download</button>
     </div>
   `;
   workflowContainer.appendChild(orchCard);
@@ -463,8 +464,8 @@ export function renderWorkflow(workflow: ParsedWorkflow | null) {
         <h3>Agent: ${agent.name}</h3>
         <textarea rows="5" readonly>${agent.content}</textarea>
         <div class="card-actions">
-          <button class="copy-btn" data-type="agent" data-index="${index}">Copy</button>
-          <button class="download-btn" data-type="agent" data-index="${index}">Download</button>
+          <button class="copy-btn btn btn-secondary" data-type="agent" data-index="${index}">Copy</button>
+          <button class="download-btn btn btn-secondary" data-type="agent" data-index="${index}">Download</button>
         </div>
       `;
       agentsList.appendChild(agentCard);
@@ -794,7 +795,9 @@ runTestBtn.addEventListener('click', async () => {
       const assistantEl = createMessageElement(assistantMsg, 'Orchestrator');
       assistantEl.classList.add('streaming');
       testOutputContainer.appendChild(assistantEl);
-      const contentDiv = assistantEl.querySelector('.content') as HTMLDivElement;
+      const contentDiv = assistantEl.querySelector(
+        '.content',
+      ) as HTMLDivElement;
 
       let pendingToolCalls: any[] = [];
       try {
@@ -828,8 +831,15 @@ runTestBtn.addEventListener('click', async () => {
       if (pendingToolCalls.length > 0) {
         for (const pendingToolCall of pendingToolCalls) {
           // Find corresponding agent
-          const agentNameMatch = pendingToolCall.name.replace('call_agent_', '');
-          const agent = currentWorkflow?.agents.find((a) => a.name.toLowerCase().replace(/[^a-z0-9]+/g, '_') === agentNameMatch);
+          const agentNameMatch = pendingToolCall.name.replace(
+            'call_agent_',
+            '',
+          );
+          const agent = currentWorkflow?.agents.find(
+            (a) =>
+              a.name.toLowerCase().replace(/[^a-z0-9]+/g, '_') ===
+              agentNameMatch,
+          );
 
           let toolResponseContent = '';
           if (agent) {
@@ -854,18 +864,24 @@ runTestBtn.addEventListener('click', async () => {
                 role: 'assistant',
                 content: '',
               };
-              const subAssistantEl = createMessageElement(subAssistantMsg, `Sub-Agent: ${agent.name}`);
+              const subAssistantEl = createMessageElement(
+                subAssistantMsg,
+                `Sub-Agent: ${agent.name}`,
+              );
               subAssistantEl.classList.add('streaming');
               testOutputContainer.appendChild(subAssistantEl);
-              const subContentDiv = subAssistantEl.querySelector('.content') as HTMLDivElement;
+              const subContentDiv = subAssistantEl.querySelector(
+                '.content',
+              ) as HTMLDivElement;
               testOutputContainer.scrollTop = testOutputContainer.scrollHeight;
 
               try {
                 const subGenerator = subAgentCore.streamChatCompletion([]);
                 for await (const chunk of subGenerator) {
-                   subAssistantMsg.content += chunk;
-                   subContentDiv.textContent = subAssistantMsg.content;
-                   testOutputContainer.scrollTop = testOutputContainer.scrollHeight;
+                  subAssistantMsg.content += chunk;
+                  subContentDiv.textContent = subAssistantMsg.content;
+                  testOutputContainer.scrollTop =
+                    testOutputContainer.scrollHeight;
                 }
                 toolResponseContent = subAssistantMsg.content;
               } finally {
@@ -951,7 +967,7 @@ ${JSON.stringify(testCore.history, null, 2)}`;
     evalOutputContainer.innerHTML = '<h3>Suggestions</h3>';
     suggestions.forEach((suggestion) => {
       const btn = document.createElement('button');
-      btn.className = 'suggestion-btn';
+      btn.className = 'suggestion-btn btn btn-secondary';
       btn.textContent = suggestion;
       btn.addEventListener('click', () => {
         userInputTextarea.value = suggestion;
