@@ -17,12 +17,19 @@ test.describe('LLM Chat Tool', () => {
 
     // Modify settings to test local storage behavior
     await page.fill('#system-prompt', 'Custom system prompt');
+    await page.waitForTimeout(500); // Wait for auto-save
 
-    // Reload and check persistence
-    await page.reload();
-    await expect(page.locator('#system-prompt')).toHaveValue(
-      'Custom system prompt',
-    );
+    // Create a new thread
+    await page.click('#new-thread-btn');
+    await expect(page.locator('#system-prompt')).toHaveValue('You are a helpful assistant.');
+
+    // Switch back to the first thread
+    const dropdown = page.locator('#thread-select');
+    // First option should be "New Session"
+    await dropdown.selectOption({ index: 0 });
+
+    // Verify persistence across thread switch
+    await expect(page.locator('#system-prompt')).toHaveValue('Custom system prompt');
   });
 
   test('should allow fetching models from OpenRouter from settings', async ({

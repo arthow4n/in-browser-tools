@@ -6,11 +6,11 @@ export type StorageKey =
   | 'shared-openrouter-providerPrefs'
   | 'shared-openrouter-presets'
   | 'shared-openrouter-activePresetId'
-  | 'llm-chat-systemPrompt'
-  | 'llm-chat-savedPrompts'
-  | 'llm-chat-history'
-  | 'llm-chat-toolsEnabled'
-  | 'llm-chat-disabledTools'
+  | `${string}systemPrompt`
+  | `${string}savedPrompts`
+  | `${string}history`
+  | `${string}toolsEnabled`
+  | `${string}disabledTools`
   | 'prompt-improver-originalPrompt'
   | 'prompt-improver-intention'
   | 'prompt-improver-howToImprove'
@@ -18,18 +18,15 @@ export type StorageKey =
   | 'prompt-improver-maxRounds'
   | 'prompt-improver-branchFactor'
   | 'prompt-improver-promptType'
-  | 'agent-workflow-designer-history'
   | 'agent-workflow-designer-savedAgents'
   | 'agent-workflow-designer-currentTask'
-  | 'text-adventure-systemPrompt'
-  | 'text-adventure-history'
   | 'text-adventure-characterName'
   | 'text-adventure-characterDescription'
   | 'text-adventure-scenarioRequest'
   | 'text-adventure-outputLanguage'
   | 'text-adventure-savedAdventures'
-  | 'repo-chat-systemPrompt'
-  | 'repo-chat-history';
+  | 'llm-chat-threads'
+  | 'llm-chat-activeThreadId';
 
 export function getStorage(key: StorageKey): string | null {
   return localStorage.getItem(PREFIX + key);
