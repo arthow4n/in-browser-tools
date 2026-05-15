@@ -5,6 +5,8 @@ export interface PromptImproverConfig {
   intention: string;
   howToImprove: string;
   evaluationFocus?: string;
+  testInput?: string;
+  testExpectedOutput?: string;
   maxLoopRound: number;
   branchFactor: number;
   promptType: 'system' | 'user';
@@ -24,6 +26,7 @@ export interface SetupData {
   implementerSystemPrompt: string;
   evaluatorSystemPrompt: string;
   testScenarios: string[];
+  testExpectedOutput?: string;
   evaluationCriteria: string;
 }
 
@@ -108,12 +111,13 @@ export class PromptImproverCore {
 You are an expert meta-prompt engineer. The user wants to improve a ${this.config.promptType} prompt.
 Intention of the prompt: ${this.config.intention}
 How it should be improved: ${this.config.howToImprove}
-
+${this.config.testInput ? `Human provided test input: ${this.config.testInput}\n` : ''}${this.config.testExpectedOutput ? `Human provided expected output: ${this.config.testExpectedOutput}\n` : ''}
 Generate a JSON object with the following schema:
 {
   "implementerSystemPrompt": "The system prompt for the Implementer agent whose job is to iteratively rewrite the prompt based on feedback.",
   "evaluatorSystemPrompt": "The system prompt for the Evaluator agent whose job is to review the output of a test subagent using the new prompt and score it.",
-  "testScenarios": ["A string representing a complex or tricky test input to feed the test subagent to rigorously verify the prompt."],
+  "testScenarios": ["A string representing a complex or tricky test input to feed the test subagent to rigorously verify the prompt. ${this.config.testInput ? `Must use the human provided test input verbatim.` : `Generate an appropriate tricky test scenario.`}"],
+  "testExpectedOutput": "The expected output for the test scenario to serve as a baseline for the evaluator. ${this.config.testExpectedOutput ? `Must use the human provided expected output verbatim.` : `Generate an appropriate expected output for the test scenario.`}",
   "evaluationCriteria": "Detailed criteria for how to score the prompt output objectively on a 1 to 5 scale. Define distinctly what each score from 1 to 5 means (e.g. 1 = completely misses the mark, 5 = perfect). ${this.config.evaluationFocus ? `Please ensure the criteria strictly focuses on the following: ${this.config.evaluationFocus}` : ''}"
 }
 
@@ -321,10 +325,13 @@ ${newPrompt}
 Test Scenario provided to subagent:
 ${scenario}
 
+Expected Output for Test Scenario:
+${setupData.testExpectedOutput || 'None provided.'}
+
 Output from Test Subagent:
 ${testOutput}
 
-Provide your evaluation in JSON format:
+Provide your evaluation in JSON format comparing the Output from Test Subagent against the Expected Output (if provided):
 {
   "score": <number 1-5>,
   "feedback": "<Detailed feedback on what is good, what is bad, and exactly how to improve in the next iteration>",

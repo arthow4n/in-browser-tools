@@ -15,6 +15,8 @@ export type StorageKey =
   | 'prompt-improver-intention'
   | 'prompt-improver-howToImprove'
   | 'prompt-improver-evaluationFocus'
+  | 'prompt-improver-testInput'
+  | 'prompt-improver-testExpectedOutput'
   | 'prompt-improver-maxRounds'
   | 'prompt-improver-branchFactor'
   | 'prompt-improver-promptType'
