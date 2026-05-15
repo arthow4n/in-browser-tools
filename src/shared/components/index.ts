@@ -5,3 +5,4 @@ export * from './PageLayout.js';
 export * from './Panel.js';
 export * from './LlmSettings.js';
 export * from './ChatMessageUI.js';
+export { AskQuestionUI } from './AskQuestionUI.js';
