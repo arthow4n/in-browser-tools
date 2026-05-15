@@ -22,6 +22,8 @@ interface PromptState {
   intention: string;
   howToImprove: string;
   evaluationFocus: string;
+  testInput: string;
+  testExpectedOutput: string;
   maxRounds: string;
   branchFactor: string;
   promptType: string;
@@ -40,6 +42,8 @@ export const App: React.FC = () => {
         getStorage('prompt-improver-howToImprove') ||
         'Ensure the LLM is considerate and fills in details the original vague prompt might not have thought about.',
       evaluationFocus: getStorage('prompt-improver-evaluationFocus') || '',
+      testInput: getStorage('prompt-improver-testInput') || '',
+      testExpectedOutput: getStorage('prompt-improver-testExpectedOutput') || '',
       maxRounds: getStorage('prompt-improver-maxRounds') || '3',
       branchFactor: getStorage('prompt-improver-branchFactor') || '3',
       promptType: getStorage('prompt-improver-promptType') || 'system',
@@ -66,6 +70,8 @@ export const App: React.FC = () => {
     setStorage('prompt-improver-intention', state.intention);
     setStorage('prompt-improver-howToImprove', state.howToImprove);
     setStorage('prompt-improver-evaluationFocus', state.evaluationFocus);
+    setStorage('prompt-improver-testInput', state.testInput);
+    setStorage('prompt-improver-testExpectedOutput', state.testExpectedOutput);
     setStorage('prompt-improver-maxRounds', state.maxRounds);
     setStorage('prompt-improver-branchFactor', state.branchFactor);
     setStorage('prompt-improver-promptType', state.promptType);
@@ -91,6 +97,8 @@ export const App: React.FC = () => {
       intention: state.intention,
       howToImprove: state.howToImprove,
       evaluationFocus: state.evaluationFocus,
+      testInput: state.testInput,
+      testExpectedOutput: state.testExpectedOutput,
       maxLoopRound: parseInt(state.maxRounds, 10) || 1,
       branchFactor: parseInt(state.branchFactor, 10) || 1,
       promptType: state.promptType as 'system' | 'user',
@@ -195,6 +203,18 @@ export const App: React.FC = () => {
           rows={3}
           value={state.evaluationFocus}
           onChange={(e) => updateState('evaluationFocus', e.target.value)}
+        />
+        <TextArea
+          label="Test Input (Optional):"
+          rows={3}
+          value={state.testInput}
+          onChange={(e) => updateState('testInput', e.target.value)}
+        />
+        <TextArea
+          label="Expected Output (Optional):"
+          rows={3}
+          value={state.testExpectedOutput}
+          onChange={(e) => updateState('testExpectedOutput', e.target.value)}
         />
 
         <Input
