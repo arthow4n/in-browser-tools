@@ -4,6 +4,7 @@ import { ChatCore } from '../../llm-chat/core.js';
 import { Input } from './Input.js';
 import { TextArea } from './TextArea.js';
 import { Button } from './Button.js';
+import { ToolCallMessageUI } from './ToolCallMessageUI.js';
 
 interface ChatMessageUIProps {
   msg: ChatMessage & { id?: string };
@@ -27,12 +28,6 @@ export const ChatMessageUI: React.FC<ChatMessageUIProps> = ({
   const [improveError, setImproveError] = useState('');
 
   let displayContent = msg.content;
-  if (msg.tool_calls && msg.tool_calls.length > 0) {
-    displayContent += '\n\n**Tool Calls:**\n';
-    for (const tc of msg.tool_calls) {
-      displayContent += `- ${tc.function.name}(${tc.function.arguments})\n`;
-    }
-  }
 
   const handleEdit = () => {
     if (isEditing) {
@@ -128,6 +123,14 @@ export const ChatMessageUI: React.FC<ChatMessageUIProps> = ({
       ) : (
         <div className="content" style={{ whiteSpace: 'pre-wrap' }}>
           {displayContent}
+        </div>
+      )}
+
+      {msg.tool_calls && msg.tool_calls.length > 0 && (
+        <div className="tool-calls" style={{ marginTop: '10px' }}>
+          {msg.tool_calls.map((tc: any, idx: number) => (
+            <ToolCallMessageUI key={tc.id || idx} toolCall={tc} />
+          ))}
         </div>
       )}
 
