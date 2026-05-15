@@ -41,25 +41,40 @@ export class ChatCore extends LLMCore {
 
   loadChatState() {
     this.systemPrompt =
-      getStorage(`${this.storagePrefix}systemPrompt` as import('../shared/storage.js').StorageKey) || 'You are a helpful assistant.';
+      getStorage(
+        `${this.storagePrefix}systemPrompt` as import('../shared/storage.js').StorageKey,
+      ) || 'You are a helpful assistant.';
 
     try {
       this.savedPrompts = JSON.parse(
-        getStorage(`${this.storagePrefix}savedPrompts` as import('../shared/storage.js').StorageKey) || '[]',
+        getStorage(
+          `${this.storagePrefix}savedPrompts` as import('../shared/storage.js').StorageKey,
+        ) || '[]',
       );
     } catch {
       this.savedPrompts = [];
     }
 
     try {
-      this.history = JSON.parse(getStorage(`${this.storagePrefix}history` as import('../shared/storage.js').StorageKey) || '[]');
+      this.history = JSON.parse(
+        getStorage(
+          `${this.storagePrefix}history` as import('../shared/storage.js').StorageKey,
+        ) || '[]',
+      );
     } catch {
       this.history = [];
     }
 
-    this.toolsEnabled = getStorage(`${this.storagePrefix}toolsEnabled` as import('../shared/storage.js').StorageKey) === 'true';
+    this.toolsEnabled =
+      getStorage(
+        `${this.storagePrefix}toolsEnabled` as import('../shared/storage.js').StorageKey,
+      ) === 'true';
     try {
-      const disabled = JSON.parse(getStorage(`${this.storagePrefix}disabledTools` as import('../shared/storage.js').StorageKey) || '[]');
+      const disabled = JSON.parse(
+        getStorage(
+          `${this.storagePrefix}disabledTools` as import('../shared/storage.js').StorageKey,
+        ) || '[]',
+      );
       this.disabledTools = new Set(disabled);
     } catch {
       this.disabledTools = new Set();
@@ -67,11 +82,24 @@ export class ChatCore extends LLMCore {
   }
 
   saveChatState() {
-    setStorage(`${this.storagePrefix}systemPrompt` as import('../shared/storage.js').StorageKey, this.systemPrompt);
-    setStorage(`${this.storagePrefix}savedPrompts` as import('../shared/storage.js').StorageKey, JSON.stringify(this.savedPrompts));
-    setStorage(`${this.storagePrefix}history` as import('../shared/storage.js').StorageKey, JSON.stringify(this.history));
-    setStorage(`${this.storagePrefix}toolsEnabled` as import('../shared/storage.js').StorageKey, this.toolsEnabled.toString());
-    setStorage(`${this.storagePrefix}disabledTools` as import('../shared/storage.js').StorageKey,
+    setStorage(
+      `${this.storagePrefix}systemPrompt` as import('../shared/storage.js').StorageKey,
+      this.systemPrompt,
+    );
+    setStorage(
+      `${this.storagePrefix}savedPrompts` as import('../shared/storage.js').StorageKey,
+      JSON.stringify(this.savedPrompts),
+    );
+    setStorage(
+      `${this.storagePrefix}history` as import('../shared/storage.js').StorageKey,
+      JSON.stringify(this.history),
+    );
+    setStorage(
+      `${this.storagePrefix}toolsEnabled` as import('../shared/storage.js').StorageKey,
+      this.toolsEnabled.toString(),
+    );
+    setStorage(
+      `${this.storagePrefix}disabledTools` as import('../shared/storage.js').StorageKey,
       JSON.stringify(Array.from(this.disabledTools)),
     );
   }

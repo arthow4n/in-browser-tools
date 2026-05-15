@@ -165,14 +165,8 @@
           ></textarea>
           <button
             id="send-btn"
-            style="
-              width: 100%;
-              padding: 10px;
-              font-weight: bold;
-              background-color: #4caf50;
-              color: white;
-              border: none;
-            "
+            class="btn btn-success"
+            style="width: 100%; padding: 10px; font-weight: bold"
           >
             Send
           </button>
@@ -182,6 +176,7 @@
           ></span>
           <button
             id="undo-chat-btn"
+            class="btn btn-secondary"
             style="width: 48%; margin-top: 10px; margin-right: 2%"
             disabled
           >
@@ -189,12 +184,17 @@
           </button>
           <button
             id="redo-chat-btn"
+            class="btn btn-secondary"
             style="width: 48%; margin-top: 10px"
             disabled
           >
             Redo Chat
           </button>
-          <button id="clear-history-btn" style="width: 100%; margin-top: 10px">
+          <button
+            id="clear-history-btn"
+            class="btn btn-danger"
+            style="width: 100%; margin-top: 10px"
+          >
             Clear Chat
           </button>
         </section>
@@ -212,8 +212,12 @@
               rows="3"
               placeholder="Paste concatenated markdown here..."
             ></textarea>
-            <button id="import-btn">Import</button>
-            <button id="fix-import-btn" style="display: none">
+            <button id="import-btn" class="btn btn-primary">Import</button>
+            <button
+              id="fix-import-btn"
+              class="btn btn-warning"
+              style="display: none"
+            >
               Fix Import with LLM
             </button>
             <span
@@ -229,8 +233,10 @@
               border-bottom: 1px solid #eee;
             "
           >
-            <button id="copy-all-btn">Copy All as Single Markdown</button>
-            <button id="download-all-btn">
+            <button id="copy-all-btn" class="btn btn-secondary">
+              Copy All as Single Markdown
+            </button>
+            <button id="download-all-btn" class="btn btn-secondary">
               Download All as Single Markdown
             </button>
             <span
@@ -264,12 +270,10 @@
           ></textarea>
           <button
             id="run-test-btn"
+            class="btn btn-primary"
             style="
               width: 100%;
               padding: 10px;
-              background-color: #2196f3;
-              color: white;
-              border: none;
               font-weight: bold;
               margin-bottom: 10px;
             "
@@ -278,13 +282,11 @@
           </button>
           <button
             id="eval-test-btn"
+            class="btn btn-warning"
             disabled
             style="
               width: 100%;
               padding: 10px;
-              background-color: #ff9800;
-              color: white;
-              border: none;
               font-weight: bold;
               margin-bottom: 10px;
             "

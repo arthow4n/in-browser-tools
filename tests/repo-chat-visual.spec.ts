@@ -52,10 +52,8 @@ data: [DONE]
 
   // Verify UI continues and shows assistant response
   await expect(
-    page
-      .locator('.message.assistant')
-      .filter({
-        hasText: 'Okay, proceeding with the plan based on the file context.',
-      }),
+    page.locator('.message.assistant').filter({
+      hasText: 'Okay, proceeding with the plan based on the file context.',
+    }),
   ).toBeVisible();
 });

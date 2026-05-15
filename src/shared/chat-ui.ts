@@ -36,14 +36,18 @@ export function createMessageElement(
   controls.className = 'message-controls';
 
   const editBtn = document.createElement('button');
+  editBtn.className = 'btn btn-secondary';
   editBtn.textContent = 'Edit';
   const deleteBtn = document.createElement('button');
+  deleteBtn.className = 'btn btn-danger';
   deleteBtn.textContent = 'Delete';
 
   const deleteBelowBtn = document.createElement('button');
+  deleteBelowBtn.className = 'btn btn-danger';
   deleteBelowBtn.textContent = 'Delete ↓';
 
   const improveBtn = document.createElement('button');
+  improveBtn.className = 'btn btn-secondary';
   improveBtn.textContent = 'Improve';
 
   controls.appendChild(improveBtn);
@@ -73,10 +77,12 @@ export function createMessageElement(
   instructionsInput.style.boxSizing = 'border-box';
 
   const doImproveBtn = document.createElement('button');
+  doImproveBtn.className = 'btn btn-primary';
   doImproveBtn.textContent = 'Improve / Regenerate';
   doImproveBtn.style.marginRight = '5px';
 
   const cancelImproveBtn = document.createElement('button');
+  cancelImproveBtn.className = 'btn btn-secondary';
   cancelImproveBtn.textContent = 'Cancel';
   cancelImproveBtn.style.marginRight = '5px';
 

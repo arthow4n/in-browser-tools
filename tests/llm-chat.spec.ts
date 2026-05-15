@@ -21,7 +21,9 @@ test.describe('LLM Chat Tool', () => {
 
     // Create a new thread
     await page.click('#new-thread-btn');
-    await expect(page.locator('#system-prompt')).toHaveValue('You are a helpful assistant.');
+    await expect(page.locator('#system-prompt')).toHaveValue(
+      'You are a helpful assistant.',
+    );
 
     // Switch back to the first thread
     const dropdown = page.locator('#thread-select');
@@ -29,7 +31,9 @@ test.describe('LLM Chat Tool', () => {
     await dropdown.selectOption({ index: 0 });
 
     // Verify persistence across thread switch
-    await expect(page.locator('#system-prompt')).toHaveValue('Custom system prompt');
+    await expect(page.locator('#system-prompt')).toHaveValue(
+      'Custom system prompt',
+    );
   });
 
   test('should allow fetching models from OpenRouter from settings', async ({
