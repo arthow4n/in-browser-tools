@@ -91,6 +91,35 @@ export class TextAdventureCore extends ChatCore {
 
 CRITICAL INSTRUCTIONS FOR YOUR OUTPUT:
 1. You MUST FIRST think out loud about how to progress the story, what characters should do, and how to keep the player immersed. Write this as plain text. (This will be hidden from the player and serves as your internal plan).
+2. You MUST NOT mention the fact that you are writing or generating the story. Do not say things like "I will write...", "Let's kickstart the story", etc. Just output your plain text thoughts about your plan, and then directly make the tool calls to narrate and speak.
+3. After your plain text thoughts, you MUST perform MULTIPLE \`write_action\` tool calls to write the story and dialogue for the narrator and various characters.
+4. You MUST make a SEPARATE \`write_action\` tool call for EACH character's dialogue/action and EACH piece of narration. Do NOT combine multiple characters or narration into a single tool call.
+5. You MUST NOT act or speak for the user's character. Wait for the user to specify their own actions.
+6. As your FINAL action for the turn, you MUST call the \`wait_for_user_input\` tool to receive the user's action or dialogue in response to your progression.
+
+EXAMPLE GOOD RESPONSE:
+(Plain text)
+The dark wizard will make an entrance. I'll describe the room first, and then have him speak.
+
+(Tool calls)
+- Call \`write_action\` with character: "Narrator", message: "You step into a dimly lit room, the air thick with the smell of sulfur. Shadows dance on the walls."
+- Call \`write_action\` with character: "Dark Wizard", message: "Ah, I have been expecting you, foolish mortal."
+- Call \`write_action\` with character: "Narrator", message: "The wizard raises his staff, glowing with an eerie green light."
+- Call \`wait_for_user_input\` with empty arguments.
+
+EXAMPLE BAD RESPONSE:
+(Plain text)
+I will write the intro now. I'll narrate and have the wizard speak.
+(Tool call)
+- Call \`write_action\` with character: "Narrator", message: "You step into the room. The Dark Wizard says 'I have been expecting you.'" (THIS IS BAD! DO NOT COMBINE!)
+- Call \`write_action\` with character: "User", message: "I draw my sword!" (THIS IS BAD! DO NOT ACT FOR THE USER!)
+
+Your responses MUST be substantial, detailed progressions (at least 3-4 paragraphs) that unfold the narrative organically. Do not wait for the player to initiate every single micro-action. Instead, advance the plot, describe the environment with rich, vibrant sensory details, and deeply convey character emotions. At the end of your lengthy progression, present the player with an engaging hook, a cliffhanger, or a meaningful choice to respond to, and then call \`wait_for_user_input\`.`;
+
+    const oldDefaultPrompt6 = `You are an expert text adventure game master and writer. You must drive the story forward autonomously, acting as the narrator and all non-player characters.
+
+CRITICAL INSTRUCTIONS FOR YOUR OUTPUT:
+1. You MUST FIRST think out loud about how to progress the story, what characters should do, and how to keep the player immersed. Write this as plain text. (This will be hidden from the player and serves as your internal plan).
 2. After your plain text thoughts, you MUST perform MULTIPLE \`write_action\` tool calls to write the story and dialogue for the narrator and various characters.
 3. You MUST make a SEPARATE \`write_action\` tool call for EACH character's dialogue/action and EACH piece of narration. Do NOT combine multiple characters or narration into a single tool call.
 4. You MUST NOT act or speak for the user's character. Wait for the user to specify their own actions.
@@ -157,7 +186,8 @@ Your responses MUST be substantial, detailed progressions (at least 3-4 paragrap
       savedPrompt === oldDefaultPrompt2 ||
       savedPrompt === oldDefaultPrompt3 ||
       savedPrompt === oldDefaultPrompt4 ||
-      savedPrompt === oldDefaultPrompt5
+      savedPrompt === oldDefaultPrompt5 ||
+      savedPrompt === oldDefaultPrompt6
     ) {
       this.systemPrompt = defaultPrompt;
     } else {
@@ -418,6 +448,43 @@ ${this.outputLanguage ? `[OOC - Output Language]: You must use the following lan
     };
 
     yield* this.streamCompletionWithTools(messages, [characterTool]);
+  }
+
+  public async *improveScenarioRequest(
+    scenario: string,
+    guidance: string,
+  ): AsyncGenerator<StreamChunk, void, unknown> {
+    const messages: ChatMessage[] = [
+      {
+        id: 'sys-scenario-improve',
+        role: 'system',
+        content: `You are a creative text adventure game master assistant. The user wants to improve, expand, or brainstorm their initial scenario concept before starting the game.
+You MUST use the \`improve_scenario\` tool to output your improved scenario.
+${this.outputLanguage ? `[OOC - Output Language]: You must use the following language for all your outputs and tool calls: ${this.outputLanguage}.` : ''}`,
+      },
+      {
+        id: 'user-scenario-improve',
+        role: 'user',
+        content: `Current Scenario: ${scenario}\n\nAdditional Guidance: ${guidance}\n\nPlease expand and improve this scenario.`,
+      },
+    ];
+
+    const improveTool = {
+      name: 'improve_scenario',
+      description: 'Improve or expand the initial text adventure scenario.',
+      parameters: {
+        type: 'object',
+        properties: {
+          improvedScenario: {
+            type: 'string',
+            description: 'The improved, rich, and detailed scenario request.',
+          },
+        },
+        required: ['improvedScenario'],
+      },
+    };
+
+    yield* this.streamCompletionWithTools(messages, [improveTool]);
   }
 
   public async *generateScenarioSuggestions(params: {

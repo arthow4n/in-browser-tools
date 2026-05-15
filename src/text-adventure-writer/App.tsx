@@ -210,6 +210,12 @@ export const App: React.FC = () => {
     isError: scenarioIsError,
     runAction: runScenarioAction,
   } = useAsyncAction();
+  const {
+    isLoading: isImprovingScenario,
+    statusText: improveScenarioStatus,
+    isError: improveScenarioIsError,
+    runAction: runImproveScenarioAction,
+  } = useAsyncAction();
 
   useEffect(() => {
     setHistory([...core.history]);
@@ -274,6 +280,39 @@ export const App: React.FC = () => {
     );
   };
 
+  const handleImproveScenario = async () => {
+    await runImproveScenarioAction(
+      'Improving scenario...',
+      async () => {
+        const generator = core.improveScenarioRequest(
+          scenarioRequest.trim(),
+          scenarioGuidance.trim()
+        );
+
+        let toolArgs = '';
+        for await (const chunk of generator) {
+          if (chunk.type === 'tool_call' && chunk.toolCall) {
+            toolArgs += chunk.toolCall.arguments;
+          }
+        }
+
+        if (toolArgs) {
+          try {
+            const parsed = JSON.parse(toolArgs);
+            if (parsed.improvedScenario) {
+              handleScenarioChange(parsed.improvedScenario);
+              setScenarioSuggestions([]);
+            }
+          } catch (e) {
+            console.error('Failed to parse improved scenario', e);
+            throw new Error('Failed to parse improved scenario from the AI.');
+          }
+        }
+      },
+      'Scenario improved.'
+    );
+  };
+
   const handleGenerateCharacter = async () => {
     await runCharAction(
       'Generating character...',
@@ -319,6 +358,8 @@ export const App: React.FC = () => {
     if (introGuidance.trim()) {
       introPrompt += `\n\n[OOC - Guidance for Intro]: ${introGuidance.trim()}`;
     }
+    introPrompt += `\n\nStart the story immediately. Make your tool calls to narrate and speak as normal.`;
+
     core.history.push({
       id: Date.now().toString(),
       role: 'user',
@@ -684,22 +725,33 @@ export const App: React.FC = () => {
             value={scenarioGuidance}
             onChange={(e) => setScenarioGuidance(e.target.value)}
           />
-          <Button
-            onClick={handleSuggestScenarios}
-            loading={isGeneratingScenarios}
-          >
-            {scenarioSuggestions.length > 0
-              ? 'Regenerate Suggestions'
-              : 'Suggest Scenarios'}
-          </Button>
+          <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+            <Button
+              onClick={handleSuggestScenarios}
+              loading={isGeneratingScenarios}
+              style={{ flex: 1 }}
+            >
+              {scenarioSuggestions.length > 0
+                ? 'Regenerate Suggestions'
+                : 'Suggest 3 Ideas'}
+            </Button>
+            <Button
+              onClick={handleImproveScenario}
+              loading={isImprovingScenario}
+              variant="info"
+              style={{ flex: 1 }}
+            >
+              Improve Scenario
+            </Button>
+          </div>
           <span
             className="status"
             style={{
-              color: scenarioIsError ? 'red' : 'green',
+              color: scenarioIsError || improveScenarioIsError ? 'red' : 'green',
               marginLeft: '10px',
             }}
           >
-            {scenarioStatus}
+            {scenarioStatus || improveScenarioStatus}
           </span>
 
           {scenarioSuggestions.length > 0 && (
