@@ -45,6 +45,8 @@ export interface ProviderPrefs {
     | 'minimal'
     | 'none'
     | '';
+  rateLimitRetries?: number;
+  rateLimitWaitSeconds?: number;
 }
 
 export interface OpenRouterPreset {
@@ -169,6 +171,8 @@ export class LLMCore {
         dataCollection: 'deny',
         zdr: true,
         reasoningEffort: '',
+        rateLimitRetries: 1,
+        rateLimitWaitSeconds: 3,
       };
       try {
         const savedPrefs = getStorage('shared-openrouter-providerPrefs');
@@ -232,7 +236,11 @@ export class LLMCore {
 
   public async callLLM(messages: ChatMessage[], retries = 2): Promise<string> {
     let attempt = 0;
+    let rateLimitAttempt = 0;
     let lastError: any;
+
+    const maxRateLimitRetries = this.providerPrefs.rateLimitRetries ?? 1;
+    const rateLimitWaitSeconds = this.providerPrefs.rateLimitWaitSeconds ?? 3;
 
     while (attempt <= retries) {
       try {
@@ -262,13 +270,33 @@ export class LLMCore {
 
         if (!res.ok) {
           const errorText = await res.text();
+          if (res.status === 429) {
+            if (rateLimitAttempt < maxRateLimitRetries) {
+              rateLimitAttempt++;
+              console.warn(
+                `Rate limited (429). Retrying in ${rateLimitWaitSeconds} seconds (Attempt ${rateLimitAttempt}/${maxRateLimitRetries})...`,
+              );
+              await new Promise((resolve) =>
+                setTimeout(resolve, 1000 * rateLimitWaitSeconds),
+              );
+              continue;
+            }
+          }
           throw new Error(`API Error: ${res.status} - ${errorText}`);
         }
 
         const data = await res.json();
         return data.choices[0]?.message?.content || '';
-      } catch (err) {
+      } catch (err: any) {
         lastError = err;
+
+        // If it's a 429 error and we are here, it means we exhausted our rateLimitRetries
+        // inside the try block (or rate limit retries are disabled).
+        // General retries should NOT apply to 429 errors.
+        if (err.message && err.message.includes('429')) {
+          throw lastError;
+        }
+
         attempt++;
         if (attempt <= retries) {
           await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
@@ -284,7 +312,11 @@ export class LLMCore {
     retries = 2,
   ): Promise<any> {
     let attempt = 0;
+    let rateLimitAttempt = 0;
     let lastError: any;
+
+    const maxRateLimitRetries = this.providerPrefs.rateLimitRetries ?? 1;
+    const rateLimitWaitSeconds = this.providerPrefs.rateLimitWaitSeconds ?? 3;
 
     while (attempt <= retries) {
       try {
@@ -327,13 +359,33 @@ export class LLMCore {
 
         if (!res.ok) {
           const errorText = await res.text();
+          if (res.status === 429) {
+            if (rateLimitAttempt < maxRateLimitRetries) {
+              rateLimitAttempt++;
+              console.warn(
+                `Rate limited (429). Retrying in ${rateLimitWaitSeconds} seconds (Attempt ${rateLimitAttempt}/${maxRateLimitRetries})...`,
+              );
+              await new Promise((resolve) =>
+                setTimeout(resolve, 1000 * rateLimitWaitSeconds),
+              );
+              continue;
+            }
+          }
           throw new Error(`API Error: ${res.status} - ${errorText}`);
         }
 
         const data = await res.json();
         return data.choices[0]?.message;
-      } catch (err) {
+      } catch (err: any) {
         lastError = err;
+
+        // If it's a 429 error and we are here, it means we exhausted our rateLimitRetries
+        // inside the try block (or rate limit retries are disabled).
+        // General retries should NOT apply to 429 errors.
+        if (err.message && err.message.includes('429')) {
+          throw lastError;
+        }
+
         attempt++;
         if (attempt <= retries) {
           await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
@@ -349,34 +401,54 @@ export class LLMCore {
     if (!this.apiKey) throw new Error('API Key is required');
     if (!this.model) throw new Error('Model is required');
 
-    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: this.model,
-        messages: messages,
-        stream: true,
-        reasoning_effort: this.providerPrefs.reasoningEffort || undefined,
-        provider: {
-          order: this.providerPrefs.order,
-          allow_fallbacks: this.providerPrefs.allowFallbacks,
-          data_collection: this.providerPrefs.dataCollection,
-          zdr: this.providerPrefs.zdr,
-        },
-      }),
-    });
+    let res: Response | null = null;
+    let rateLimitAttempt = 0;
+    const maxRateLimitRetries = this.providerPrefs.rateLimitRetries ?? 1;
+    const rateLimitWaitSeconds = this.providerPrefs.rateLimitWaitSeconds ?? 3;
 
-    if (!res.ok) {
-      const errorText = await res.text();
-      throw new Error(
-        `Failed to fetch completion: ${res.status} ${res.statusText} - ${errorText}`,
-      );
+    while (rateLimitAttempt <= maxRateLimitRetries) {
+      res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: this.model,
+          messages: messages,
+          stream: true,
+          reasoning_effort: this.providerPrefs.reasoningEffort || undefined,
+          provider: {
+            order: this.providerPrefs.order,
+            allow_fallbacks: this.providerPrefs.allowFallbacks,
+            data_collection: this.providerPrefs.dataCollection,
+            zdr: this.providerPrefs.zdr,
+          },
+        }),
+      });
+
+      if (!res.ok) {
+        if (res.status === 429 && rateLimitAttempt < maxRateLimitRetries) {
+          rateLimitAttempt++;
+          console.warn(
+            `Rate limited (429). Retrying in ${rateLimitWaitSeconds} seconds (Attempt ${rateLimitAttempt}/${maxRateLimitRetries})...`,
+          );
+          await new Promise((resolve) =>
+            setTimeout(resolve, 1000 * rateLimitWaitSeconds),
+          );
+          continue;
+        }
+
+        const errorText = await res.text();
+        throw new Error(
+          `Failed to fetch completion: ${res.status} ${res.statusText} - ${errorText}`,
+        );
+      }
+
+      break;
     }
 
-    if (!res.body) throw new Error('Response body is null');
+    if (!res || !res.body) throw new Error('Response body is null');
 
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
@@ -438,23 +510,43 @@ export class LLMCore {
       }));
     }
 
-    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    });
+    let res: Response | null = null;
+    let rateLimitAttempt = 0;
+    const maxRateLimitRetries = this.providerPrefs.rateLimitRetries ?? 1;
+    const rateLimitWaitSeconds = this.providerPrefs.rateLimitWaitSeconds ?? 3;
 
-    if (!res.ok) {
-      const errorText = await res.text();
-      throw new Error(
-        `Failed to fetch completion: ${res.status} ${res.statusText} - ${errorText}`,
-      );
+    while (rateLimitAttempt <= maxRateLimitRetries) {
+      res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        if (res.status === 429 && rateLimitAttempt < maxRateLimitRetries) {
+          rateLimitAttempt++;
+          console.warn(
+            `Rate limited (429). Retrying in ${rateLimitWaitSeconds} seconds (Attempt ${rateLimitAttempt}/${maxRateLimitRetries})...`,
+          );
+          await new Promise((resolve) =>
+            setTimeout(resolve, 1000 * rateLimitWaitSeconds),
+          );
+          continue;
+        }
+
+        const errorText = await res.text();
+        throw new Error(
+          `Failed to fetch completion: ${res.status} ${res.statusText} - ${errorText}`,
+        );
+      }
+
+      break;
     }
 
-    if (!res.body) throw new Error('Response body is null');
+    if (!res || !res.body) throw new Error('Response body is null');
 
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
