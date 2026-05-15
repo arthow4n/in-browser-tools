@@ -104,7 +104,9 @@ export const App: React.FC = () => {
       'Running...',
       async () => {
         if (!llmCore.apiKey || !llmCore.model || !state.originalPrompt) {
-          throw new Error('Please fill out API Key, Model, and Original Prompt.');
+          throw new Error(
+            'Please fill out API Key, Model, and Original Prompt.',
+          );
         }
         const core = new PromptImproverCore(config, llmCore);
         const generator = core.run();

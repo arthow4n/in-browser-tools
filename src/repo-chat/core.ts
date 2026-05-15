@@ -7,11 +7,11 @@ import { getStorage, setStorage } from '../shared/storage.js';
 const DEFAULT_SYSTEM_PROMPT =
   'You are a chat agent helping the user generate an execution plan to be delegated to an autonomous coding agent. The plan should outline the approach but not be overly detailed. Entrust the coding agent to handle the implementation details. You do not have access to any tools. You must rely on the files provided in your context to answer questions and generate the plan.';
 
-
 function getTabSessionId(): string {
   let sessionId = sessionStorage.getItem('tab-session-id');
   if (!sessionId) {
-    sessionId = Date.now().toString() + Math.random().toString(36).substring(2, 9);
+    sessionId =
+      Date.now().toString() + Math.random().toString(36).substring(2, 9);
     sessionStorage.setItem('tab-session-id', sessionId);
   }
   return sessionId;

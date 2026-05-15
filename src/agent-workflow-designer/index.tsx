@@ -28,11 +28,11 @@ export interface ParsedWorkflow {
 export let currentWorkflow: ParsedWorkflow | null = null;
 let undoManager: UndoRedoManager<ChatMessage[]> | null = null;
 
-
 function getTabSessionId(): string {
   let sessionId = sessionStorage.getItem('tab-session-id');
   if (!sessionId) {
-    sessionId = Date.now().toString() + Math.random().toString(36).substring(2, 9);
+    sessionId =
+      Date.now().toString() + Math.random().toString(36).substring(2, 9);
     sessionStorage.setItem('tab-session-id', sessionId);
   }
   return sessionId;
@@ -794,7 +794,9 @@ runTestBtn.addEventListener('click', async () => {
       const assistantEl = createMessageElement(assistantMsg, 'Orchestrator');
       assistantEl.classList.add('streaming');
       testOutputContainer.appendChild(assistantEl);
-      const contentDiv = assistantEl.querySelector('.content') as HTMLDivElement;
+      const contentDiv = assistantEl.querySelector(
+        '.content',
+      ) as HTMLDivElement;
 
       let pendingToolCalls: any[] = [];
       try {
@@ -828,8 +830,15 @@ runTestBtn.addEventListener('click', async () => {
       if (pendingToolCalls.length > 0) {
         for (const pendingToolCall of pendingToolCalls) {
           // Find corresponding agent
-          const agentNameMatch = pendingToolCall.name.replace('call_agent_', '');
-          const agent = currentWorkflow?.agents.find((a) => a.name.toLowerCase().replace(/[^a-z0-9]+/g, '_') === agentNameMatch);
+          const agentNameMatch = pendingToolCall.name.replace(
+            'call_agent_',
+            '',
+          );
+          const agent = currentWorkflow?.agents.find(
+            (a) =>
+              a.name.toLowerCase().replace(/[^a-z0-9]+/g, '_') ===
+              agentNameMatch,
+          );
 
           let toolResponseContent = '';
           if (agent) {
@@ -854,18 +863,24 @@ runTestBtn.addEventListener('click', async () => {
                 role: 'assistant',
                 content: '',
               };
-              const subAssistantEl = createMessageElement(subAssistantMsg, `Sub-Agent: ${agent.name}`);
+              const subAssistantEl = createMessageElement(
+                subAssistantMsg,
+                `Sub-Agent: ${agent.name}`,
+              );
               subAssistantEl.classList.add('streaming');
               testOutputContainer.appendChild(subAssistantEl);
-              const subContentDiv = subAssistantEl.querySelector('.content') as HTMLDivElement;
+              const subContentDiv = subAssistantEl.querySelector(
+                '.content',
+              ) as HTMLDivElement;
               testOutputContainer.scrollTop = testOutputContainer.scrollHeight;
 
               try {
                 const subGenerator = subAgentCore.streamChatCompletion([]);
                 for await (const chunk of subGenerator) {
-                   subAssistantMsg.content += chunk;
-                   subContentDiv.textContent = subAssistantMsg.content;
-                   testOutputContainer.scrollTop = testOutputContainer.scrollHeight;
+                  subAssistantMsg.content += chunk;
+                  subContentDiv.textContent = subAssistantMsg.content;
+                  testOutputContainer.scrollTop =
+                    testOutputContainer.scrollHeight;
                 }
                 toolResponseContent = subAssistantMsg.content;
               } finally {

@@ -33,7 +33,8 @@ export const App: React.FC = () => {
 
   const [scenarioGuidance, setScenarioGuidance] = useState('');
   const [scenarioSuggestions, setScenarioSuggestions] = useState<string[]>([]);
-  const [previousScenarioSuggestions, setPreviousScenarioSuggestions] = useState<string[]>([]);
+  const [previousScenarioSuggestions, setPreviousScenarioSuggestions] =
+    useState<string[]>([]);
 
   const [streamingMsg, setStreamingMsg] = useState<any | null>(null);
 
@@ -48,7 +49,9 @@ export const App: React.FC = () => {
       systemPrompt: core.systemPrompt,
       outputLanguage: core.outputLanguage,
     };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: 'application/json',
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -58,11 +61,15 @@ export const App: React.FC = () => {
   };
 
   const [saveName, setSaveName] = useState('');
-  const [savedAdventures, setSavedAdventures] = useState<Record<string, any>>({});
+  const [savedAdventures, setSavedAdventures] = useState<Record<string, any>>(
+    {},
+  );
 
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('in-browser-tools:text-adventure-savedAdventures');
+      const saved = localStorage.getItem(
+        'in-browser-tools:text-adventure-savedAdventures',
+      );
       if (saved) {
         setSavedAdventures(JSON.parse(saved));
       }
@@ -88,7 +95,10 @@ export const App: React.FC = () => {
 
     const newSaved = { ...savedAdventures, [saveName.trim()]: data };
     setSavedAdventures(newSaved);
-    localStorage.setItem('in-browser-tools:text-adventure-savedAdventures', JSON.stringify(newSaved));
+    localStorage.setItem(
+      'in-browser-tools:text-adventure-savedAdventures',
+      JSON.stringify(newSaved),
+    );
     setSaveName('');
     setFormError('');
   };
@@ -127,7 +137,10 @@ export const App: React.FC = () => {
     const newSaved = { ...savedAdventures };
     delete newSaved[name];
     setSavedAdventures(newSaved);
-    localStorage.setItem('in-browser-tools:text-adventure-savedAdventures', JSON.stringify(newSaved));
+    localStorage.setItem(
+      'in-browser-tools:text-adventure-savedAdventures',
+      JSON.stringify(newSaved),
+    );
   };
 
   const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -246,7 +259,10 @@ export const App: React.FC = () => {
             const parsed = JSON.parse(toolArgs);
             if (parsed.suggestions && Array.isArray(parsed.suggestions)) {
               setScenarioSuggestions(parsed.suggestions);
-              setPreviousScenarioSuggestions((prev) => [...prev, ...parsed.suggestions]);
+              setPreviousScenarioSuggestions((prev) => [
+                ...prev,
+                ...parsed.suggestions,
+              ]);
             }
           } catch (e) {
             console.error('Failed to parse scenario suggestions', e);
@@ -320,7 +336,8 @@ export const App: React.FC = () => {
     }
     setFormError('');
 
-    const content = '[OOC]: Please rewrite and significantly elaborate on your last response. Make it much more vibrant, detailed, and immersive. Describe the environment, sensory details, and character emotions more deeply, and significantly expand the narrative length by adding more events or richer environmental exposition.';
+    const content =
+      '[OOC]: Please rewrite and significantly elaborate on your last response. Make it much more vibrant, detailed, and immersive. Describe the environment, sensory details, and character emotions more deeply, and significantly expand the narrative length by adding more events or richer environmental exposition.';
 
     // Find the last assistant message
     let unresolvedWaitToolId: string | null = null;
@@ -329,7 +346,9 @@ export const App: React.FC = () => {
       if (msg.role === 'assistant' && msg.tool_calls) {
         for (const tc of msg.tool_calls) {
           if (tc.function.name === 'wait_for_user_input') {
-            const hasResult = core.history.some(m => m.role === 'tool' && m.tool_call_id === tc.id);
+            const hasResult = core.history.some(
+              (m) => m.role === 'tool' && m.tool_call_id === tc.id,
+            );
             if (!hasResult) {
               unresolvedWaitToolId = tc.id;
             }
@@ -392,7 +411,9 @@ export const App: React.FC = () => {
       if (msg.role === 'assistant' && msg.tool_calls) {
         for (const tc of msg.tool_calls) {
           if (tc.function.name === 'wait_for_user_input') {
-            const hasResult = core.history.some(m => m.role === 'tool' && m.tool_call_id === tc.id);
+            const hasResult = core.history.some(
+              (m) => m.role === 'tool' && m.tool_call_id === tc.id,
+            );
             if (!hasResult) {
               unresolvedWaitToolId = tc.id;
             }
@@ -500,7 +521,10 @@ export const App: React.FC = () => {
       if (msg.tool_calls && msg.tool_calls.length > 0) {
         hasToolCalls = true;
         msg.tool_calls.forEach((tc: any, i: number) => {
-          if (tc.function.name === 'speak' || tc.function.name === 'write_action') {
+          if (
+            tc.function.name === 'speak' ||
+            tc.function.name === 'write_action'
+          ) {
             try {
               const args = JSON.parse(tc.function.arguments);
               const isNarrator = args.character?.toLowerCase() === 'narrator';
@@ -548,7 +572,14 @@ export const App: React.FC = () => {
       <LlmSettings core={core} />
 
       <Panel title="Adventure Management">
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end', marginBottom: '15px' }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: '10px',
+            alignItems: 'flex-end',
+            marginBottom: '15px',
+          }}
+        >
           <div style={{ flex: 1 }}>
             <Input
               label="Save Name"
@@ -563,17 +594,51 @@ export const App: React.FC = () => {
 
         {Object.keys(savedAdventures).length > 0 && (
           <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Load / Delete Save</label>
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0, border: '1px solid #ccc', borderRadius: '4px' }}>
+            <label
+              style={{
+                display: 'block',
+                marginBottom: '5px',
+                fontWeight: 'bold',
+              }}
+            >
+              Load / Delete Save
+            </label>
+            <ul
+              style={{
+                listStyle: 'none',
+                padding: 0,
+                margin: 0,
+                border: '1px solid #ccc',
+                borderRadius: '4px',
+              }}
+            >
               {Object.entries(savedAdventures).map(([name, data]) => (
-                <li key={name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', borderBottom: '1px solid #eee' }}>
+                <li
+                  key={name}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '10px',
+                    borderBottom: '1px solid #eee',
+                  }}
+                >
                   <div>
                     <strong>{name}</strong>
-                    <div style={{ fontSize: '0.8em', color: '#666' }}>Saved: {new Date(data.savedAt).toLocaleString()}</div>
+                    <div style={{ fontSize: '0.8em', color: '#666' }}>
+                      Saved: {new Date(data.savedAt).toLocaleString()}
+                    </div>
                   </div>
                   <div style={{ display: 'flex', gap: '5px' }}>
-                    <Button onClick={() => handleLoadFromBrowser(name)}>Load</Button>
-                    <Button variant="danger" onClick={() => handleDeleteFromBrowser(name)}>Delete</Button>
+                    <Button onClick={() => handleLoadFromBrowser(name)}>
+                      Load
+                    </Button>
+                    <Button
+                      variant="danger"
+                      onClick={() => handleDeleteFromBrowser(name)}
+                    >
+                      Delete
+                    </Button>
                   </div>
                 </li>
               ))}
@@ -581,9 +646,18 @@ export const App: React.FC = () => {
           </div>
         )}
 
-        <div style={{ borderTop: '1px solid #ccc', paddingTop: '15px', display: 'flex', gap: '10px' }}>
+        <div
+          style={{
+            borderTop: '1px solid #ccc',
+            paddingTop: '15px',
+            display: 'flex',
+            gap: '10px',
+          }}
+        >
           <Button onClick={handleExport}>Export JSON</Button>
-          <Button onClick={() => fileInputRef.current?.click()}>Import JSON</Button>
+          <Button onClick={() => fileInputRef.current?.click()}>
+            Import JSON
+          </Button>
           <Input
             type="file"
             accept=".json"
@@ -610,18 +684,33 @@ export const App: React.FC = () => {
             value={scenarioGuidance}
             onChange={(e) => setScenarioGuidance(e.target.value)}
           />
-          <Button onClick={handleSuggestScenarios} loading={isGeneratingScenarios}>
-            {scenarioSuggestions.length > 0 ? 'Regenerate Suggestions' : 'Suggest Scenarios'}
+          <Button
+            onClick={handleSuggestScenarios}
+            loading={isGeneratingScenarios}
+          >
+            {scenarioSuggestions.length > 0
+              ? 'Regenerate Suggestions'
+              : 'Suggest Scenarios'}
           </Button>
           <span
             className="status"
-            style={{ color: scenarioIsError ? 'red' : 'green', marginLeft: '10px' }}
+            style={{
+              color: scenarioIsError ? 'red' : 'green',
+              marginLeft: '10px',
+            }}
           >
             {scenarioStatus}
           </span>
 
           {scenarioSuggestions.length > 0 && (
-            <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+            <div
+              style={{
+                marginTop: '10px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '5px',
+              }}
+            >
               {scenarioSuggestions.map((suggestion, idx) => (
                 <Button
                   key={idx}
@@ -630,7 +719,12 @@ export const App: React.FC = () => {
                     handleScenarioChange(suggestion);
                     setScenarioSuggestions([]);
                   }}
-                  style={{ textAlign: 'left', whiteSpace: 'normal', height: 'auto', padding: '10px' }}
+                  style={{
+                    textAlign: 'left',
+                    whiteSpace: 'normal',
+                    height: 'auto',
+                    padding: '10px',
+                  }}
                 >
                   {suggestion}
                 </Button>
@@ -681,7 +775,10 @@ export const App: React.FC = () => {
             3. Generate / Restart Intro
           </Button>
           {formError && (
-            <span className="status" style={{ color: 'red', marginLeft: '10px' }}>
+            <span
+              className="status"
+              style={{ color: 'red', marginLeft: '10px' }}
+            >
               {formError}
             </span>
           )}
@@ -807,7 +904,10 @@ export const App: React.FC = () => {
             {responseStatus}
           </span>
           {formError && (
-            <span className="status" style={{ color: 'red', marginLeft: '10px' }}>
+            <span
+              className="status"
+              style={{ color: 'red', marginLeft: '10px' }}
+            >
               {formError}
             </span>
           )}
