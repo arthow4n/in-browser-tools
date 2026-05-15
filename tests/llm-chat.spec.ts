@@ -27,7 +27,7 @@ test.describe('LLM Chat Tool', () => {
 
     // Switch back to the first thread
     const dropdown = page.locator('#thread-select');
-    // First option should be "New Session"
+    // First option should be dynamically named with a timestamp
     await dropdown.selectOption({ index: 0 });
 
     // Verify persistence across thread switch
