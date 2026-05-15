@@ -130,6 +130,38 @@
         rows="3"
         placeholder="Describe the scenario you want the LLM to start with..."
       ></textarea>
+
+      <div
+        style="margin-top: 10px; border-top: 1px dashed #ccc; padding-top: 10px"
+      >
+        <label for="scenario-guidance"
+          >Optional: Suggest how to improve or generate scenario ideas:</label
+        >
+        <input
+          type="text"
+          id="scenario-guidance"
+          placeholder="e.g., Make it a horror setting..."
+        />
+        <div style="display: flex; gap: 10px; margin-top: 10px;">
+          <button
+            id="suggest-scenarios-btn"
+            class="btn btn-warning"
+            style="flex: 1; padding: 10px; font-weight: bold"
+          >
+            Suggest 3 Ideas
+          </button>
+          <button
+            id="improve-scenario-btn"
+            class="btn btn-info"
+            style="flex: 1; padding: 10px; font-weight: bold"
+          >
+            Improve Scenario
+          </button>
+        </div>
+        <div id="scenario-suggestions-container" style="display: flex; flex-direction: column; gap: 5px; margin-top: 10px;">
+          <!-- Suggestions will be injected here as buttons -->
+        </div>
+      </div>
     </section>
 
     <section id="character-setup-section">

@@ -30,6 +30,28 @@ const scenarioRequestInput = getRequiredElement(
   HTMLTextAreaElement,
 );
 
+const scenarioGuidanceInput = getRequiredElement(
+  'scenario-guidance',
+  HTMLInputElement,
+);
+
+const suggestScenariosBtn = getRequiredElement(
+  'suggest-scenarios-btn',
+  HTMLButtonElement,
+);
+
+const improveScenarioBtn = getRequiredElement(
+  'improve-scenario-btn',
+  HTMLButtonElement,
+);
+
+const scenarioSuggestionsContainer = getRequiredElement(
+  'scenario-suggestions-container',
+  HTMLDivElement,
+);
+
+let previousScenarioSuggestions: string[] = [];
+
 const characterGuidanceInput = getRequiredElement(
   'character-guidance',
   HTMLInputElement,
@@ -132,6 +154,9 @@ function init() {
   });
 
   sendBtn.addEventListener('click', handleSend);
+
+  suggestScenariosBtn.addEventListener('click', handleSuggestScenarios);
+  improveScenarioBtn.addEventListener('click', handleImproveScenario);
 
   setupRegenerationUI({
     btnElement: generateCharacterBtn,
@@ -548,6 +573,96 @@ function setupRegenerationUI(params: {
   });
 }
 
+async function handleSuggestScenarios() {
+  await runWithUIState(
+    suggestScenariosBtn,
+    chatStatus,
+    'Suggesting scenarios...',
+    async () => {
+      const generator = core.generateScenarioSuggestions({
+        currentScenario: scenarioRequestInput.value.trim(),
+        guidance: scenarioGuidanceInput.value.trim(),
+        previousSuggestions: previousScenarioSuggestions,
+      });
+
+      let toolArgs = '';
+      for await (const chunk of generator) {
+        if (chunk.type === 'tool_call' && chunk.toolCall) {
+          toolArgs += chunk.toolCall.arguments;
+        }
+      }
+
+      if (toolArgs) {
+        try {
+          const parsed = JSON.parse(toolArgs);
+          if (parsed.suggestions && Array.isArray(parsed.suggestions)) {
+            scenarioSuggestionsContainer.innerHTML = '';
+            parsed.suggestions.forEach((suggestion: string) => {
+              const btn = document.createElement('button');
+              btn.className = 'btn btn-secondary';
+              btn.style.textAlign = 'left';
+              btn.style.whiteSpace = 'normal';
+              btn.style.height = 'auto';
+              btn.style.padding = '10px';
+              btn.textContent = suggestion;
+              btn.addEventListener('click', () => {
+                core.scenarioRequest = suggestion;
+                scenarioRequestInput.value = suggestion;
+                core.saveChatState();
+                scenarioSuggestionsContainer.innerHTML = '';
+              });
+              scenarioSuggestionsContainer.appendChild(btn);
+            });
+            previousScenarioSuggestions.push(...parsed.suggestions);
+            suggestScenariosBtn.textContent = 'Regenerate Suggestions';
+          }
+        } catch (e) {
+          console.error('Failed to parse scenario suggestions', e);
+          throw new Error('Failed to parse suggestions from the AI.');
+        }
+      }
+    },
+    'Scenarios suggested.',
+  );
+}
+
+async function handleImproveScenario() {
+  await runWithUIState(
+    improveScenarioBtn,
+    chatStatus,
+    'Improving scenario...',
+    async () => {
+      const generator = core.improveScenarioRequest(
+        scenarioRequestInput.value.trim(),
+        scenarioGuidanceInput.value.trim(),
+      );
+
+      let toolArgs = '';
+      for await (const chunk of generator) {
+        if (chunk.type === 'tool_call' && chunk.toolCall) {
+          toolArgs += chunk.toolCall.arguments;
+        }
+      }
+
+      if (toolArgs) {
+        try {
+          const parsed = JSON.parse(toolArgs);
+          if (parsed.improvedScenario) {
+            core.scenarioRequest = parsed.improvedScenario;
+            scenarioRequestInput.value = parsed.improvedScenario;
+            core.saveChatState();
+            scenarioSuggestionsContainer.innerHTML = '';
+          }
+        } catch (e) {
+          console.error('Failed to parse improved scenario', e);
+          throw new Error('Failed to parse improved scenario from the AI.');
+        }
+      }
+    },
+    'Scenario improved.',
+  );
+}
+
 async function handleGenerateCharacter(params: { guidance: string }) {
   const scenarioText = core.scenarioRequest.trim();
   if (!scenarioText) {
@@ -570,7 +685,7 @@ async function handleGenerateCharacter(params: { guidance: string }) {
 
       for await (const chunk of generator) {
         if (chunk.type === 'tool_call' && chunk.toolCall) {
-          toolArgs = chunk.toolCall.arguments; // streamCompletionWithTools aggregates tool calls and yields the final string at the end.
+          toolArgs += chunk.toolCall.arguments; // streamCompletionWithTools aggregates tool calls and yields the final string at the end.
         }
       }
 
@@ -649,6 +764,7 @@ async function handleGenerateIntro(params: { guidance: string }) {
   if (params.guidance) {
     introPrompt += `\n\n[OOC - Guidance for Intro]: ${params.guidance}`;
   }
+  introPrompt += `\n\nStart the story immediately. Make your tool calls to narrate and speak as normal.`;
 
   initialMessages.push({
     id: Date.now().toString(),
