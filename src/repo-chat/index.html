@@ -81,6 +81,14 @@
       </div>
       <div id="history-container"></div>
 
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+        <input type="checkbox" id="enable-tools-checkbox" />
+        <label for="enable-tools-checkbox">Enable Tools</label>
+      </div>
+      <div id="tools-container" style="display: none; flex-direction: column; gap: 5px; padding: 10px; background: #f0f0f0; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 10px;"></div>
+
+      <div id="ask-question-container"></div>
+
       <label for="chat-input">Message:</label>
       <textarea id="chat-input" rows="4"></textarea>
       <button id="send-btn" class="btn btn-primary">Send</button>

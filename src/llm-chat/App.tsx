@@ -11,7 +11,9 @@ import {
 import { ChatCore, ChatMessage } from './core.js';
 import { getStorage, setStorage } from '../shared/storage.js';
 import { browserAlertTool } from './tools/browser-alert.js';
+import { askQuestionTool } from '../shared/tools/ask-question.js';
 import { useAsyncAction } from '../shared/hooks/useAsyncAction.js';
+import { AskQuestionUI } from '../shared/components/index.js';
 
 export const App: React.FC = () => {
   const [threads, setThreads] = useState<{ id: string; name: string }[]>([]);
@@ -96,8 +98,18 @@ export const App: React.FC = () => {
   // Streaming assistant message state
   const [streamingMsg, setStreamingMsg] = useState<ChatMessage | null>(null);
 
+  const [askQuestionData, setAskQuestionData] = useState<{
+    questions: any[];
+    resolve: (answers: any[]) => void;
+  } | null>(null);
+
   useEffect(() => {
+    (window as any).showAskQuestionUI = (questions: any[], resolve: (answers: any[]) => void) => {
+      setAskQuestionData({ questions, resolve });
+    };
+
     core.registerTool(browserAlertTool);
+    core.registerTool(askQuestionTool);
     core.loadChatState();
     setSystemPrompt(core.systemPrompt);
     setHistory([...core.history]);
@@ -376,6 +388,16 @@ export const App: React.FC = () => {
       </Panel>
 
       <LlmSettings core={core} />
+
+      {askQuestionData && (
+        <AskQuestionUI
+          questions={askQuestionData.questions}
+          onComplete={(answers) => {
+            askQuestionData.resolve(answers);
+            setAskQuestionData(null);
+          }}
+        />
+      )}
 
       <Panel title="System Prompt">
         <TextArea

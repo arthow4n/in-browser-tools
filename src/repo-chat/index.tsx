@@ -4,9 +4,16 @@ import { getRequiredElement } from '../shared/dom-utils.js';
 import { runWithUIState } from '../shared/ui-utils.js';
 import { ChatMessage } from '../llm-chat/core.js';
 import { createMessageElement } from '../shared/chat-ui.js';
+import { browserAlertTool } from '../llm-chat/tools/browser-alert.js';
+import { askQuestionTool } from '../shared/tools/ask-question.js';
+import { AskQuestionUI } from '../shared/components/index.js';
+import React from 'react';
+import { createRoot, Root } from 'react-dom/client';
 import '../shared/components/styles.css';
 
 const core = new RepoChatCore();
+core.registerTool(browserAlertTool);
+core.registerTool(askQuestionTool);
 
 // --- DOM Elements ---
 const llmSettingsContainer = getRequiredElement(
@@ -28,12 +35,67 @@ const restartChatBtn = getRequiredElement(
 );
 const clearAllBtn = getRequiredElement('clear-all-btn', HTMLButtonElement);
 
+const enableToolsCheckbox = getRequiredElement('enable-tools-checkbox', HTMLInputElement);
+const toolsContainer = getRequiredElement('tools-container', HTMLDivElement);
+const askQuestionContainer = getRequiredElement('ask-question-container', HTMLDivElement);
+
 const chatInput = getRequiredElement('chat-input', HTMLTextAreaElement);
 const sendBtn = getRequiredElement('send-btn', HTMLButtonElement);
 const chatStatus = getRequiredElement('chat-status', HTMLSpanElement);
 
 // Setup LLM Settings UI
 setupLLMSettings(llmSettingsContainer, core);
+
+// Tools setup
+enableToolsCheckbox.checked = core.toolsEnabled;
+toolsContainer.style.display = core.toolsEnabled ? 'flex' : 'none';
+
+enableToolsCheckbox.addEventListener('change', (e) => {
+  const checked = (e.target as HTMLInputElement).checked;
+  core.toolsEnabled = checked;
+  core.saveChatState();
+  toolsContainer.style.display = checked ? 'flex' : 'none';
+});
+
+core.tools.forEach((tool) => {
+  const label = document.createElement('label');
+  label.style.display = 'flex';
+  label.style.alignItems = 'center';
+  label.style.gap = '5px';
+  label.style.fontSize = '0.9em';
+
+  const cb = document.createElement('input');
+  cb.type = 'checkbox';
+  cb.checked = !core.disabledTools.has(tool.name);
+  cb.addEventListener('change', (e) => {
+    core.setToolEnabled(tool.name, (e.target as HTMLInputElement).checked);
+    core.saveChatState();
+  });
+
+  const span = document.createElement('span');
+  span.textContent = `${tool.name}: ${tool.description}`;
+
+  label.appendChild(cb);
+  label.appendChild(span);
+  toolsContainer.appendChild(label);
+});
+
+let askQuestionRoot: Root | null = null;
+(window as any).showAskQuestionUI = (questions: any[], resolve: (answers: any[]) => void) => {
+  if (!askQuestionRoot) {
+    askQuestionRoot = createRoot(askQuestionContainer);
+  }
+  askQuestionRoot.render(
+    <AskQuestionUI
+      questions={questions}
+      onComplete={(answers) => {
+        resolve(answers);
+        askQuestionRoot?.unmount();
+        askQuestionRoot = null;
+      }}
+    />
+  );
+};
 
 // Render history
 function renderHistory() {
@@ -116,12 +178,9 @@ async function handleChatGeneration() {
       let currentContentDiv: HTMLDivElement | null = null;
       let currentAssistantEl: HTMLDivElement | null = null;
 
-      const generator = core.streamChatCompletion([]);
+      const generator = core.streamChatCompletionWithTools([]);
 
-      while (true) {
-        const { value: textChunk, done } = await generator.next();
-        if (done) break;
-
+      for await (const chunk of generator) {
         if (!currentAssistantMsg) {
           currentAssistantMsg = {
             id: 'msg_' + Date.now(),
@@ -141,13 +200,32 @@ async function handleChatGeneration() {
           ) as HTMLDivElement;
         }
 
-        if (textChunk) {
-          currentAssistantMsg.content += textChunk;
+        if (chunk.type === 'text' && chunk.text) {
+          currentAssistantMsg.content += chunk.text;
+        } else if (chunk.type === 'tool_call' && chunk.toolCall) {
+          if (!currentAssistantMsg.tool_calls) {
+            currentAssistantMsg.tool_calls = [];
+          }
+          currentAssistantMsg.tool_calls.push({
+            id: chunk.toolCall.id,
+            type: 'function',
+            function: {
+              name: chunk.toolCall.name,
+              arguments: chunk.toolCall.arguments,
+            },
+          });
         }
 
-        // Re-render the content text to show ongoing chunks
-        if (currentContentDiv) {
-          currentContentDiv.textContent = currentAssistantMsg.content;
+        // Re-render the content text to show ongoing chunks (vanilla DOM)
+        if (currentContentDiv && currentAssistantMsg) {
+          let displayContent = currentAssistantMsg.content;
+          if (currentAssistantMsg.tool_calls && currentAssistantMsg.tool_calls.length > 0) {
+            displayContent += '\n\n**Tool Calls:**\n';
+            for (const tc of currentAssistantMsg.tool_calls) {
+              displayContent += `- ${tc.function.name}(${tc.function.arguments})\n`;
+            }
+          }
+          currentContentDiv.textContent = displayContent;
         }
         historyContainer.scrollTop = historyContainer.scrollHeight;
       }
@@ -156,7 +234,58 @@ async function handleChatGeneration() {
         currentAssistantEl.classList.remove('streaming');
       }
 
-      core.saveChatState();
+      if (currentAssistantMsg) {
+        if (
+          currentAssistantMsg.content ||
+          (currentAssistantMsg.tool_calls &&
+            currentAssistantMsg.tool_calls.length > 0)
+        ) {
+          // already pushed, just saving
+        } else {
+          // empty message, remove it
+          core.history.pop();
+          if (currentAssistantEl) {
+             historyContainer.removeChild(currentAssistantEl);
+          }
+        }
+
+        core.saveChatState();
+
+        if (
+          currentAssistantMsg.tool_calls &&
+          currentAssistantMsg.tool_calls.length > 0
+        ) {
+          for (const tc of currentAssistantMsg.tool_calls) {
+          const tool = core.tools.find((t) => t.name === tc.function.name);
+          let resultStr = '';
+          if (!tool) {
+            resultStr = `Error: Tool ${tc.function.name} not found.`;
+          } else {
+            try {
+              const args = JSON.parse(tc.function.arguments);
+              const result = await tool.execute(args);
+              resultStr =
+                typeof result === 'string' ? result : JSON.stringify(result);
+            } catch (e: any) {
+              resultStr = `Error executing tool: ${e.message}`;
+            }
+          }
+
+          const toolMsg: ChatMessage = {
+            id: 'msg_tool_' + Date.now().toString() + Math.random().toString().slice(2, 8),
+            role: 'tool',
+            content: resultStr,
+            tool_call_id: tc.id,
+          };
+            core.history.push(toolMsg);
+            core.saveChatState();
+            renderHistory();
+          }
+
+          // trigger next generation automatically
+          await handleChatGeneration();
+        }
+      }
     },
     '',
   );
