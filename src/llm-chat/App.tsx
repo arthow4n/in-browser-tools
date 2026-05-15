@@ -29,26 +29,26 @@ export const App: React.FC = () => {
       // ignore
     }
 
+    const startThreadId = Date.now().toString();
+    const sessionName = `Session ${new Date().toLocaleString()}`;
+
     if (savedThreads.length === 0) {
-      const newThreadId = Date.now().toString();
-      savedThreads = [{ id: newThreadId, name: 'New Thread' }];
+      savedThreads = [{ id: startThreadId, name: sessionName }];
       setStorage('llm-chat-threads', JSON.stringify(savedThreads));
-      setStorage('llm-chat-activeThreadId', newThreadId);
+      setStorage('llm-chat-activeThreadId', startThreadId);
+    } else {
+      // ALWAYS default to opening a new thread on load
+      const isNewStart = savedThreads.every((t) => t.id !== startThreadId);
+      if (isNewStart) {
+        savedThreads = [
+          ...savedThreads,
+          { id: startThreadId, name: sessionName },
+        ];
+        setStorage('llm-chat-threads', JSON.stringify(savedThreads));
+      }
     }
 
     setThreads(savedThreads);
-
-    // ALWAYS default to opening a new thread on load
-    const startThreadId = Date.now().toString();
-    const isNewStart = savedThreads.every((t) => t.id !== startThreadId);
-    if (isNewStart) {
-      savedThreads = [
-        ...savedThreads,
-        { id: startThreadId, name: 'New Session' },
-      ];
-      setThreads(savedThreads);
-      setStorage('llm-chat-threads', JSON.stringify(savedThreads));
-    }
     setActiveThreadId(startThreadId);
   }, []);
 
@@ -329,7 +329,7 @@ export const App: React.FC = () => {
               const newThreadId = Date.now().toString();
               const newThreads = [
                 ...threads,
-                { id: newThreadId, name: `Thread ${threads.length + 1}` },
+                { id: newThreadId, name: `Session ${new Date().toLocaleString()}` },
               ];
               setThreads(newThreads);
               setStorage('llm-chat-threads', JSON.stringify(newThreads));
