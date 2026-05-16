@@ -303,3 +303,49 @@ section {
 .mt-4 {
   margin-top: 20px;
 }
+
+/* Markdown Rendering Styles */
+.markdown-body {
+  word-wrap: break-word;
+}
+
+.markdown-body p {
+  margin-top: 0;
+  margin-bottom: 1em;
+}
+
+.markdown-body pre {
+  background: #2d2d2d;
+  color: #ccc;
+  padding: 10px;
+  border-radius: 4px;
+  overflow-x: auto;
+  font-family: monospace;
+}
+
+.markdown-body code {
+  background: #e6e6e6;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: monospace;
+}
+
+.markdown-body pre code {
+  background: none;
+  padding: 0;
+  color: inherit;
+}
+
+.markdown-body ul,
+.markdown-body ol {
+  margin-top: 0;
+  margin-bottom: 1em;
+  padding-left: 20px;
+}
+
+.markdown-body blockquote {
+  border-left: 4px solid #ccc;
+  margin: 0;
+  padding-left: 10px;
+  color: #666;
+}

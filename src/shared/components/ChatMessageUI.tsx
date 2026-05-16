@@ -5,6 +5,8 @@ import { Input } from './Input.js';
 import { TextArea } from './TextArea.js';
 import { Button } from './Button.js';
 import { ToolCallMessageUI } from './ToolCallMessageUI.js';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface ChatMessageUIProps {
   msg: ChatMessage & { id?: string };
@@ -28,6 +30,7 @@ export const ChatMessageUI: React.FC<ChatMessageUIProps> = ({
   const [improveError, setImproveError] = useState('');
 
   let displayContent = msg.content;
+  const renderMarkdown = core?.providerPrefs?.renderMarkdown ?? true;
 
   const handleEdit = () => {
     if (isEditing) {
@@ -120,6 +123,12 @@ export const ChatMessageUI: React.FC<ChatMessageUIProps> = ({
           value={editContent}
           onChange={(e) => setEditContent(e.target.value)}
         />
+      ) : renderMarkdown ? (
+        <div className="content markdown-body">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {displayContent}
+          </ReactMarkdown>
+        </div>
       ) : (
         <div className="content" style={{ whiteSpace: 'pre-wrap' }}>
           {displayContent}
