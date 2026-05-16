@@ -229,21 +229,23 @@ export const App: React.FC = () => {
   };
 
   const handleClearAll = () => {
-    core.clearAll();
-    setHistory([...core.history]);
-    setSystemPrompt(core.systemPrompt);
-    setClonedWordCount(core.clonedWordCount);
-    // reset prompt to default planner
-    const defaultPlanner = BUILT_IN_PROMPTS[0];
-    setSelectedPromptId(defaultPlanner.id);
-    setSystemPrompt(defaultPlanner.content);
-    setToolsEnabled(defaultPlanner.toolsEnabled);
-    setDisabledTools(new Set(defaultPlanner.disabledTools));
-    core.selectedPromptId = defaultPlanner.id;
-    core.systemPrompt = defaultPlanner.content;
-    core.toolsEnabled = defaultPlanner.toolsEnabled;
-    core.disabledTools = new Set(defaultPlanner.disabledTools);
-    core.saveChatState();
+    if (window.confirm('Clear entire chat history?')) {
+      core.clearAll();
+      setHistory([...core.history]);
+      setSystemPrompt(core.systemPrompt);
+      setClonedWordCount(core.clonedWordCount);
+      // reset prompt to default planner
+      const defaultPlanner = BUILT_IN_PROMPTS[0];
+      setSelectedPromptId(defaultPlanner.id);
+      setSystemPrompt(defaultPlanner.content);
+      setToolsEnabled(defaultPlanner.toolsEnabled);
+      setDisabledTools(new Set(defaultPlanner.disabledTools));
+      core.selectedPromptId = defaultPlanner.id;
+      core.systemPrompt = defaultPlanner.content;
+      core.toolsEnabled = defaultPlanner.toolsEnabled;
+      core.disabledTools = new Set(defaultPlanner.disabledTools);
+      core.saveChatState();
+    }
   };
 
 

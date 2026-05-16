@@ -195,19 +195,23 @@ function init() {
   });
 
   clearHistoryBtn.addEventListener('click', () => {
-    core.history = [];
-    core.saveChatState();
-    renderHistory();
+    if (window.confirm('Clear entire chat history?')) {
+      core.history = [];
+      core.saveChatState();
+      renderHistory();
+    }
   });
 
   oocSendBtn.addEventListener('click', handleOOCSend);
 
   clearOocHistoryBtn.addEventListener('click', () => {
-    oocChatHistory.innerHTML = '';
-    oocChatHistory.style.display = 'none';
+    if (window.confirm('Clear entire chat history?')) {
+      oocChatHistory.innerHTML = '';
+      oocChatHistory.style.display = 'none';
 
-    // The OOC history isn't actually saved in core.history or persisted across sessions,
-    // so clearing the UI is sufficient for the current implementation.
+      // The OOC history isn't actually saved in core.history or persisted across sessions,
+      // so clearing the UI is sufficient for the current implementation.
+    }
   });
 
   advancedDetails.addEventListener('toggle', () => {
