@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { ChatMessage } from '../llm-core.js';
-import Markdown from 'react-markdown';
 import { ChatCore } from '../../llm-chat/core.js';
 import { Input } from './Input.js';
 import { TextArea } from './TextArea.js';
@@ -123,11 +122,7 @@ export const ChatMessageUI: React.FC<ChatMessageUIProps> = ({
         />
       ) : (
         <div className="content" style={{ whiteSpace: 'pre-wrap' }}>
-          {core.providerPrefs?.renderMarkdown !== false ? (
-            <Markdown>{displayContent}</Markdown>
-          ) : (
-            displayContent
-          )}
+          {displayContent}
         </div>
       )}
 

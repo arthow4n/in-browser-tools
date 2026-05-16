@@ -54,7 +54,6 @@ export interface ProviderPrefs {
   rateLimitRetries?: number;
   rateLimitWaitSeconds?: number;
   streamResponses?: boolean;
-  renderMarkdown?: boolean;
 }
 
 export interface OpenRouterPreset {
@@ -111,7 +110,7 @@ export class LLMCore {
 
   set providerPrefs(val: ProviderPrefs) {
     const active = this.presets.find((p) => p.id === this.activePresetId);
-    if (active) active.providerPrefs = { ...val, renderMarkdown: val.renderMarkdown ?? true };
+    if (active) active.providerPrefs = val;
   }
 
   public addPreset(name: string): OpenRouterPreset {
@@ -127,7 +126,6 @@ export class LLMCore {
         zdr: true,
         reasoningEffort: '',
         streamResponses: true,
-        renderMarkdown: true,
       },
     };
     this.presets.push(newPreset);
@@ -201,7 +199,7 @@ export class LLMCore {
         name: 'Default Preset',
         apiKey: legacyApiKey,
         model: legacyModel,
-        providerPrefs: { ...legacyPrefs, renderMarkdown: legacyPrefs.renderMarkdown ?? true },
+        providerPrefs: legacyPrefs,
       };
 
       this.presets = [defaultPreset];
