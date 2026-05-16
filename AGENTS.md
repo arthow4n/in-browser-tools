@@ -6,7 +6,7 @@ Any task given to you should be treated as final instructions. You should work a
 
 Don't check in with the user, don't ask for clarification unless the user explicitly asks for it.
 
-If you are Jules, finalize and submit the changes directly without asking for confirmation or asking for any sorts of final checks.
+If you are Jules, make decisions yourself and keep working until the task is done. Don't ask for any further input from the user. Just finalize and submit your changes directly.
 
 ## How to work in this repo
 
@@ -58,6 +58,7 @@ You MUST run the pre-push checks and fix any issues raised during the pre-push c
 - Prefer object parameters (named arguments) to positional arguments for functions to improve readability.
 - Disallow optional arguments with default values. All arguments should be explicitly declared and passed to functions.
 - If an element or variable is expected to exist, do not suppress missing object errors using optional chaining (`?.`) or type casting. Verify its existence and throw an explicit error if the check fails.
+- **Strict TypeScript**: DO NOT use the `any` type in TypeScript code. Always define concrete types, use `unknown`, or use appropriate generic types. If parsing external or dynamic data (like JSON), type it as `unknown` and assert or validate the structure at the call site.
 - **Local Storage Management:** To avoid key collisions and protect data under the same domain, ALL local storage interactions MUST go through `getStorage` and `setStorage` exported from `src/shared/storage.ts`. Do not call `localStorage.getItem` or `localStorage.setItem` directly. These utilities automatically prefix keys with `in-browser-tools:`.
 - **Global Settings:** Shared configurations across tools, such as the OpenRouter API Key, model settings, and provider routing preferences, belong in the centralized Settings page (`src/settings`). Individual tools should use the `<LlmSettings>` component from `src/shared/components/LlmSettings.tsx` to direct users to this page rather than re-implementing these inputs.
 
