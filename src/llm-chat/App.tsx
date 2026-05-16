@@ -8,7 +8,7 @@ import {
   LlmSettings,
   ChatMessageUI,
 } from '../shared/components/index.js';
-import { ChatCore, ChatMessage } from './core.js';
+import { ChatCore, ChatMessage, BUILT_IN_PROMPTS } from './core.js';
 import { getStorage, setStorage } from '../shared/storage.js';
 import { askQuestionTool } from '../shared/tools/ask-question.js';
 import { useAsyncAction } from '../shared/hooks/useAsyncAction.js';
@@ -59,6 +59,7 @@ export const App: React.FC = () => {
     core.loadChatState();
 
     setSystemPrompt(core.systemPrompt);
+    setSelectedPromptId(core.selectedPromptId);
     setHistory([...core.history]);
     setSavedPrompts([...core.savedPrompts]);
     setToolsEnabled(core.toolsEnabled);
@@ -70,7 +71,7 @@ export const App: React.FC = () => {
   const [systemPrompt, setSystemPrompt] = useState(core.systemPrompt);
   const [history, setHistory] = useState<ChatMessage[]>([]);
   const [savedPrompts, setSavedPrompts] = useState<
-    { id: string; name: string; content: string }[]
+    { id: string; name: string; content: string; toolsEnabled?: boolean; disabledTools?: string[] }[]
   >([]);
   const [selectedPromptId, setSelectedPromptId] = useState<string>('');
   const [toolsEnabled, setToolsEnabled] = useState(core.toolsEnabled);
@@ -104,11 +105,27 @@ export const App: React.FC = () => {
     core.registerTool(askQuestionTool);
     core.loadChatState();
     setSystemPrompt(core.systemPrompt);
+    setSelectedPromptId(core.selectedPromptId);
     setHistory([...core.history]);
     setSavedPrompts([...core.savedPrompts]);
     setToolsEnabled(core.toolsEnabled);
     setDisabledTools(new Set(core.disabledTools));
   }, []);
+
+  const hasChanges = (() => {
+    if (!selectedPromptId) return false;
+    const builtin = BUILT_IN_PROMPTS.find(p => p.id === selectedPromptId);
+    if (builtin) {
+      return builtin.content !== systemPrompt || builtin.toolsEnabled !== toolsEnabled || JSON.stringify(builtin.disabledTools.sort()) !== JSON.stringify(Array.from(disabledTools).sort());
+    }
+    const custom = savedPrompts.find(p => p.id === selectedPromptId);
+    if (custom) {
+      const customToolsEnabled = custom.toolsEnabled ?? false;
+      const customDisabledTools = custom.disabledTools ?? [];
+      return custom.content !== systemPrompt || customToolsEnabled !== toolsEnabled || JSON.stringify(customDisabledTools.sort()) !== JSON.stringify(Array.from(disabledTools).sort());
+    }
+    return false;
+  })();
 
   const handleSystemPromptChange = (
     e: React.ChangeEvent<HTMLTextAreaElement>,
@@ -138,7 +155,14 @@ export const App: React.FC = () => {
     const name = prompt('Enter a name for this system prompt:');
     if (!name) return;
     const id = Date.now().toString();
-    core.savedPrompts.push({ id, name, content: core.systemPrompt });
+    core.savedPrompts.push({
+      id,
+      name,
+      content: core.systemPrompt,
+      toolsEnabled: core.toolsEnabled,
+      disabledTools: Array.from(core.disabledTools)
+    });
+    core.selectedPromptId = id;
     core.saveChatState();
     setSavedPrompts([...core.savedPrompts]);
     setSelectedPromptId(id);
@@ -149,6 +173,8 @@ export const App: React.FC = () => {
     const sp = core.savedPrompts.find((p) => p.id === selectedPromptId);
     if (sp) {
       sp.content = core.systemPrompt;
+      sp.toolsEnabled = core.toolsEnabled;
+      sp.disabledTools = Array.from(core.disabledTools);
       core.saveChatState();
       setSavedPrompts([...core.savedPrompts]);
     }
@@ -157,11 +183,35 @@ export const App: React.FC = () => {
   const handlePromptSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const id = e.target.value;
     setSelectedPromptId(id);
-    if (!id) return;
-    const sp = core.savedPrompts.find((p) => p.id === id);
-    if (sp) {
-      setSystemPrompt(sp.content);
-      core.systemPrompt = sp.content;
+    core.selectedPromptId = id;
+
+    if (!id) {
+      core.saveChatState();
+      return;
+    }
+
+    const builtin = BUILT_IN_PROMPTS.find((p) => p.id === id);
+    if (builtin) {
+      setSystemPrompt(builtin.content);
+      core.systemPrompt = builtin.content;
+      setToolsEnabled(builtin.toolsEnabled);
+      core.toolsEnabled = builtin.toolsEnabled;
+      setDisabledTools(new Set(builtin.disabledTools));
+      core.disabledTools = new Set(builtin.disabledTools);
+      core.saveChatState();
+      return;
+    }
+
+    const custom = core.savedPrompts.find((p) => p.id === id);
+    if (custom) {
+      setSystemPrompt(custom.content);
+      core.systemPrompt = custom.content;
+      const customToolsEnabled = custom.toolsEnabled ?? false;
+      const customDisabledTools = custom.disabledTools ?? [];
+      setToolsEnabled(customToolsEnabled);
+      core.toolsEnabled = customToolsEnabled;
+      setDisabledTools(new Set(customDisabledTools));
+      core.disabledTools = new Set(customDisabledTools);
       core.saveChatState();
     }
   };
@@ -394,6 +444,38 @@ export const App: React.FC = () => {
 
 
       <Panel title="System Prompt">
+        <div className="flex-row" style={{ marginBottom: '10px' }}>
+          <select
+            id="saved-prompts-select"
+            value={selectedPromptId}
+            onChange={handlePromptSelect}
+            style={{ minWidth: '200px' }}
+          >
+            <option value="">-- No Prompt Selected --</option>
+            <optgroup label="--- Built-in ---">
+              {BUILT_IN_PROMPTS.map((bp) => (
+                <option key={bp.id} value={bp.id}>
+                  {bp.name}
+                </option>
+              ))}
+            </optgroup>
+            {savedPrompts.length > 0 && (
+              <optgroup label="--- Custom ---">
+                {savedPrompts.map((sp) => (
+                  <option key={sp.id} value={sp.id}>
+                    {sp.name}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+          </select>
+          {selectedPromptId && hasChanges && (
+            <span style={{ color: '#d97706', marginLeft: '10px', fontWeight: 'bold' }}>
+              ⚠️ Unsaved changes (Click Save to persist changes to this prompt slot)
+            </span>
+          )}
+        </div>
+
         <TextArea
           id="system-prompt"
           value={systemPrompt}
@@ -401,20 +483,49 @@ export const App: React.FC = () => {
           rows={4}
         />
 
-        <div className="flex-row" style={{ marginTop: '10px' }}>
-          <select
-            id="saved-prompts-select"
-            value={selectedPromptId}
-            onChange={handlePromptSelect}
+        <div className="flex-row" style={{ marginTop: '10px', marginBottom: '10px' }}>
+          <Input
+            type="checkbox"
+            id="enable-tools-checkbox"
+            label="Enable Tools"
+            checked={toolsEnabled}
+            onChange={handleToolEnableToggle}
+            containerStyle={{ marginRight: '15px' }}
+          />
+        </div>
+
+        {toolsEnabled && (
+          <div
+            id="tool-list-container"
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '5px',
+              padding: '10px',
+              background: '#f0f0f0',
+              border: '1px solid #ccc',
+              borderRadius: '4px',
+              marginBottom: '10px',
+            }}
           >
-            <option value="">-- Load Saved Prompt --</option>
-            {savedPrompts.map((sp) => (
-              <option key={sp.id} value={sp.id}>
-                {sp.name}
-              </option>
+            {core.tools.map((tool) => (
+              <Input
+                key={tool.name}
+                type="checkbox"
+                label={`${tool.name}: ${tool.description}`}
+                checked={!disabledTools.has(tool.name)}
+                onChange={(e) => handleToolToggle(tool.name, e.target.checked)}
+                style={{
+                  fontWeight: 'normal',
+                  fontSize: '0.9em',
+                }}
+              />
             ))}
-          </select>
-          {selectedPromptId && (
+          </div>
+        )}
+
+        <div className="flex-row" style={{ marginTop: '10px' }}>
+          {selectedPromptId && !BUILT_IN_PROMPTS.find(p => p.id === selectedPromptId) && (
             <Button onClick={handleUpdatePrompt} id="update-prompt-btn">
               Save
             </Button>
@@ -422,7 +533,7 @@ export const App: React.FC = () => {
           <Button onClick={handleSavePrompt} id="save-prompt-btn">
             Save As New...
           </Button>
-          {selectedPromptId && (
+          {selectedPromptId && !BUILT_IN_PROMPTS.find(p => p.id === selectedPromptId) && (
             <Button
               variant="danger"
               onClick={handleDeletePrompt}
@@ -515,47 +626,6 @@ export const App: React.FC = () => {
             />
           )}
         </div>
-
-        <div className="flex-row">
-          <Input
-            type="checkbox"
-            id="enable-tools-checkbox"
-            label="Enable Tools"
-            checked={toolsEnabled}
-            onChange={handleToolEnableToggle}
-            containerStyle={{ marginRight: '15px' }}
-          />
-        </div>
-
-        {toolsEnabled && (
-          <div
-            id="tool-list-container"
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '5px',
-              padding: '10px',
-              background: '#f0f0f0',
-              border: '1px solid #ccc',
-              borderRadius: '4px',
-              marginBottom: '10px',
-            }}
-          >
-            {core.tools.map((tool) => (
-              <Input
-                key={tool.name}
-                type="checkbox"
-                label={`${tool.name}: ${tool.description}`}
-                checked={!disabledTools.has(tool.name)}
-                onChange={(e) => handleToolToggle(tool.name, e.target.checked)}
-                style={{
-                  fontWeight: 'normal',
-                  fontSize: '0.9em',
-                }}
-              />
-            ))}
-          </div>
-        )}
 
         <TextArea
           id="user-input"
