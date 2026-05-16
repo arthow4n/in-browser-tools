@@ -14,18 +14,33 @@ export const randomTool: AgentTool = {
           type: 'string',
         },
       },
+      num_choices: {
+        type: 'number',
+        description: 'The number of unique choices to pick from the options array.',
+      },
     },
-    required: ['options'],
+    required: ['options', 'num_choices'],
   },
   execute: async (args: any) => {
     const options = args.options;
+    const num_choices = args.num_choices;
+
     if (!Array.isArray(options) || options.length === 0) {
       return { error: 'options must be a non-empty array of strings.' };
     }
 
-    const randomIndex = Math.floor(Math.random() * options.length);
-    const chosen = options[randomIndex];
+    if (typeof num_choices !== 'number' || num_choices < 1 || num_choices > options.length) {
+      return { error: `num_choices must be a number between 1 and ${options.length}.` };
+    }
 
-    return { chosen };
+    const selectedIndices = new Set<number>();
+    while (selectedIndices.size < num_choices) {
+      const randomIndex = Math.floor(Math.random() * options.length);
+      selectedIndices.add(randomIndex);
+    }
+
+    const chosen = Array.from(selectedIndices).map((index) => options[index]);
+
+    return chosen;
   },
 };
