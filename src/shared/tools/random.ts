@@ -18,8 +18,12 @@ export const randomTool: AgentTool = {
         type: 'number',
         description: 'The number of unique choices to pick from the options array.',
       },
+      hide_details: {
+        type: 'boolean',
+        description: 'Whether to hide the exact arguments and results in the UI. For example, when handling role play story progression, a hidden random should be preferred to keep the player unaware of upcoming events. Set to false if you want the user to see the exact options and the random result.',
+      },
     },
-    required: ['options', 'num_choices'],
+    required: ['options', 'num_choices', 'hide_details'],
   },
   execute: async (args: any) => {
     const options = args.options;

@@ -56,9 +56,21 @@ export const ToolCallMessageUI: React.FC<ToolCallMessageUIProps> = ({ toolCall }
 
   const isPendingAskQuestion = askQuestionData !== null;
 
+  let parsedArgs: any = null;
+  try {
+    parsedArgs = JSON.parse(toolCall.function.arguments);
+  } catch (e) {
+    // Ignore parse error
+  }
+
+  const hideDetails = parsedArgs?.hide_details;
+  // If it's a pending question, open it.
+  // Else if it's the random tool and hide_details is strictly false, open it.
+  const isOpen = isPendingAskQuestion || (toolCall.function.name === 'random' && hideDetails === false) ? true : undefined;
+
   return (
     <details
-      open={isPendingAskQuestion ? true : undefined}
+      open={isOpen}
       style={{
         marginTop: '10px',
         padding: '5px',
