@@ -14,15 +14,45 @@ export interface ChatMessage extends SharedChatMessage {
   id: string; // Override to make it required
 }
 
+export interface BuiltInPrompt {
+  id: string;
+  name: string;
+  content: string;
+  toolsEnabled: boolean;
+  disabledTools: string[];
+}
+
+export const BUILT_IN_PROMPTS: BuiltInPrompt[] = [
+  {
+    id: 'builtin-assistant',
+    name: 'Assistant',
+    content: 'You are a helpful assistant.',
+    toolsEnabled: false,
+    disabledTools: [],
+  },
+  {
+    id: 'builtin-brain-picker',
+    name: 'Brain-picker',
+    content: `You are a "brain-picker" assistant. Your goal is NOT to directly answer questions or have a casual conversation. Instead, your primary goal is to aggressively use the \`ask_question\` tool to help the user elaborate more and think out loud to flesh out their vague ideas or questions. You should help the user think deeply and speak for themselves.
+
+Always provide diverse, thoughtful options when invoking \`ask_question\` instead of just leaving a free input all the time. Focus on probing questions that expand their thinking.`,
+    toolsEnabled: true,
+    disabledTools: [],
+  },
+];
+
 export interface SavedPrompt {
   id: string;
   name: string;
   content: string;
+  toolsEnabled?: boolean;
+  disabledTools?: string[];
 }
 
 export class ChatCore extends LLMCore {
   public storagePrefix: string;
   public systemPrompt: string = 'You are a helpful assistant.';
+  public selectedPromptId: string = 'builtin-assistant';
   public savedPrompts: SavedPrompt[] = [];
   public history: ChatMessage[] = [];
   public toolsEnabled: boolean = false;
@@ -44,6 +74,20 @@ export class ChatCore extends LLMCore {
       getStorage(
         `${this.storagePrefix}systemPrompt` as import('../shared/storage.js').StorageKey,
       ) || 'You are a helpful assistant.';
+
+    const savedSelectedPromptId = getStorage(
+      `${this.storagePrefix}selectedPromptId` as import('../shared/storage.js').StorageKey,
+    );
+
+    if (savedSelectedPromptId !== null) {
+      this.selectedPromptId = savedSelectedPromptId;
+    } else {
+      if (this.systemPrompt === 'You are a helpful assistant.') {
+        this.selectedPromptId = 'builtin-assistant';
+      } else {
+        this.selectedPromptId = '';
+      }
+    }
 
     try {
       this.savedPrompts = JSON.parse(
@@ -85,6 +129,10 @@ export class ChatCore extends LLMCore {
     setStorage(
       `${this.storagePrefix}systemPrompt` as import('../shared/storage.js').StorageKey,
       this.systemPrompt,
+    );
+    setStorage(
+      `${this.storagePrefix}selectedPromptId` as import('../shared/storage.js').StorageKey,
+      this.selectedPromptId,
     );
     setStorage(
       `${this.storagePrefix}savedPrompts` as import('../shared/storage.js').StorageKey,
