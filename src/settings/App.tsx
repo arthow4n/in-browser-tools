@@ -29,6 +29,9 @@ export const App: React.FC = () => {
   const [streamResponses, setStreamResponses] = useState(
     core.providerPrefs.streamResponses ?? true,
   );
+  const [renderMarkdown, setRenderMarkdown] = useState(
+    core.providerPrefs.renderMarkdown ?? true,
+  );
   const [zdr, setZdr] = useState(core.providerPrefs.zdr);
   const [rateLimitRetries, setRateLimitRetries] = useState(
     core.providerPrefs.rateLimitRetries ?? 1,
@@ -56,6 +59,7 @@ export const App: React.FC = () => {
     setDataCollection(core.providerPrefs.dataCollection);
     setAllowFallbacks(core.providerPrefs.allowFallbacks);
     setStreamResponses(core.providerPrefs.streamResponses ?? true);
+    setRenderMarkdown(core.providerPrefs.renderMarkdown ?? true);
     setZdr(core.providerPrefs.zdr);
     setRateLimitRetries(core.providerPrefs.rateLimitRetries ?? 1);
     setRateLimitWaitSeconds(core.providerPrefs.rateLimitWaitSeconds ?? 3);
@@ -88,6 +92,7 @@ export const App: React.FC = () => {
       dataCollection: dataCollection as 'allow' | 'deny',
       allowFallbacks,
       streamResponses,
+      renderMarkdown,
       zdr,
       rateLimitRetries,
       rateLimitWaitSeconds,
@@ -102,6 +107,7 @@ export const App: React.FC = () => {
     dataCollection,
     allowFallbacks,
     streamResponses,
+    renderMarkdown,
     zdr,
     rateLimitRetries,
     rateLimitWaitSeconds,
@@ -186,6 +192,7 @@ export const App: React.FC = () => {
     setDataCollection(core.providerPrefs.dataCollection);
     setAllowFallbacks(core.providerPrefs.allowFallbacks);
     setStreamResponses(core.providerPrefs.streamResponses ?? true);
+    setRenderMarkdown(core.providerPrefs.renderMarkdown ?? true);
     setZdr(core.providerPrefs.zdr);
     setRateLimitRetries(core.providerPrefs.rateLimitRetries ?? 1);
     setRateLimitWaitSeconds(core.providerPrefs.rateLimitWaitSeconds ?? 3);
@@ -423,6 +430,15 @@ export const App: React.FC = () => {
           label="Stream Responses"
           checked={streamResponses}
           onChange={(e) => setStreamResponses(e.target.checked)}
+          containerStyle={{ display: 'block', marginTop: '15px' }}
+        />
+
+        <Input
+          type="checkbox"
+          id="provider-markdown"
+          label="Render Messages as Markdown"
+          checked={renderMarkdown}
+          onChange={(e) => setRenderMarkdown(e.target.checked)}
           containerStyle={{ display: 'block', marginTop: '15px' }}
         />
 
