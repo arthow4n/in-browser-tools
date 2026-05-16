@@ -36,6 +36,38 @@ test.describe('LLM Chat Tool', () => {
     );
   });
 
+  test('should allow saving new prompt and updating existing saved prompt', async ({ page }) => {
+    await page.goto('/llm-chat');
+
+    // Make a change and save it as a new prompt
+    await page.fill('#system-prompt', 'Prompt 1 content');
+    page.once('dialog', dialog => {
+      dialog.accept('My First Prompt');
+    });
+    await page.click('#save-prompt-btn');
+
+    // Wait for the prompt to be selected in the dropdown
+    await expect(page.locator('#saved-prompts-select')).toHaveValue(/^[0-9]+$/);
+
+    // Check that "Save" button is now visible
+    await expect(page.locator('#update-prompt-btn')).toBeVisible();
+
+    // Now let's change the content and click "Save"
+    await page.fill('#system-prompt', 'Updated prompt 1 content');
+    await page.click('#update-prompt-btn');
+
+    // Change the content to something else manually to test if it loads correctly
+    await page.fill('#system-prompt', 'Something completely different');
+
+    // Select the prompt from the dropdown again to reload
+    const promptId = await page.locator('#saved-prompts-select').inputValue();
+    await page.locator('#saved-prompts-select').selectOption(''); // Deselect
+    await page.locator('#saved-prompts-select').selectOption(promptId); // Select again
+
+    // Verify the updated content was loaded
+    await expect(page.locator('#system-prompt')).toHaveValue('Updated prompt 1 content');
+  });
+
   test('should allow fetching models from OpenRouter from settings', async ({
     page,
   }) => {

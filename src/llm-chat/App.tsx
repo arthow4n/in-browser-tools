@@ -150,6 +150,16 @@ export const App: React.FC = () => {
     setSelectedPromptId(id);
   };
 
+  const handleUpdatePrompt = () => {
+    if (!selectedPromptId) return;
+    const sp = core.savedPrompts.find((p) => p.id === selectedPromptId);
+    if (sp) {
+      sp.content = core.systemPrompt;
+      core.saveChatState();
+      setSavedPrompts([...core.savedPrompts]);
+    }
+  };
+
   const handlePromptSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const id = e.target.value;
     setSelectedPromptId(id);
@@ -418,8 +428,13 @@ export const App: React.FC = () => {
               </option>
             ))}
           </select>
+          {selectedPromptId && (
+            <Button onClick={handleUpdatePrompt} id="update-prompt-btn">
+              Save
+            </Button>
+          )}
           <Button onClick={handleSavePrompt} id="save-prompt-btn">
-            Save Current As...
+            Save As New...
           </Button>
           {selectedPromptId && (
             <Button
