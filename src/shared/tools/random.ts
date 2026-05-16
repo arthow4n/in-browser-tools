@@ -14,8 +14,12 @@ export const randomTool: AgentTool = {
           type: 'string',
         },
       },
+      count: {
+        type: 'number',
+        description: 'How many choices to randomly pick from the options without repeating the same option index.',
+      },
     },
-    required: ['options'],
+    required: ['options', 'count'],
   },
   execute: async (args: any) => {
     const options = args.options;
@@ -23,8 +27,19 @@ export const randomTool: AgentTool = {
       return { error: 'options must be a non-empty array of strings.' };
     }
 
-    const randomIndex = Math.floor(Math.random() * options.length);
-    const chosen = options[randomIndex];
+    const count = args.count;
+    if (typeof count !== 'number' || !Number.isInteger(count) || count < 1 || count > options.length) {
+      return { error: 'count must be a positive integer less than or equal to the number of options.' };
+    }
+
+    const availableIndices = Array.from({ length: options.length }, (_, i) => i);
+    const chosen = [];
+
+    for (let i = 0; i < count; i++) {
+      const randomIndex = Math.floor(Math.random() * availableIndices.length);
+      const chosenIndex = availableIndices.splice(randomIndex, 1)[0];
+      chosen.push(options[chosenIndex]);
+    }
 
     return { chosen };
   },
