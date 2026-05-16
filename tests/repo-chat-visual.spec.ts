@@ -24,12 +24,8 @@ test('Repo Chat Verification', async ({ page }) => {
   // Ensure tool messages are NOT printed since they were removed
   await expect(page.locator('.message.tool')).toBeHidden();
 
-  // Ensure the new assistant prompt appears
-  await expect(
-    page
-      .locator('.message.assistant')
-      .filter({ hasText: 'I have read the repository files into my context' }),
-  ).toBeVisible();
+  // We removed the initial seed question, so we verify word count display instead
+  await expect(page.locator('.panel').first()).toContainText('Repository cloned. Approximately');
 
   // Test basic streaming behavior without tools
   await page.route(

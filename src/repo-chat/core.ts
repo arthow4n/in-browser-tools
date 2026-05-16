@@ -5,7 +5,7 @@ import { fs, vol } from 'memfs';
 import { getStorage, setStorage } from '../shared/storage.js';
 
 const DEFAULT_SYSTEM_PROMPT =
-  'You are a chat agent helping the user generate an execution plan to be delegated to an autonomous coding agent. The plan should outline the approach but not be overly detailed. Entrust the coding agent to handle the implementation details. You do not have access to any tools. You must rely on the files provided in your context to answer questions and generate the plan.';
+  'You are a chat agent helping the user generate an execution plan to be delegated to an autonomous coding agent. The plan should outline the approach but not be overly detailed. Entrust the coding agent to handle the implementation details. You must rely on the files provided in your context to answer questions and generate the plan.';
 
 function getTabSessionId(): string {
   let sessionId = sessionStorage.getItem('tab-session-id');
@@ -17,30 +17,79 @@ function getTabSessionId(): string {
   return sessionId;
 }
 
+
+export const BUILT_IN_PROMPTS = [
+  {
+    id: 'repo-chat-planner',
+    name: 'Feature implementation planner',
+    content: `You are a chat agent helping the user generate an execution plan to be delegated to an autonomous coding agent. The plan should outline the approach but not be overly detailed. Entrust the coding agent to handle the implementation details. You must rely on the files provided in your context to answer questions and generate the plan.
+
+When generating a plan, outline the plan -> invoke the \`response_grounding\` tool to review the plan -> follow the tool\'s instruction -> generate a new version -> loop until the tool forces you to stop.
+
+Once the review is done, output ONLY the final plan content. Do NOT invoke any implementation or edit tools.`,
+
+    toolsEnabled: true,
+    disabledTools: ['ask_question'], // enable response_grounding
+  },
+  {
+    id: 'repo-chat-quick',
+    name: 'Quick chat',
+    content: 'You are a chat assistant that has access to a cloned repository. You can access information from the repo or answer questions grounded by the repo context.',
+    toolsEnabled: false,
+    disabledTools: [],
+  },
+];
 export class RepoChatCore extends ChatCore {
+  public clonedWordCount: number = 0;
+
+  public clonedRepoContext: string = '';
+
   constructor() {
     super(`repo-chat-${getTabSessionId()}-`);
     this.toolsEnabled = false; // Disable tools
     this.loadChatState(); // load states explicitly here as well to overwrite ChatCore defaults
+    if (!this.selectedPromptId || this.selectedPromptId === 'builtin-assistant') {
+      this.selectedPromptId = 'repo-chat-planner';
+      this.systemPrompt = BUILT_IN_PROMPTS[0].content;
+      this.toolsEnabled = true;
+      this.disabledTools = new Set(['ask_question']);
+      this.saveChatState();
+    }
   }
 
   restartChat() {
-    // Keeps the first message which is the cloned repo context + the initial assistant message
-    if (this.history.length >= 2) {
-      this.history = this.history.slice(0, 2);
-    } else if (this.history.length === 1) {
-      this.history = [this.history[0]];
-    } else {
-      this.history = [];
-    }
+    this.history = [];
     this.saveChatState();
   }
 
   clearAll() {
+    this.clonedWordCount = 0;
+    this.clonedRepoContext = '';
     this.systemPrompt = DEFAULT_SYSTEM_PROMPT;
     this.history = [];
     vol.reset();
     this.saveChatState();
+  }
+
+
+  async *streamChatCompletion(newMessages: ChatMessage[]) {
+    const originalPrompt = this.systemPrompt;
+    this.systemPrompt = originalPrompt + this.clonedRepoContext;
+    try {
+      yield* super.streamChatCompletion(newMessages);
+    } finally {
+      this.systemPrompt = originalPrompt;
+    }
+  }
+
+  async *streamChatCompletionWithTools(newMessages: ChatMessage[]) {
+    const originalPrompt = this.systemPrompt;
+    this.systemPrompt = originalPrompt + this.clonedRepoContext;
+    try {
+      yield* super.streamChatCompletionWithTools(newMessages);
+    } finally {
+      this.systemPrompt = originalPrompt;
+    }
   }
 
   async cloneRepo(url: string, statusCallback: (msg: string) => void) {
@@ -107,15 +156,9 @@ export class RepoChatCore extends ChatCore {
       }
     }
 
-    this.systemPrompt += `\n\n--- REPOSITORY FILES ---\n${totalContent}`;
+    this.clonedRepoContext = `\n\n--- REPOSITORY FILES ---\n${totalContent}`;
+    this.clonedWordCount = totalContent.split(/\s+/).length;
 
-    // Add the initial question
-    const questionMsg: ChatMessage = {
-      id: 'msg_seed_question_' + Date.now(),
-      role: 'assistant',
-      content:
-        'I have read the repository files into my context. What changes do you want to make to the repo?',
-    };
-    this.history.push(questionMsg);
+    // Initial question removed per requirements.
   }
 }
