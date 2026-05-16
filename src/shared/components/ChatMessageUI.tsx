@@ -123,6 +123,74 @@ export const ChatMessageUI: React.FC<ChatMessageUIProps> = ({
           value={editContent}
           onChange={(e) => setEditContent(e.target.value)}
         />
+      ) : msg.role === 'tool' ? (
+        (() => {
+          let hideDetails = true;
+          let toolName = 'unknown';
+
+          if (msg.tool_call_id && core.history) {
+            const parentMsg = core.history.find((m: any) =>
+              m.tool_calls?.some((tc: any) => tc.id === msg.tool_call_id),
+            );
+            if (parentMsg) {
+              const tc = parentMsg.tool_calls.find(
+                (tc: any) => tc.id === msg.tool_call_id,
+              );
+              if (tc) {
+                toolName = tc.function.name;
+                if (toolName === 'random') {
+                  try {
+                    const args = JSON.parse(tc.function.arguments);
+                    if (args.hide_details === false) {
+                      hideDetails = false;
+                    }
+                  } catch (e) {}
+                } else {
+                  // For other tools, we don't hide by default right now, or maybe we do?
+                  // The prompt specifies 'random tool' should have hide_details.
+                  // Default true for random unless explicitly false.
+                  // For other tools, default behavior can remain just showing the content.
+                  hideDetails = false;
+                }
+              }
+            }
+          } else {
+             hideDetails = false;
+          }
+
+          if (hideDetails) {
+            return (
+              <details
+                style={{
+                  marginTop: '10px',
+                  padding: '5px',
+                  border: '1px solid #ccc',
+                  borderRadius: '4px',
+                  background: '#f9f9f9',
+                }}
+              >
+                <summary style={{ cursor: 'pointer', fontWeight: 'bold' }}>
+                  Tool Result: {toolName}
+                </summary>
+                <div className="content" style={{ whiteSpace: 'pre-wrap', marginTop: '10px' }}>
+                  {displayContent}
+                </div>
+              </details>
+            );
+          } else {
+             return renderMarkdown ? (
+               <div className="content markdown-body">
+                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                   {displayContent}
+                 </ReactMarkdown>
+               </div>
+             ) : (
+               <div className="content" style={{ whiteSpace: 'pre-wrap' }}>
+                 {displayContent}
+               </div>
+             );
+          }
+        })()
       ) : renderMarkdown ? (
         <div className="content markdown-body">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>

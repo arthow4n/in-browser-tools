@@ -56,9 +56,24 @@ export const ToolCallMessageUI: React.FC<ToolCallMessageUIProps> = ({ toolCall }
 
   const isPendingAskQuestion = askQuestionData !== null;
 
+  let parsedArgs: any = {};
+  try {
+    parsedArgs = JSON.parse(toolCall.function.arguments);
+  } catch (e) {
+    // Ignore parse errors, args might be incomplete during streaming
+  }
+
+  const hideDetails = parsedArgs?.hide_details;
+  let isOpen = undefined;
+  if (isPendingAskQuestion) {
+    isOpen = true;
+  } else if (hideDetails === false) {
+    isOpen = true;
+  }
+
   return (
     <details
-      open={isPendingAskQuestion ? true : undefined}
+      open={isOpen}
       style={{
         marginTop: '10px',
         padding: '5px',
