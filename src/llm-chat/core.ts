@@ -168,8 +168,16 @@ export class ChatCore extends LLMCore {
     newMessages: ChatMessage[],
   ): AsyncGenerator<string, void, unknown> {
     const allMessages = [...this.history, ...newMessages];
+
+    let finalSystemPrompt = this.systemPrompt;
+    const activeAppends = this.appendedSystemPrompts.filter((p) => p.enabled);
+    if (activeAppends.length > 0) {
+      const appendText = activeAppends.map((p) => p.text).join('\n\n');
+      finalSystemPrompt = `<main_system_prompt>\n${this.systemPrompt}\n</main_system_prompt>\n\n<appended_system_prompts>\n${appendText}\n</appended_system_prompts>`;
+    }
+
     const messages: SharedChatMessage[] = [
-      { role: 'system', content: this.systemPrompt },
+      { role: 'system', content: finalSystemPrompt },
       ...allMessages.map((m) => {
         const mapped: SharedChatMessage = { role: m.role, content: m.content };
         if (m.tool_calls) mapped.tool_calls = m.tool_calls;
@@ -185,8 +193,16 @@ export class ChatCore extends LLMCore {
     newMessages: ChatMessage[],
   ): AsyncGenerator<StreamChunk, void, unknown> {
     const allMessages = [...this.history, ...newMessages];
+
+    let finalSystemPrompt = this.systemPrompt;
+    const activeAppends = this.appendedSystemPrompts.filter((p) => p.enabled);
+    if (activeAppends.length > 0) {
+      const appendText = activeAppends.map((p) => p.text).join('\n\n');
+      finalSystemPrompt = `<main_system_prompt>\n${this.systemPrompt}\n</main_system_prompt>\n\n<appended_system_prompts>\n${appendText}\n</appended_system_prompts>`;
+    }
+
     const messages: SharedChatMessage[] = [
-      { role: 'system', content: this.systemPrompt },
+      { role: 'system', content: finalSystemPrompt },
       ...allMessages.map((m) => {
         const mapped: SharedChatMessage = { role: m.role, content: m.content };
         if (m.tool_calls) mapped.tool_calls = m.tool_calls;

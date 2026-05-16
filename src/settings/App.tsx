@@ -33,6 +33,9 @@ export const App: React.FC = () => {
   const [rateLimitWaitSeconds, setRateLimitWaitSeconds] = useState(
     core.providerPrefs.rateLimitWaitSeconds ?? 3,
   );
+  const [appendedPrompts, setAppendedPrompts] = useState(
+    [...core.appendedSystemPrompts],
+  );
   const [availableModels, setAvailableModels] = useState<
     { id: string; name: string }[]
   >([]);
@@ -84,6 +87,7 @@ export const App: React.FC = () => {
       rateLimitRetries,
       rateLimitWaitSeconds,
     };
+    core.appendedSystemPrompts = appendedPrompts;
     core.saveState();
   }, [
     apiKey,
@@ -95,6 +99,7 @@ export const App: React.FC = () => {
     zdr,
     rateLimitRetries,
     rateLimitWaitSeconds,
+    appendedPrompts,
   ]);
 
   const handleCreatePreset = () => {
@@ -177,8 +182,31 @@ export const App: React.FC = () => {
     setZdr(core.providerPrefs.zdr);
     setRateLimitRetries(core.providerPrefs.rateLimitRetries ?? 1);
     setRateLimitWaitSeconds(core.providerPrefs.rateLimitWaitSeconds ?? 3);
+    setAppendedPrompts([...core.appendedSystemPrompts]);
     setResetStatus('All settings reset to defaults.');
     setTimeout(() => setResetStatus(''), 3000);
+  };
+
+  const handleAddAppendedPrompt = () => {
+    setAppendedPrompts([
+      ...appendedPrompts,
+      { id: crypto.randomUUID(), text: '', enabled: true },
+    ]);
+  };
+
+  const handleUpdateAppendedPrompt = (
+    id: string,
+    updates: Partial<{ text: string; enabled: boolean }>,
+  ) => {
+    setAppendedPrompts((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, ...updates } : p)),
+    );
+  };
+
+  const handleDeleteAppendedPrompt = (id: string) => {
+    if (window.confirm('Are you sure you want to delete this prompt?')) {
+      setAppendedPrompts((prev) => prev.filter((p) => p.id !== id));
+    }
   };
 
   return (
@@ -424,6 +452,73 @@ export const App: React.FC = () => {
           </small>
         </div>
       </div>
+
+      <hr
+        style={{
+          marginTop: '30px',
+          marginBottom: '20px',
+          border: 0,
+          borderTop: '1px solid #ccc',
+        }}
+      />
+
+      <h2>Global System Prompts</h2>
+      <p style={{ color: '#666', fontSize: '14px' }}>
+        These prompts will be automatically appended to the main system prompt
+        in any LLM feature if toggled on.
+      </p>
+
+      {appendedPrompts.map((p) => (
+        <div
+          key={p.id}
+          style={{
+            marginBottom: '15px',
+            padding: '15px',
+            background: '#f5f5f5',
+            borderRadius: '4px',
+            border: '1px solid #ddd',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: '10px',
+            }}
+          >
+            <Input
+              type="checkbox"
+              label="Enabled"
+              checked={p.enabled}
+              onChange={(e) =>
+                handleUpdateAppendedPrompt(p.id, { enabled: e.target.checked })
+              }
+              id={`appended-enabled-${p.id}`}
+            />
+            <Button
+              variant="danger"
+              onClick={() => handleDeleteAppendedPrompt(p.id)}
+              style={{ padding: '4px 8px', fontSize: '12px' }}
+            >
+              Delete
+            </Button>
+          </div>
+          <TextArea
+            label="Prompt Text:"
+            value={p.text}
+            onChange={(e) =>
+              handleUpdateAppendedPrompt(p.id, { text: e.target.value })
+            }
+            rows={4}
+            id={`appended-text-${p.id}`}
+          />
+        </div>
+      ))}
+
+      <Button onClick={handleAddAppendedPrompt} style={{ marginTop: '10px' }}>
+        Add Prompt
+      </Button>
 
       <hr
         style={{
