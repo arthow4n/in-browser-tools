@@ -27,6 +27,12 @@ export interface StreamChunk {
   };
 }
 
+export interface SystemPromptAppend {
+  id: string;
+  text: string;
+  enabled: boolean;
+}
+
 export interface Model {
   id: string;
   name: string;
@@ -60,6 +66,7 @@ export interface OpenRouterPreset {
 export class LLMCore {
   public presets: OpenRouterPreset[] = [];
   public activePresetId: string = '';
+  public appendedSystemPrompts: SystemPromptAppend[] = [];
 
   constructor() {
     this.loadState();
@@ -199,6 +206,15 @@ export class LLMCore {
     if (!this.presets.find((p) => p.id === this.activePresetId)) {
       this.activePresetId = this.presets[0].id;
     }
+
+    try {
+      const savedAppended = getStorage('shared-llm-appendedSystemPrompts');
+      if (savedAppended) {
+        this.appendedSystemPrompts = JSON.parse(savedAppended);
+      }
+    } catch {
+      this.appendedSystemPrompts = [];
+    }
   }
 
   public saveState() {
@@ -215,6 +231,11 @@ export class LLMCore {
         JSON.stringify(active.providerPrefs),
       );
     }
+
+    setStorage(
+      'shared-llm-appendedSystemPrompts',
+      JSON.stringify(this.appendedSystemPrompts),
+    );
   }
 
   public async fetchModels(): Promise<Model[]> {

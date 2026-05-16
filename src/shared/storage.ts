@@ -6,6 +6,7 @@ export type StorageKey =
   | 'shared-openrouter-providerPrefs'
   | 'shared-openrouter-presets'
   | 'shared-openrouter-activePresetId'
+  | 'shared-llm-appendedSystemPrompts'
   | `${string}systemPrompt`
   | `${string}selectedPromptId`
   | `${string}savedPrompts`
