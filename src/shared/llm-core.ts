@@ -54,6 +54,7 @@ export interface ProviderPrefs {
   rateLimitRetries?: number;
   rateLimitWaitSeconds?: number;
   streamResponses?: boolean;
+  renderMarkdown?: boolean;
 }
 
 export interface OpenRouterPreset {
@@ -105,6 +106,7 @@ export class LLMCore {
       zdr: true,
       reasoningEffort: '',
       streamResponses: true,
+      renderMarkdown: true,
     };
   }
 
@@ -126,6 +128,7 @@ export class LLMCore {
         zdr: true,
         reasoningEffort: '',
         streamResponses: true,
+        renderMarkdown: true,
       },
     };
     this.presets.push(newPreset);
@@ -184,6 +187,7 @@ export class LLMCore {
         rateLimitRetries: 1,
         rateLimitWaitSeconds: 3,
         streamResponses: true,
+        renderMarkdown: true,
       };
       try {
         const savedPrefs = getStorage('shared-openrouter-providerPrefs');
