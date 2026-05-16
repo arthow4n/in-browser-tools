@@ -63,11 +63,13 @@ export const App: React.FC = () => {
     setSavedPrompts([...core.savedPrompts]);
     setToolsEnabled(core.toolsEnabled);
     setDisabledTools(new Set(core.disabledTools));
+    setIsSystemPromptDirty(false); // Reset dirty state on thread switch
 
     setStorage('llm-chat-activeThreadId', activeThreadId);
   }, [activeThreadId]);
 
   const [systemPrompt, setSystemPrompt] = useState(core.systemPrompt);
+  const [isSystemPromptDirty, setIsSystemPromptDirty] = useState(false);
   const [history, setHistory] = useState<ChatMessage[]>([]);
   const [savedPrompts, setSavedPrompts] = useState<
     { id: string; name: string; content: string }[]
@@ -116,6 +118,7 @@ export const App: React.FC = () => {
     setSystemPrompt(e.target.value);
     core.systemPrompt = e.target.value;
     core.saveChatState();
+    setIsSystemPromptDirty(true);
   };
 
   const handleImprovePrompt = async () => {
@@ -138,30 +141,48 @@ export const App: React.FC = () => {
     const name = prompt('Enter a name for this system prompt:');
     if (!name) return;
     const id = Date.now().toString();
-    core.savedPrompts.push({ id, name, content: core.systemPrompt });
+    core.savedPrompts.push({ id, name, content: systemPrompt, toolsEnabled, disabledTools: Array.from(disabledTools) });
     core.saveChatState();
     setSavedPrompts([...core.savedPrompts]);
     setSelectedPromptId(id);
+    setIsSystemPromptDirty(false);
   };
 
   const handleUpdatePrompt = () => {
     if (!selectedPromptId) return;
     const sp = core.savedPrompts.find((p) => p.id === selectedPromptId);
     if (sp) {
-      sp.content = core.systemPrompt;
+      sp.content = systemPrompt;
+      sp.toolsEnabled = toolsEnabled;
+      sp.disabledTools = Array.from(disabledTools);
       core.saveChatState();
       setSavedPrompts([...core.savedPrompts]);
+      setIsSystemPromptDirty(false);
     }
   };
 
   const handlePromptSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const id = e.target.value;
     setSelectedPromptId(id);
-    if (!id) return;
-    const sp = core.savedPrompts.find((p) => p.id === id);
+    if (!id) {
+      setIsSystemPromptDirty(false);
+      return;
+    }
+    const sp = core.builtInPrompts.find((p) => p.id === id) || core.savedPrompts.find((p) => p.id === id);
     if (sp) {
       setSystemPrompt(sp.content);
+      setIsSystemPromptDirty(false);
       core.systemPrompt = sp.content;
+
+      if (sp.toolsEnabled !== undefined) {
+        setToolsEnabled(sp.toolsEnabled);
+        core.toolsEnabled = sp.toolsEnabled;
+      }
+      if (sp.disabledTools !== undefined) {
+        setDisabledTools(new Set(sp.disabledTools));
+        core.disabledTools = new Set(sp.disabledTools);
+      }
+
       core.saveChatState();
     }
   };
@@ -191,12 +212,14 @@ export const App: React.FC = () => {
     setToolsEnabled(checked);
     core.toolsEnabled = checked;
     core.saveChatState();
+    setIsSystemPromptDirty(true);
   };
 
   const handleToolToggle = (toolName: string, enabled: boolean) => {
     core.setToolEnabled(toolName, enabled);
     core.saveChatState();
     setDisabledTools(new Set(core.disabledTools));
+    setIsSystemPromptDirty(true);
   };
 
   const triggerUpdate = () => {
@@ -396,6 +419,7 @@ export const App: React.FC = () => {
       <Panel title="System Prompt">
         <TextArea
           id="system-prompt"
+          label={isSystemPromptDirty ? "System Prompt (Unsaved Changes)" : "System Prompt"}
           value={systemPrompt}
           onChange={handleSystemPromptChange}
           rows={4}
@@ -408,13 +432,22 @@ export const App: React.FC = () => {
             onChange={handlePromptSelect}
           >
             <option value="">-- Load Saved Prompt --</option>
-            {savedPrompts.map((sp) => (
-              <option key={sp.id} value={sp.id}>
-                {sp.name}
-              </option>
-            ))}
+            <optgroup label="--- Built-in ---">
+              {core.builtInPrompts.map((sp) => (
+                <option key={sp.id} value={sp.id}>
+                  {sp.name}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="--- Custom ---">
+              {savedPrompts.map((sp) => (
+                <option key={sp.id} value={sp.id}>
+                  {sp.name}
+                </option>
+              ))}
+            </optgroup>
           </select>
-          {selectedPromptId && (
+          {selectedPromptId && !selectedPromptId.startsWith('builtin-') && (
             <Button onClick={handleUpdatePrompt} id="update-prompt-btn">
               Save
             </Button>
@@ -422,7 +455,7 @@ export const App: React.FC = () => {
           <Button onClick={handleSavePrompt} id="save-prompt-btn">
             Save As New...
           </Button>
-          {selectedPromptId && (
+          {selectedPromptId && !selectedPromptId.startsWith('builtin-') && (
             <Button
               variant="danger"
               onClick={handleDeletePrompt}
@@ -483,38 +516,6 @@ export const App: React.FC = () => {
             </span>
           </div>
         </details>
-      </Panel>
-
-      <Panel title="Chat History">
-        <div
-          id="history-container"
-          style={{
-            maxHeight: '500px',
-            overflowY: 'auto',
-            marginBottom: '15px',
-            border: '1px solid #ccc',
-            padding: '10px',
-            borderRadius: '4px',
-            background: '#fafafa',
-          }}
-        >
-          {history.map((msg) => (
-            <ChatMessageUI
-              key={msg.id}
-              msg={msg}
-              core={core}
-              onUpdate={triggerUpdate}
-            />
-          ))}
-          {streamingMsg && (
-            <ChatMessageUI
-              msg={streamingMsg}
-              core={core}
-              onUpdate={triggerUpdate}
-              isStreaming={true}
-            />
-          )}
-        </div>
 
         <div className="flex-row">
           <Input
@@ -556,6 +557,40 @@ export const App: React.FC = () => {
             ))}
           </div>
         )}
+      </Panel>
+
+      <Panel title="Chat History">
+        <div
+          id="history-container"
+          style={{
+            maxHeight: '500px',
+            overflowY: 'auto',
+            marginBottom: '15px',
+            border: '1px solid #ccc',
+            padding: '10px',
+            borderRadius: '4px',
+            background: '#fafafa',
+          }}
+        >
+          {history.map((msg) => (
+            <ChatMessageUI
+              key={msg.id}
+              msg={msg}
+              core={core}
+              onUpdate={triggerUpdate}
+            />
+          ))}
+          {streamingMsg && (
+            <ChatMessageUI
+              msg={streamingMsg}
+              core={core}
+              onUpdate={triggerUpdate}
+              isStreaming={true}
+            />
+          )}
+        </div>
+
+
 
         <TextArea
           id="user-input"

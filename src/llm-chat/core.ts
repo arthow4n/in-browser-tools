@@ -18,6 +18,8 @@ export interface SavedPrompt {
   id: string;
   name: string;
   content: string;
+  toolsEnabled?: boolean;
+  disabledTools?: string[];
 }
 
 export class ChatCore extends LLMCore {
@@ -28,6 +30,22 @@ export class ChatCore extends LLMCore {
   public toolsEnabled: boolean = false;
   public disabledTools: Set<string> = new Set();
   public tools: AgentTool[] = [];
+  public builtInPrompts: SavedPrompt[] = [
+    {
+      id: 'builtin-assistant',
+      name: 'Assistant',
+      content: 'You are a helpful assistant.',
+      toolsEnabled: false,
+      disabledTools: []
+    },
+    {
+      id: 'builtin-brainpicker',
+      name: 'Brain-picker',
+      content: 'You are a Brain-Picker. Your goal is NOT to answer questions or provide solutions directly. Instead, aggressively use the ask_question tool to make the user elaborate, think out loud, and flesh out their vague ideas. Always provide diverse options when invoking ask_question rather than leaving free input all the time. Help the user clarify their own thoughts.',
+      toolsEnabled: true,
+      disabledTools: []
+    }
+  ];
 
   constructor(storagePrefix: string = 'llm-chat-') {
     super();
