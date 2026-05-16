@@ -36,7 +36,6 @@ export const App: React.FC = () => {
 
     if (savedThreads.length === 0) {
       savedThreads = [{ id: startThreadId, name: sessionName }];
-      setStorage('llm-chat-threads', JSON.stringify(savedThreads));
       setStorage('llm-chat-activeThreadId', startThreadId);
     } else {
       // ALWAYS default to opening a new thread on load
@@ -46,7 +45,6 @@ export const App: React.FC = () => {
           ...savedThreads,
           { id: startThreadId, name: sessionName },
         ];
-        setStorage('llm-chat-threads', JSON.stringify(savedThreads));
       }
     }
 
@@ -278,6 +276,14 @@ export const App: React.FC = () => {
       setUserInput('');
     }
 
+    const currentSavedThreads = JSON.parse(getStorage('llm-chat-threads') || '[]');
+    if (!currentSavedThreads.find((t: any) => t.id === activeThreadId)) {
+      const activeThread = threads.find(t => t.id === activeThreadId);
+      if (activeThread) {
+        setStorage('llm-chat-threads', JSON.stringify([...currentSavedThreads, activeThread]));
+      }
+    }
+
     setIsSending(true);
     setChatStatus({ text: '', isError: false });
 
@@ -400,7 +406,6 @@ export const App: React.FC = () => {
                 { id: newThreadId, name: `Session ${new Date().toLocaleString()}` },
               ];
               setThreads(newThreads);
-              setStorage('llm-chat-threads', JSON.stringify(newThreads));
               setActiveThreadId(newThreadId);
             }}
           >
