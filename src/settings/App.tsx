@@ -26,6 +26,9 @@ export const App: React.FC = () => {
   const [allowFallbacks, setAllowFallbacks] = useState(
     core.providerPrefs.allowFallbacks,
   );
+  const [streamResponses, setStreamResponses] = useState(
+    core.providerPrefs.streamResponses ?? true,
+  );
   const [zdr, setZdr] = useState(core.providerPrefs.zdr);
   const [rateLimitRetries, setRateLimitRetries] = useState(
     core.providerPrefs.rateLimitRetries ?? 1,
@@ -52,6 +55,7 @@ export const App: React.FC = () => {
     setOrder(core.providerPrefs.order.join(', '));
     setDataCollection(core.providerPrefs.dataCollection);
     setAllowFallbacks(core.providerPrefs.allowFallbacks);
+    setStreamResponses(core.providerPrefs.streamResponses ?? true);
     setZdr(core.providerPrefs.zdr);
     setRateLimitRetries(core.providerPrefs.rateLimitRetries ?? 1);
     setRateLimitWaitSeconds(core.providerPrefs.rateLimitWaitSeconds ?? 3);
@@ -83,6 +87,7 @@ export const App: React.FC = () => {
         : [],
       dataCollection: dataCollection as 'allow' | 'deny',
       allowFallbacks,
+      streamResponses,
       zdr,
       rateLimitRetries,
       rateLimitWaitSeconds,
@@ -96,6 +101,7 @@ export const App: React.FC = () => {
     order,
     dataCollection,
     allowFallbacks,
+    streamResponses,
     zdr,
     rateLimitRetries,
     rateLimitWaitSeconds,
@@ -179,6 +185,7 @@ export const App: React.FC = () => {
     setOrder(core.providerPrefs.order.join(', '));
     setDataCollection(core.providerPrefs.dataCollection);
     setAllowFallbacks(core.providerPrefs.allowFallbacks);
+    setStreamResponses(core.providerPrefs.streamResponses ?? true);
     setZdr(core.providerPrefs.zdr);
     setRateLimitRetries(core.providerPrefs.rateLimitRetries ?? 1);
     setRateLimitWaitSeconds(core.providerPrefs.rateLimitWaitSeconds ?? 3);
@@ -407,6 +414,15 @@ export const App: React.FC = () => {
           label="Allow Fallbacks"
           checked={allowFallbacks}
           onChange={(e) => setAllowFallbacks(e.target.checked)}
+          containerStyle={{ display: 'block', marginTop: '15px' }}
+        />
+
+        <Input
+          type="checkbox"
+          id="provider-stream-responses"
+          label="Stream Responses"
+          checked={streamResponses}
+          onChange={(e) => setStreamResponses(e.target.checked)}
           containerStyle={{ display: 'block', marginTop: '15px' }}
         />
 

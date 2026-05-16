@@ -53,6 +53,7 @@ export interface ProviderPrefs {
     | '';
   rateLimitRetries?: number;
   rateLimitWaitSeconds?: number;
+  streamResponses?: boolean;
 }
 
 export interface OpenRouterPreset {
@@ -103,6 +104,7 @@ export class LLMCore {
       dataCollection: 'deny',
       zdr: true,
       reasoningEffort: '',
+      streamResponses: true,
     };
   }
 
@@ -123,6 +125,7 @@ export class LLMCore {
         dataCollection: 'deny',
         zdr: true,
         reasoningEffort: '',
+        streamResponses: true,
       },
     };
     this.presets.push(newPreset);
@@ -180,6 +183,7 @@ export class LLMCore {
         reasoningEffort: '',
         rateLimitRetries: 1,
         rateLimitWaitSeconds: 3,
+        streamResponses: true,
       };
       try {
         const savedPrefs = getStorage('shared-openrouter-providerPrefs');
@@ -426,6 +430,7 @@ export class LLMCore {
     let rateLimitAttempt = 0;
     const maxRateLimitRetries = this.providerPrefs.rateLimitRetries ?? 1;
     const rateLimitWaitSeconds = this.providerPrefs.rateLimitWaitSeconds ?? 3;
+    const isStreaming = this.providerPrefs.streamResponses ?? true;
 
     while (rateLimitAttempt <= maxRateLimitRetries) {
       res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -437,7 +442,7 @@ export class LLMCore {
         body: JSON.stringify({
           model: this.model,
           messages: messages,
-          stream: true,
+          stream: isStreaming,
           reasoning_effort: this.providerPrefs.reasoningEffort || undefined,
           provider: {
             order: this.providerPrefs.order,
@@ -469,7 +474,18 @@ export class LLMCore {
       break;
     }
 
-    if (!res || !res.body) throw new Error('Response body is null');
+    if (!res) throw new Error('Response is null');
+
+    if (!isStreaming) {
+      const data = await res.json();
+      const content = data.choices?.[0]?.message?.content;
+      if (content) {
+        yield content;
+      }
+      return;
+    }
+
+    if (!res.body) throw new Error('Response body is null');
 
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
@@ -507,10 +523,12 @@ export class LLMCore {
     if (!this.apiKey) throw new Error('API Key is required');
     if (!this.model) throw new Error('Model is required');
 
+    const isStreaming = this.providerPrefs.streamResponses ?? true;
+
     const body: any = {
       model: this.model,
       messages: messages,
-      stream: true,
+      stream: isStreaming,
       reasoning_effort: this.providerPrefs.reasoningEffort || undefined,
       provider: {
         order: this.providerPrefs.order,
@@ -567,7 +585,32 @@ export class LLMCore {
       break;
     }
 
-    if (!res || !res.body) throw new Error('Response body is null');
+    if (!res) throw new Error('Response is null');
+
+    if (!isStreaming) {
+      const data = await res.json();
+      const msg = data.choices?.[0]?.message;
+
+      if (msg?.content) {
+        yield { type: 'text', text: msg.content };
+      }
+
+      if (msg?.tool_calls) {
+        for (const tc of msg.tool_calls) {
+          yield {
+            type: 'tool_call',
+            toolCall: {
+              id: tc.id,
+              name: tc.function.name,
+              arguments: tc.function.arguments || '',
+            },
+          };
+        }
+      }
+      return;
+    }
+
+    if (!res.body) throw new Error('Response body is null');
 
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
