@@ -4,7 +4,6 @@ import { getRequiredElement } from '../shared/dom-utils.js';
 import { runWithUIState } from '../shared/ui-utils.js';
 import { ChatMessage } from '../llm-chat/core.js';
 import { createMessageElement } from '../shared/chat-ui.js';
-import { browserAlertTool } from '../llm-chat/tools/browser-alert.js';
 import { askQuestionTool } from '../shared/tools/ask-question.js';
 import { AskQuestionUI } from '../shared/components/index.js';
 import React from 'react';
@@ -12,7 +11,6 @@ import { createRoot, Root } from 'react-dom/client';
 import '../shared/components/styles.css';
 
 const core = new RepoChatCore();
-core.registerTool(browserAlertTool);
 core.registerTool(askQuestionTool);
 
 // --- DOM Elements ---

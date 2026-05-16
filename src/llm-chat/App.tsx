@@ -10,7 +10,6 @@ import {
 } from '../shared/components/index.js';
 import { ChatCore, ChatMessage } from './core.js';
 import { getStorage, setStorage } from '../shared/storage.js';
-import { browserAlertTool } from './tools/browser-alert.js';
 import { askQuestionTool } from '../shared/tools/ask-question.js';
 import { useAsyncAction } from '../shared/hooks/useAsyncAction.js';
 import { AskQuestionUI } from '../shared/components/index.js';
@@ -108,7 +107,6 @@ export const App: React.FC = () => {
       setAskQuestionData({ questions, resolve });
     };
 
-    core.registerTool(browserAlertTool);
     core.registerTool(askQuestionTool);
     core.loadChatState();
     setSystemPrompt(core.systemPrompt);
