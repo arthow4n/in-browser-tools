@@ -22,8 +22,8 @@ export const AskQuestionUI: React.FC<AskQuestionUIProps> = ({
 
   const [answers, setAnswers] = useState<any[]>(
     safeQuestions.map((q) => {
-      if (q.type === 'single_select') return { selected: null, freetext: '' };
-      return { selected: [] as string[], freetext: '' };
+      if (q.type === 'single_select') return { selected: null, freetext: '', refused: false, refuseReason: '' };
+      return { selected: [] as string[], freetext: '', refused: false, refuseReason: '' };
     }),
   );
 
@@ -52,6 +52,32 @@ export const AskQuestionUI: React.FC<AskQuestionUIProps> = ({
     setAnswers(newAnswers);
   };
 
+  const handleRefuseToggle = (questionIndex: number) => {
+    const newAnswers = [...answers];
+    newAnswers[questionIndex] = { ...newAnswers[questionIndex], refused: !newAnswers[questionIndex].refused };
+    setAnswers(newAnswers);
+  };
+
+  const handleRefuseReasonChange = (questionIndex: number, text: string) => {
+    const newAnswers = [...answers];
+    newAnswers[questionIndex] = { ...newAnswers[questionIndex], refuseReason: text };
+    setAnswers(newAnswers);
+  };
+
+  const handleRefuseAll = () => {
+    const newAnswers = answers.map((ans) => ({ ...ans, refused: true }));
+    setAnswers(newAnswers);
+    // Directly submit after state update (setTimeout to wait for re-render if needed, but we can just map and call onComplete)
+    const formattedAnswers = newAnswers.map((ans, i) => {
+      let response = 'Refused to answer';
+      if (ans.refuseReason) {
+        response += ` | Reason: ${ans.refuseReason}`;
+      }
+      return response;
+    });
+    onComplete(formattedAnswers);
+  };
+
   const handleFreetextChange = (questionIndex: number, text: string) => {
     const newAnswers = [...answers];
     newAnswers[questionIndex] = { ...newAnswers[questionIndex], freetext: text };
@@ -62,6 +88,15 @@ export const AskQuestionUI: React.FC<AskQuestionUIProps> = ({
     const formattedAnswers = answers.map((ans, i) => {
       const q = safeQuestions[i];
       let response = '';
+
+      if (ans.refused) {
+        response = 'Refused to answer';
+        if (ans.refuseReason) {
+          response += ` | Reason: ${ans.refuseReason}`;
+        }
+        return response;
+      }
+
       if (q.type === 'single_select') {
         response = `Selected: ${ans.selected || 'None'}`;
       } else if (q.type === 'multi_select') {
@@ -83,7 +118,27 @@ export const AskQuestionUI: React.FC<AskQuestionUIProps> = ({
         <div key={i} style={{ marginBottom: '20px' }}>
           <h4>{i + 1}. {q.text}</h4>
 
-          {q.type === 'single_select' && Array.isArray(q.options) && (
+          <div style={{ marginBottom: '10px' }}>
+            <Button
+              variant={answers[i].refused ? 'danger' : 'secondary'}
+              onClick={() => handleRefuseToggle(i)}
+            >
+              {answers[i].refused ? 'Cancel Refusal' : 'Refuse to Answer'}
+            </Button>
+          </div>
+
+          {answers[i].refused ? (
+            <input
+              type="text"
+              placeholder="Reason for refusing (optional)"
+              value={answers[i].refuseReason}
+              onChange={(e) => handleRefuseReasonChange(i, e.target.value)}
+              className="form-control"
+              style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+            />
+          ) : (
+            <>
+              {q.type === 'single_select' && Array.isArray(q.options) && (
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '10px' }}>
               {q.options.map((opt) => (
                 <Button
@@ -121,11 +176,18 @@ export const AskQuestionUI: React.FC<AskQuestionUIProps> = ({
               style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
             />
           )}
+            </>
+          )}
         </div>
       ))}
-      <Button onClick={handleSubmit} variant="primary">
-        Submit Answers
-      </Button>
+      <div style={{ display: 'flex', gap: '10px' }}>
+        <Button onClick={handleSubmit} variant="primary">
+          Submit Answers
+        </Button>
+        <Button onClick={handleRefuseAll} variant="danger">
+          Refuse All
+        </Button>
+      </div>
     </Panel>
   );
 };

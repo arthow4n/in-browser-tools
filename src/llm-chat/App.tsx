@@ -12,7 +12,6 @@ import { ChatCore, ChatMessage } from './core.js';
 import { getStorage, setStorage } from '../shared/storage.js';
 import { askQuestionTool } from '../shared/tools/ask-question.js';
 import { useAsyncAction } from '../shared/hooks/useAsyncAction.js';
-import { AskQuestionUI } from '../shared/components/index.js';
 
 export const App: React.FC = () => {
   const [threads, setThreads] = useState<{ id: string; name: string }[]>([]);
@@ -97,15 +96,10 @@ export const App: React.FC = () => {
   // Streaming assistant message state
   const [streamingMsg, setStreamingMsg] = useState<ChatMessage | null>(null);
 
-  const [askQuestionData, setAskQuestionData] = useState<{
-    questions: any[];
-    resolve: (answers: any[]) => void;
-  } | null>(null);
+
 
   useEffect(() => {
-    (window as any).showAskQuestionUI = (questions: any[], resolve: (answers: any[]) => void) => {
-      setAskQuestionData({ questions, resolve });
-    };
+
 
     core.registerTool(askQuestionTool);
     core.loadChatState();
@@ -284,7 +278,7 @@ export const App: React.FC = () => {
             } else {
               try {
                 const args = JSON.parse(tc.function.arguments);
-                const result = await tool.execute(args);
+                const result = await tool.execute(args, { toolCallId: tc.id });
                 resultStr =
                   typeof result === 'string' ? result : JSON.stringify(result);
               } catch (e: any) {
@@ -397,15 +391,7 @@ export const App: React.FC = () => {
 
       <LlmSettings core={core} />
 
-      {askQuestionData && (
-        <AskQuestionUI
-          questions={askQuestionData.questions}
-          onComplete={(answers) => {
-            askQuestionData.resolve(answers);
-            setAskQuestionData(null);
-          }}
-        />
-      )}
+
 
       <Panel title="System Prompt">
         <TextArea
