@@ -38,14 +38,25 @@ export const askQuestionTool: AgentTool = {
     },
     required: ['questions'],
   },
-  execute: async (args: any) => {
+  execute: async (args: any, context?: any) => {
     return new Promise((resolve) => {
-      if (typeof (window as any).showAskQuestionUI === 'function') {
-        (window as any).showAskQuestionUI(args.questions, resolve);
-      } else {
-        console.error('showAskQuestionUI is not defined on window');
-        resolve({ error: 'UI not implemented to handle this tool.' });
+      const toolCallId = context?.toolCallId;
+      if (!toolCallId) {
+        // Fallback for isolated executions without a context ID
+        if (typeof (window as any).showAskQuestionUI === 'function') {
+          (window as any).showAskQuestionUI(args.questions, resolve);
+        } else {
+          resolve({ error: 'Missing toolCallId and showAskQuestionUI is not defined.' });
+        }
+        return;
       }
+
+      const w = window as any;
+      w.pendingAskQuestions = w.pendingAskQuestions || {};
+      w.pendingAskQuestions[toolCallId] = { questions: args.questions, resolve };
+
+      // Dispatch event so React components can re-render if necessary
+      window.dispatchEvent(new CustomEvent('askQuestionUpdate', { detail: { toolCallId } }));
     });
   },
 };

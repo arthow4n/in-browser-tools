@@ -5,7 +5,6 @@ import { runWithUIState } from '../shared/ui-utils.js';
 import { ChatMessage } from '../llm-chat/core.js';
 import { createMessageElement } from '../shared/chat-ui.js';
 import { askQuestionTool } from '../shared/tools/ask-question.js';
-import { AskQuestionUI } from '../shared/components/index.js';
 import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
 import '../shared/components/styles.css';
@@ -78,22 +77,7 @@ core.tools.forEach((tool) => {
   toolsContainer.appendChild(label);
 });
 
-let askQuestionRoot: Root | null = null;
-(window as any).showAskQuestionUI = (questions: any[], resolve: (answers: any[]) => void) => {
-  if (!askQuestionRoot) {
-    askQuestionRoot = createRoot(askQuestionContainer);
-  }
-  askQuestionRoot.render(
-    <AskQuestionUI
-      questions={questions}
-      onComplete={(answers) => {
-        resolve(answers);
-        askQuestionRoot?.unmount();
-        askQuestionRoot = null;
-      }}
-    />
-  );
-};
+
 
 // Render history
 function renderHistory() {
@@ -261,7 +245,7 @@ async function handleChatGeneration() {
           } else {
             try {
               const args = JSON.parse(tc.function.arguments);
-              const result = await tool.execute(args);
+              const result = await tool.execute(args, { toolCallId: tc.id });
               resultStr =
                 typeof result === 'string' ? result : JSON.stringify(result);
             } catch (e: any) {
