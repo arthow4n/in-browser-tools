@@ -45,7 +45,7 @@ export class RepoChatCore extends ChatCore {
   public clonedRepoContext: string = '';
 
   constructor() {
-    super(`repo-chat-${getTabSessionId()}-`);
+    super(`repo-chat-${getTabSessionId()}-`, 'repo-chat-');
     this.toolsEnabled = false; // Disable tools
     this.loadChatState(); // load states explicitly here as well to overwrite ChatCore defaults
     if (!this.selectedPromptId || this.selectedPromptId === 'builtin-assistant') {
