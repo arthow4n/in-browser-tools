@@ -361,6 +361,21 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleAddAsRole = (role: 'user' | 'assistant' | 'system') => {
+    const text = userInput.trim();
+    if (!text) return;
+
+    const newMsg: ChatMessage = {
+      id: crypto.randomUUID(),
+      role: role,
+      content: text,
+    };
+    core.history.push(newMsg);
+    core.saveChatState();
+    setHistory([...core.history]);
+    setUserInput('');
+  };
+
   const handleSend = async () => {
     const text = userInput.trim();
     if (!text && core.history.length === 0) return;
@@ -660,9 +675,18 @@ export const App: React.FC = () => {
           onChange={(e) => setUserInput(e.target.value)}
         />
 
-        <div className="flex-row" style={{ marginTop: '10px' }}>
+        <div className="flex-row" style={{ marginTop: '10px', flexWrap: 'wrap', gap: '5px' }}>
           <Button onClick={handleSend} disabled={isSending} id="send-btn">
             Send
+          </Button>
+          <Button onClick={() => handleAddAsRole('user')} id="add-as-user-btn">
+            Add as User
+          </Button>
+          <Button onClick={() => handleAddAsRole('assistant')} id="add-as-assistant-btn">
+            Add as Assistant
+          </Button>
+          <Button onClick={() => handleAddAsRole('system')} id="add-as-system-btn">
+            Add as System
           </Button>
           <Button
             variant="danger"
@@ -674,7 +698,7 @@ export const App: React.FC = () => {
           <span
             id="chat-status"
             className="status"
-            style={{ color: chatStatus.isError ? 'red' : 'green' }}
+            style={{ color: chatStatus.isError ? 'red' : 'green', alignSelf: 'center' }}
           >
             {chatStatus.text}
           </span>
