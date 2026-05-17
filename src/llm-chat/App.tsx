@@ -31,7 +31,7 @@ export const App: React.FC = () => {
       // ignore
     }
 
-    const startThreadId = Date.now().toString();
+    const startThreadId = crypto.randomUUID();
     const sessionName = `Session ${new Date().toLocaleString()}`;
 
     if (savedThreads.length === 0) {
@@ -156,7 +156,7 @@ export const App: React.FC = () => {
   const handleSavePrompt = () => {
     const name = prompt('Enter a name for this system prompt:');
     if (!name) return;
-    const id = Date.now().toString();
+    const id = crypto.randomUUID();
     core.savedPrompts.push({
       id,
       name,
@@ -266,7 +266,7 @@ export const App: React.FC = () => {
 
     if (text) {
       const userMsg: ChatMessage = {
-        id: Date.now().toString(),
+        id: crypto.randomUUID(),
         role: 'user',
         content: text,
       };
@@ -347,7 +347,7 @@ export const App: React.FC = () => {
             }
 
             const toolMsg: ChatMessage = {
-              id: Date.now().toString() + Math.random().toString(),
+              id: crypto.randomUUID(),
               role: 'tool',
               content: resultStr,
               tool_call_id: tc.id,
@@ -400,7 +400,7 @@ export const App: React.FC = () => {
           <Button
             id="new-thread-btn"
             onClick={() => {
-              const newThreadId = Date.now().toString();
+              const newThreadId = crypto.randomUUID();
               const newThreads = [
                 ...threads,
                 { id: newThreadId, name: `Session ${new Date().toLocaleString()}` },

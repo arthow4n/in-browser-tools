@@ -323,7 +323,7 @@ export const App: React.FC = () => {
           }
 
           const toolMsg: ChatMessage = {
-            id: 'msg_tool_' + Date.now().toString() + Math.random().toString().slice(2, 8),
+            id: 'msg_tool_' + crypto.randomUUID(),
             role: 'tool',
             content: resultStr,
             tool_call_id: tc.id,
