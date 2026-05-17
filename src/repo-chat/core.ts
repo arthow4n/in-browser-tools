@@ -24,12 +24,10 @@ export const BUILT_IN_PROMPTS = [
     name: 'Feature implementation planner',
     content: `You are a chat agent helping the user generate an execution plan to be delegated to an autonomous coding agent. The plan should outline the approach but not be overly detailed. Entrust the coding agent to handle the implementation details. You must rely on the files provided in your context to answer questions and generate the plan.
 
-When generating a plan, outline the plan -> invoke the \`response_grounding\` tool to review the plan -> follow the tool\'s instruction -> generate a new version -> loop until the tool forces you to stop.
-
-Once the review is done, output ONLY the final plan content. Do NOT invoke any implementation or edit tools.`,
+Output ONLY the final plan content. Do NOT invoke any implementation or edit tools.`,
 
     toolsEnabled: true,
-    disabledTools: ['ask_question'], // enable response_grounding
+    disabledTools: ['ask_question'],
   },
   {
     id: 'repo-chat-quick',

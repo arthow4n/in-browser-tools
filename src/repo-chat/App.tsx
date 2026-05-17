@@ -12,7 +12,6 @@ import { LlmSettings } from '../shared/components/LlmSettings.js';
 import { ChatMessageUI } from '../shared/components/ChatMessageUI.js';
 
 import { askQuestionTool } from '../shared/tools/ask-question.js';
-import { responseGroundingTool } from '../shared/tools/response-grounding.js';
 
 import { useAsyncAction } from '../shared/hooks/useAsyncAction.js';
 
@@ -21,7 +20,6 @@ import '../shared/components/styles.css';
 // Initialize core once
 const core = new RepoChatCore();
 core.registerTool(askQuestionTool);
-core.registerTool(responseGroundingTool);
 core.loadChatState(); // load states explicitly here as well
 
 export const App: React.FC = () => {
@@ -313,7 +311,6 @@ export const App: React.FC = () => {
           } else {
             try {
               const args = JSON.parse(tc.function.arguments);
-              // Pass context info like threadId for response_grounding tool to work scoped
               const result = await tool.execute(args, { toolCallId: tc.id, threadId: core.storagePrefix });
               resultStr =
                 typeof result === 'string' ? result : JSON.stringify(result);

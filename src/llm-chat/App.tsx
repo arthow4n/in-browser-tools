@@ -11,7 +11,6 @@ import {
 import { ChatCore, ChatMessage, BUILT_IN_PROMPTS } from './core.js';
 import { getStorage, setStorage } from '../shared/storage.js';
 import { askQuestionTool } from '../shared/tools/ask-question.js';
-import { responseGroundingTool } from '../shared/tools/response-grounding.js';
 import { randomTool } from '../shared/tools/random.js';
 import { useAsyncAction } from '../shared/hooks/useAsyncAction.js';
 
@@ -104,7 +103,6 @@ export const App: React.FC = () => {
 
 
     core.registerTool(askQuestionTool);
-    core.registerTool(responseGroundingTool);
     core.registerTool(randomTool);
     core.loadChatState();
     setSystemPrompt(core.systemPrompt);
