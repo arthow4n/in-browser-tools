@@ -2,11 +2,7 @@
 
 ## Work autonomously
 
-Any task given to you should be treated as final instructions. You should work autonomously to finish it without asking for further input.
-
-Don't check in with the user, don't ask for clarification unless the user explicitly asks for it.
-
-If you are Jules, make decisions yourself and keep working until the task is done. Don't ask for any further input from the user. Just finalize and submit your changes directly.
+Any task given to you should be treated as final instructions. You should work autonomously to finish it without asking for further input. You should automnomously make all the decisions yourself even when the given task is ambiguous.
 
 ## How to work in this repo
 
