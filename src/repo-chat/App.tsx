@@ -45,6 +45,7 @@ export const App: React.FC = () => {
   const [clonedWordCount, setClonedWordCount] = useState<number>(
     core.clonedWordCount,
   );
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Sync core state to local React state occasionally
   const triggerUpdate = () => {
@@ -287,90 +288,331 @@ export const App: React.FC = () => {
       setUserInput('');
       setHistory([...core.history]);
 
-      const doStream = async (assistantMsg: ChatMessage) => {
-        setStreamingMsg(assistantMsg);
+      const triggerGeneration = async (currentAssistantMsg?: ChatMessage) => {
+        const doStream = async (assistantMsg: ChatMessage) => {
+          abortControllerRef.current = new AbortController();
+          setStreamingMsg(assistantMsg);
 
-        const generator = core.streamChatCompletionWithTools([]);
-
-        for await (const chunk of generator) {
-          if (chunk.type === 'text' && chunk.text) {
-            assistantMsg.content += chunk.text;
-          } else if (chunk.type === 'tool_call' && chunk.toolCall) {
-            if (!assistantMsg.tool_calls) {
-              assistantMsg.tool_calls = [];
-            }
-            assistantMsg.tool_calls.push({
-              id: chunk.toolCall.id,
-              type: 'function',
-              function: {
-                name: chunk.toolCall.name,
-                arguments: chunk.toolCall.arguments,
-              },
+          try {
+            const generator = core.streamChatCompletionWithTools([], {
+              abortSignal: abortControllerRef.current.signal,
             });
-          }
-          setStreamingMsg({ ...assistantMsg }); // force re-render
-        }
 
-        setStreamingMsg(null);
-
-        if (
-          assistantMsg.content ||
-          (assistantMsg.tool_calls && assistantMsg.tool_calls.length > 0)
-        ) {
-          core.history.push(assistantMsg);
-        }
-        core.saveChatState();
-        setHistory([...core.history]);
-
-        if (assistantMsg.tool_calls && assistantMsg.tool_calls.length > 0) {
-          for (const tc of assistantMsg.tool_calls) {
-            const tool = core.tools.find((t) => t.name === tc.function.name);
-            let resultStr = '';
-            if (!tool) {
-              resultStr = `Error: Tool ${tc.function.name} not found.`;
-            } else {
-              try {
-                const args = JSON.parse(tc.function.arguments);
-                const result = await tool.execute(args, {
-                  toolCallId: tc.id,
-                  threadId: core.storagePrefix,
+            for await (const chunk of generator) {
+              if (chunk.type === 'text' && chunk.text) {
+                assistantMsg.content += chunk.text;
+              } else if (chunk.type === 'tool_call' && chunk.toolCall) {
+                if (!assistantMsg.tool_calls) {
+                  assistantMsg.tool_calls = [];
+                }
+                assistantMsg.tool_calls.push({
+                  id: chunk.toolCall.id,
+                  type: 'function',
+                  function: {
+                    name: chunk.toolCall.name,
+                    arguments: chunk.toolCall.arguments,
+                  },
                 });
-                resultStr =
-                  typeof result === 'string' ? result : JSON.stringify(result);
-              } catch (e: any) {
-                resultStr = `Error executing tool: ${e.message}`;
               }
+              setStreamingMsg({ ...assistantMsg }); // force re-render
             }
+          } catch (e: any) {
+            if (e.name !== 'AbortError') {
+              assistantMsg.content += `\n[Error: ${e.message}]`;
+              setStreamingMsg({ ...assistantMsg });
+            }
+          } finally {
+            setStreamingMsg(null);
 
-            const toolMsg: ChatMessage = {
-              id: 'msg_tool_' + crypto.randomUUID(),
-              role: 'tool',
-              content: resultStr,
-              tool_call_id: tc.id,
-            };
-            core.history.push(toolMsg);
+            if (
+              assistantMsg.content ||
+              (assistantMsg.tool_calls && assistantMsg.tool_calls.length > 0)
+            ) {
+              core.history.push(assistantMsg);
+            }
             core.saveChatState();
             setHistory([...core.history]);
-          }
 
-          const nextAssistantMsg: ChatMessage = {
-            id: 'msg_' + Date.now(),
-            role: 'assistant',
-            content: '',
-          };
-          await doStream(nextAssistantMsg);
-        } else {
-          setIsSending(false);
-        }
+            if (
+              assistantMsg.tool_calls &&
+              assistantMsg.tool_calls.length > 0 &&
+              !abortControllerRef.current?.signal.aborted
+            ) {
+              for (const tc of assistantMsg.tool_calls) {
+                const tool = core.tools.find(
+                  (t) => t.name === tc.function.name,
+                );
+                let resultStr = '';
+                if (!tool) {
+                  resultStr = `Error: Tool ${tc.function.name} not found.`;
+                } else {
+                  try {
+                    const args = JSON.parse(tc.function.arguments);
+                    const result = await tool.execute(args, {
+                      toolCallId: tc.id,
+                      threadId: core.storagePrefix,
+                      abortSignal: abortControllerRef.current?.signal,
+                    });
+                    resultStr =
+                      typeof result === 'string'
+                        ? result
+                        : JSON.stringify(result);
+                  } catch (e: any) {
+                    if (e.name === 'AbortError') {
+                      break;
+                    }
+                    resultStr = `Error executing tool: ${e.message}`;
+                  }
+                }
+
+                const toolMsg: ChatMessage = {
+                  id: 'msg_tool_' + crypto.randomUUID(),
+                  role: 'tool',
+                  content: resultStr,
+                  tool_call_id: tc.id,
+                };
+                core.history.push(toolMsg);
+                core.saveChatState();
+                setHistory([...core.history]);
+              }
+
+              if (!abortControllerRef.current?.signal.aborted) {
+                const nextAssistantMsg: ChatMessage = {
+                  id: 'msg_' + Date.now(),
+                  role: 'assistant',
+                  content: '',
+                };
+                await doStream(nextAssistantMsg);
+              } else {
+                setIsSending(false);
+              }
+            } else {
+              setIsSending(false);
+            }
+            abortControllerRef.current = null;
+          }
+        };
+
+        const initialAssistantMsg: ChatMessage = currentAssistantMsg || {
+          id: 'msg_' + Date.now(),
+          role: 'assistant',
+          content: '',
+        };
+        await doStream(initialAssistantMsg);
       };
 
-      const initialAssistantMsg: ChatMessage = {
+      await triggerGeneration();
+    });
+
+  const handleReanswer = async (toolCallId: string) => {
+    const msgIdx = core.history.findIndex(
+      (m: any) =>
+        m.role === 'assistant' &&
+        m.tool_calls &&
+        m.tool_calls.some((tc: any) => tc.id === toolCallId),
+    );
+    if (msgIdx !== -1) {
+      const assistantMsg = core.history[msgIdx];
+      core.history = core.history.slice(0, msgIdx);
+      core.saveChatState();
+      setHistory([...core.history]);
+
+      setIsSending(true);
+      const doStream = async (msg: ChatMessage) => {
+        abortControllerRef.current = new AbortController();
+        setStreamingMsg(msg);
+        try {
+          const generator = core.streamChatCompletionWithTools([], {
+            abortSignal: abortControllerRef.current.signal,
+          });
+          for await (const chunk of generator) {
+            if (chunk.type === 'text' && chunk.text) {
+              msg.content += chunk.text;
+            } else if (chunk.type === 'tool_call' && chunk.toolCall) {
+              if (!msg.tool_calls) msg.tool_calls = [];
+              msg.tool_calls.push({
+                id: chunk.toolCall.id,
+                type: 'function',
+                function: {
+                  name: chunk.toolCall.name,
+                  arguments: chunk.toolCall.arguments,
+                },
+              });
+            }
+            setStreamingMsg({ ...msg });
+          }
+        } catch (e: any) {
+          if (e.name !== 'AbortError') {
+            msg.content += `\n[Error: ${e.message}]`;
+            setStreamingMsg({ ...msg });
+          }
+        } finally {
+          setStreamingMsg(null);
+          if (msg.content || (msg.tool_calls && msg.tool_calls.length > 0)) {
+            core.history.push(msg);
+          }
+          core.saveChatState();
+          setHistory([...core.history]);
+
+          if (
+            msg.tool_calls &&
+            msg.tool_calls.length > 0 &&
+            !abortControllerRef.current?.signal.aborted
+          ) {
+            for (const tc of msg.tool_calls) {
+              const tool = core.tools.find((t) => t.name === tc.function.name);
+              let resultStr = '';
+              if (!tool) {
+                resultStr = `Error: Tool ${tc.function.name} not found.`;
+              } else {
+                try {
+                  const args = JSON.parse(tc.function.arguments);
+                  const result = await tool.execute(args, {
+                    toolCallId: tc.id,
+                    threadId: core.storagePrefix,
+                    abortSignal: abortControllerRef.current?.signal,
+                  });
+                  resultStr =
+                    typeof result === 'string'
+                      ? result
+                      : JSON.stringify(result);
+                } catch (e: any) {
+                  if (e.name === 'AbortError') break;
+                  resultStr = `Error: ${e.message}`;
+                }
+              }
+              const toolMsg: ChatMessage = {
+                id: 'msg_tool_' + crypto.randomUUID(),
+                role: 'tool',
+                content: resultStr,
+                tool_call_id: tc.id,
+              };
+              core.history.push(toolMsg);
+              core.saveChatState();
+              setHistory([...core.history]);
+            }
+            if (!abortControllerRef.current?.signal.aborted) {
+              await doStream({
+                id: 'msg_' + Date.now(),
+                role: 'assistant',
+                content: '',
+              });
+            } else {
+              setIsSending(false);
+            }
+          } else {
+            setIsSending(false);
+          }
+          abortControllerRef.current = null;
+        }
+      };
+      await doStream(assistantMsg);
+    }
+  };
+
+  const handleRegenerate = async (msgId: string) => {
+    const idx = core.history.findIndex((m: any) => m.id === msgId);
+    if (idx !== -1) {
+      core.history = core.history.slice(0, idx);
+      core.saveChatState();
+      setHistory([...core.history]);
+
+      setIsSending(true);
+      const doStream = async (msg: ChatMessage) => {
+        abortControllerRef.current = new AbortController();
+        setStreamingMsg(msg);
+        try {
+          const generator = core.streamChatCompletionWithTools([], {
+            abortSignal: abortControllerRef.current.signal,
+          });
+          for await (const chunk of generator) {
+            if (chunk.type === 'text' && chunk.text) {
+              msg.content += chunk.text;
+            } else if (chunk.type === 'tool_call' && chunk.toolCall) {
+              if (!msg.tool_calls) msg.tool_calls = [];
+              msg.tool_calls.push({
+                id: chunk.toolCall.id,
+                type: 'function',
+                function: {
+                  name: chunk.toolCall.name,
+                  arguments: chunk.toolCall.arguments,
+                },
+              });
+            }
+            setStreamingMsg({ ...msg });
+          }
+        } catch (e: any) {
+          if (e.name !== 'AbortError') {
+            msg.content += `\n[Error: ${e.message}]`;
+            setStreamingMsg({ ...msg });
+          }
+        } finally {
+          setStreamingMsg(null);
+          if (msg.content || (msg.tool_calls && msg.tool_calls.length > 0)) {
+            core.history.push(msg);
+          }
+          core.saveChatState();
+          setHistory([...core.history]);
+
+          if (
+            msg.tool_calls &&
+            msg.tool_calls.length > 0 &&
+            !abortControllerRef.current?.signal.aborted
+          ) {
+            for (const tc of msg.tool_calls) {
+              const tool = core.tools.find((t) => t.name === tc.function.name);
+              let resultStr = '';
+              if (!tool) {
+                resultStr = `Error: Tool ${tc.function.name} not found.`;
+              } else {
+                try {
+                  const args = JSON.parse(tc.function.arguments);
+                  const result = await tool.execute(args, {
+                    toolCallId: tc.id,
+                    threadId: core.storagePrefix,
+                    abortSignal: abortControllerRef.current?.signal,
+                  });
+                  resultStr =
+                    typeof result === 'string'
+                      ? result
+                      : JSON.stringify(result);
+                } catch (e: any) {
+                  if (e.name === 'AbortError') break;
+                  resultStr = `Error: ${e.message}`;
+                }
+              }
+              const toolMsg: ChatMessage = {
+                id: 'msg_tool_' + crypto.randomUUID(),
+                role: 'tool',
+                content: resultStr,
+                tool_call_id: tc.id,
+              };
+              core.history.push(toolMsg);
+              core.saveChatState();
+              setHistory([...core.history]);
+            }
+            if (!abortControllerRef.current?.signal.aborted) {
+              await doStream({
+                id: 'msg_' + Date.now(),
+                role: 'assistant',
+                content: '',
+              });
+            } else {
+              setIsSending(false);
+            }
+          } else {
+            setIsSending(false);
+          }
+          abortControllerRef.current = null;
+        }
+      };
+      await doStream({
         id: 'msg_' + Date.now(),
         role: 'assistant',
         content: '',
-      };
-      await doStream(initialAssistantMsg);
-    });
+      });
+    }
+  };
 
   return (
     <PageLayout>
@@ -556,6 +798,9 @@ export const App: React.FC = () => {
               msg={msg}
               core={core}
               onUpdate={triggerUpdate}
+              disabled={isSending}
+              onReanswer={handleReanswer}
+              onRegenerate={handleRegenerate}
             />
           ))}
           {streamingMsg && (
@@ -564,6 +809,9 @@ export const App: React.FC = () => {
               core={core}
               onUpdate={triggerUpdate}
               isStreaming={true}
+              disabled={isSending}
+              onReanswer={handleReanswer}
+              onRegenerate={handleRegenerate}
             />
           )}
         </div>
@@ -580,6 +828,15 @@ export const App: React.FC = () => {
           <Button onClick={handleSend} disabled={isSending} id="send-btn">
             Send
           </Button>
+          {isSending && (
+            <Button
+              variant="danger"
+              onClick={() => abortControllerRef.current?.abort()}
+              id="cancel-btn"
+            >
+              Cancel
+            </Button>
+          )}
           <span
             id="chat-status"
             className="status"

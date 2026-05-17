@@ -29,6 +29,11 @@ test('Repo Chat Verification', async ({ page }) => {
     'Repository cloned. Approximately',
   );
 
+  let streamPromiseResolve: () => void;
+  const streamPromise = new Promise<void>((resolve) => {
+    streamPromiseResolve = resolve;
+  });
+
   // Test basic streaming behavior without tools
   await page.route(
     'https://openrouter.ai/api/v1/chat/completions',
@@ -37,6 +42,7 @@ test('Repo Chat Verification', async ({ page }) => {
 
 data: [DONE]
 `;
+      await streamPromise;
       await route.fulfill({
         status: 200,
         contentType: 'text/event-stream',
@@ -47,6 +53,11 @@ data: [DONE]
 
   await page.fill('#chat-input', 'Test intention');
   await page.click('#send-btn');
+
+  // Verify cancel button appears
+  await expect(page.locator('#cancel-btn')).toBeVisible();
+
+  streamPromiseResolve!();
 
   // Verify UI continues and shows assistant response
   await expect(

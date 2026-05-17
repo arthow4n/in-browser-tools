@@ -264,6 +264,8 @@ export const App: React.FC = () => {
     setDisabledTools(new Set(core.disabledTools));
   };
 
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   const triggerUpdate = () => {
     setHistory([...core.history]);
   };
@@ -273,10 +275,13 @@ export const App: React.FC = () => {
     setChatStatus({ text: '', isError: false });
 
     const doStream = async (currentAssistantMsg: ChatMessage) => {
+      abortControllerRef.current = new AbortController();
       setStreamingMsg(currentAssistantMsg);
 
       try {
-        const generator = core.streamChatCompletionWithTools([]);
+        const generator = core.streamChatCompletionWithTools([], {
+          abortSignal: abortControllerRef.current.signal,
+        });
         for await (const chunk of generator) {
           if (chunk.type === 'text' && chunk.text) {
             currentAssistantMsg.content += chunk.text;
@@ -296,9 +301,11 @@ export const App: React.FC = () => {
           setStreamingMsg({ ...currentAssistantMsg }); // Force re-render
         }
       } catch (e: any) {
-        setChatStatus({ text: `Chat Error: ${e.message}`, isError: true });
-        currentAssistantMsg.content += `\n[Error: ${e.message}]`;
-        setStreamingMsg({ ...currentAssistantMsg });
+        if (e.name !== 'AbortError') {
+          setChatStatus({ text: `Chat Error: ${e.message}`, isError: true });
+          currentAssistantMsg.content += `\n[Error: ${e.message}]`;
+          setStreamingMsg({ ...currentAssistantMsg });
+        }
       } finally {
         setStreamingMsg(null);
         if (
@@ -313,7 +320,8 @@ export const App: React.FC = () => {
 
         if (
           currentAssistantMsg.tool_calls &&
-          currentAssistantMsg.tool_calls.length > 0
+          currentAssistantMsg.tool_calls.length > 0 &&
+          !abortControllerRef.current?.signal.aborted
         ) {
           for (const tc of currentAssistantMsg.tool_calls) {
             const tool = core.tools.find((t) => t.name === tc.function.name);
@@ -323,10 +331,16 @@ export const App: React.FC = () => {
             } else {
               try {
                 const args = JSON.parse(tc.function.arguments);
-                const result = await tool.execute(args, { toolCallId: tc.id });
+                const result = await tool.execute(args, {
+                  toolCallId: tc.id,
+                  abortSignal: abortControllerRef.current?.signal,
+                });
                 resultStr =
                   typeof result === 'string' ? result : JSON.stringify(result);
               } catch (e: any) {
+                if (e.name === 'AbortError') {
+                  break;
+                }
                 resultStr = `Error executing tool: ${e.message}`;
               }
             }
@@ -342,15 +356,20 @@ export const App: React.FC = () => {
             setHistory([...core.history]);
           }
 
-          const nextAssistantMsg: ChatMessage = {
-            id: (Date.now() + 2).toString(),
-            role: 'assistant',
-            content: '',
-          };
-          await doStream(nextAssistantMsg);
+          if (!abortControllerRef.current?.signal.aborted) {
+            const nextAssistantMsg: ChatMessage = {
+              id: (Date.now() + 2).toString(),
+              role: 'assistant',
+              content: '',
+            };
+            await doStream(nextAssistantMsg);
+          } else {
+            setIsSending(false);
+          }
         } else {
           setIsSending(false);
         }
+        abortControllerRef.current = null;
       }
     };
 
@@ -360,6 +379,22 @@ export const App: React.FC = () => {
       content: '',
     };
     await doStream(initialMsg);
+  };
+
+  const handleReanswer = async (toolCallId: string) => {
+    const msgIdx = core.history.findIndex(
+      (m: any) =>
+        m.role === 'assistant' &&
+        m.tool_calls &&
+        m.tool_calls.some((tc: any) => tc.id === toolCallId),
+    );
+    if (msgIdx !== -1) {
+      const assistantMsg = core.history[msgIdx];
+      core.history = core.history.slice(0, msgIdx);
+      core.saveChatState();
+      setHistory([...core.history]);
+      await triggerGeneration(assistantMsg);
+    }
   };
 
   const handleRegenerate = async (msgId: string) => {
@@ -685,6 +720,8 @@ export const App: React.FC = () => {
               msg={msg}
               core={core}
               onUpdate={triggerUpdate}
+              disabled={isSending}
+              onReanswer={handleReanswer}
             />
           ))}
           {streamingMsg && (
@@ -694,6 +731,8 @@ export const App: React.FC = () => {
               core={core}
               onUpdate={triggerUpdate}
               isStreaming={true}
+              disabled={isSending}
+              onReanswer={handleReanswer}
             />
           )}
         </div>
@@ -710,6 +749,15 @@ export const App: React.FC = () => {
           <Button onClick={handleSend} disabled={isSending} id="send-btn">
             Send
           </Button>
+          {isSending && (
+            <Button
+              variant="danger"
+              onClick={() => abortControllerRef.current?.abort()}
+              id="cancel-btn"
+            >
+              Cancel
+            </Button>
+          )}
           <select
             id="insert-role-select"
             value={insertRole}

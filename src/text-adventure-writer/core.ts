@@ -58,7 +58,7 @@ export class TextAdventureCore extends ChatCore {
         properties: {},
         required: [],
       },
-      execute: () => {
+      execute: (_args, _context) => {
         return { success: true };
       },
     });
@@ -79,7 +79,7 @@ export class TextAdventureCore extends ChatCore {
         },
         required: ['suggestions'],
       },
-      execute: () => {
+      execute: (_args, _context) => {
         return { success: true };
       },
     });
@@ -222,6 +222,7 @@ Your responses MUST be substantial, detailed progressions (at least 3-4 paragrap
 
   public async *generateNextAction(
     guidance: string,
+    options?: { abortSignal?: AbortSignal },
   ): AsyncGenerator<string, void, unknown> {
     const plainTextHistory: ChatMessage[] = this.history
       .map((msg) => {
@@ -292,7 +293,7 @@ ${this.outputLanguage ? `[OOC - Output Language]: You must output the action/dia
     this.toolsEnabled = false;
 
     try {
-      yield* this.streamChatCompletion(messages);
+      yield* this.streamChatCompletion(messages, options);
     } finally {
       this.toolsEnabled = originalToolsEnabled;
     }
@@ -300,6 +301,7 @@ ${this.outputLanguage ? `[OOC - Output Language]: You must output the action/dia
 
   override async *streamChatCompletion(
     newMessages: ChatMessage[],
+    options?: { abortSignal?: AbortSignal },
   ): AsyncGenerator<string, void, unknown> {
     const injectedMessages = [...newMessages];
     if (this.characterDescription) {
@@ -316,11 +318,12 @@ ${this.outputLanguage ? `[OOC - Output Language]: You must output the action/dia
         content: `[OOC - Output Language]: You must use the following language for all your outputs, responses, narrations, and character dialogues: ${this.outputLanguage}. Note: "the user" here refers to the human playing the game, not your "user" role in this chat thread.`,
       });
     }
-    yield* super.streamChatCompletion(injectedMessages);
+    yield* super.streamChatCompletion(injectedMessages, options);
   }
 
   override async *streamChatCompletionWithTools(
     newMessages: ChatMessage[],
+    options?: { abortSignal?: AbortSignal },
   ): AsyncGenerator<StreamChunk, void, unknown> {
     const injectedMessages = [...newMessages];
     if (this.characterDescription) {
@@ -337,11 +340,12 @@ ${this.outputLanguage ? `[OOC - Output Language]: You must output the action/dia
         content: `[OOC - Output Language]: You must use the following language for all your outputs, responses, narrations, and character dialogues: ${this.outputLanguage}. Note: "the user" here refers to the human playing the game, not your "user" role in this chat thread.`,
       });
     }
-    yield* super.streamChatCompletionWithTools(injectedMessages);
+    yield* super.streamChatCompletionWithTools(injectedMessages, options);
   }
 
   public async *generateOOCResponse(
     question: string,
+    options?: { abortSignal?: AbortSignal },
   ): AsyncGenerator<string, void, unknown> {
     const plainTextHistory: ChatMessage[] = this.history
       .map((msg) => {
@@ -402,16 +406,19 @@ ${this.outputLanguage ? `[OOC - Output Language]: You must output your answer in
     this.toolsEnabled = false;
 
     try {
-      yield* this.streamChatCompletion(messages);
+      yield* this.streamChatCompletion(messages, options);
     } finally {
       this.toolsEnabled = originalToolsEnabled;
     }
   }
 
-  public async *generateCharacter(params: {
-    scenarioRequest: string;
-    guidance: string;
-  }): AsyncGenerator<StreamChunk, void, unknown> {
+  public async *generateCharacter(
+    params: {
+      scenarioRequest: string;
+      guidance: string;
+    },
+    options?: { abortSignal?: AbortSignal },
+  ): AsyncGenerator<StreamChunk, void, unknown> {
     const messages: ChatMessage[] = [
       {
         id: 'sys-char-gen',
@@ -446,12 +453,13 @@ ${this.outputLanguage ? `[OOC - Output Language]: You must use the following lan
       },
     };
 
-    yield* this.streamCompletionWithTools(messages, [characterTool]);
+    yield* this.streamCompletionWithTools(messages, [characterTool], options);
   }
 
   public async *improveScenarioRequest(
     scenario: string,
     guidance: string,
+    options?: { abortSignal?: AbortSignal },
   ): AsyncGenerator<StreamChunk, void, unknown> {
     const messages: ChatMessage[] = [
       {
@@ -483,14 +491,17 @@ ${this.outputLanguage ? `[OOC - Output Language]: You must use the following lan
       },
     };
 
-    yield* this.streamCompletionWithTools(messages, [improveTool]);
+    yield* this.streamCompletionWithTools(messages, [improveTool], options);
   }
 
-  public async *generateScenarioSuggestions(params: {
-    currentScenario: string;
-    guidance: string;
-    previousSuggestions: string[];
-  }): AsyncGenerator<StreamChunk, void, unknown> {
+  public async *generateScenarioSuggestions(
+    params: {
+      currentScenario: string;
+      guidance: string;
+      previousSuggestions: string[];
+    },
+    options?: { abortSignal?: AbortSignal },
+  ): AsyncGenerator<StreamChunk, void, unknown> {
     const originalHistory = this.history;
     const originalSystemPrompt = this.systemPrompt;
 
@@ -553,7 +564,7 @@ ${this.outputLanguage ? `[OOC - Output Language]: You must use the following lan
         },
       ];
 
-      yield* this.streamCompletionWithTools(messages, [suggestTool]);
+      yield* this.streamCompletionWithTools(messages, [suggestTool], options);
     } finally {
       this.history = originalHistory;
       this.systemPrompt = originalSystemPrompt;

@@ -349,3 +349,25 @@ section {
   padding-left: 10px;
   color: #666;
 }
+
+@keyframes streaming-pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.streaming-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 1em;
+  background-color: currentColor;
+  animation: streaming-pulse 1s step-end infinite;
+  vertical-align: text-bottom;
+  margin-left: 4px;
+}
