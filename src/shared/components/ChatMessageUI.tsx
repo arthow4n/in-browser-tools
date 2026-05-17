@@ -32,6 +32,27 @@ export const ChatMessageUI: React.FC<ChatMessageUIProps> = ({
   let displayContent = msg.content;
   const renderMarkdown = core?.providerPrefs?.renderMarkdown ?? true;
 
+  // Determine if this is a tool result that should be hidden
+  let hideDetails = false;
+  let toolCallName = 'Tool Result';
+  if (msg.role === 'tool' && core?.history && msg.tool_call_id) {
+    const originMsg = core.history.find((m: any) =>
+      m.tool_calls?.some((tc: any) => tc.id === msg.tool_call_id)
+    );
+    if (originMsg) {
+      const tc = originMsg.tool_calls.find((t: any) => t.id === msg.tool_call_id);
+      if (tc) {
+        toolCallName = `Tool Result: ${tc.function.name}`;
+        try {
+          const args = JSON.parse(tc.function.arguments);
+          hideDetails = args.hide_details === true;
+        } catch (e) {
+          // Ignore
+        }
+      }
+    }
+  }
+
   const handleEdit = () => {
     if (isEditing) {
       msg.content = editContent;
@@ -123,6 +144,25 @@ export const ChatMessageUI: React.FC<ChatMessageUIProps> = ({
           value={editContent}
           onChange={(e) => setEditContent(e.target.value)}
         />
+      ) : hideDetails ? (
+        <details style={{
+          marginTop: '10px',
+          padding: '5px',
+          border: '1px solid #ccc',
+          borderRadius: '4px',
+          background: '#f9f9f9',
+        }}>
+          <summary style={{ cursor: 'pointer', fontWeight: 'bold' }}>{toolCallName}</summary>
+          <div style={{ marginTop: '10px' }}>
+            {renderMarkdown ? (
+              <div className="content markdown-body">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayContent}</ReactMarkdown>
+              </div>
+            ) : (
+              <div className="content" style={{ whiteSpace: 'pre-wrap' }}>{displayContent}</div>
+            )}
+          </div>
+        </details>
       ) : renderMarkdown ? (
         <div className="content markdown-body">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
