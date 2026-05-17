@@ -285,6 +285,9 @@ export const App: React.FC = () => {
         for await (const chunk of generator) {
           if (chunk.type === 'text' && chunk.text) {
             currentAssistantMsg.content += chunk.text;
+          } else if (chunk.type === 'reasoning' && chunk.reasoning) {
+            currentAssistantMsg.reasoning =
+              (currentAssistantMsg.reasoning || '') + chunk.reasoning;
           } else if (chunk.type === 'tool_call' && chunk.toolCall) {
             if (!currentAssistantMsg.tool_calls) {
               currentAssistantMsg.tool_calls = [];
