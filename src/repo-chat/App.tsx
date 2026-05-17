@@ -39,8 +39,12 @@ export const App: React.FC = () => {
   const [isSending, setIsSending] = useState<boolean>(false);
   const [streamingMsg, setStreamingMsg] = useState<ChatMessage | null>(null);
 
-  const [repoUrl, setRepoUrl] = useState<string>('https://github.com/arthow4n/in-browser-tools.git');
-  const [clonedWordCount, setClonedWordCount] = useState<number>(core.clonedWordCount);
+  const [repoUrl, setRepoUrl] = useState<string>(
+    'https://github.com/arthow4n/in-browser-tools.git',
+  );
+  const [clonedWordCount, setClonedWordCount] = useState<number>(
+    core.clonedWordCount,
+  );
 
   // Sync core state to local React state occasionally
   const triggerUpdate = () => {
@@ -192,7 +196,11 @@ export const App: React.FC = () => {
   };
 
   const handleDeletePrompt = () => {
-    if (!selectedPromptId || BUILT_IN_PROMPTS.find(p => p.id === selectedPromptId)) return;
+    if (
+      !selectedPromptId ||
+      BUILT_IN_PROMPTS.find((p) => p.id === selectedPromptId)
+    )
+      return;
     if (confirm('Are you sure you want to delete this saved prompt?')) {
       const newPrompts = savedPrompts.filter((p) => p.id !== selectedPromptId);
       setSavedPrompts(newPrompts);
@@ -203,23 +211,33 @@ export const App: React.FC = () => {
     }
   };
 
-  const { runAction, isLoading: isCloning, statusText: cloneStatusText, isError: cloneIsError } = useAsyncAction();
-  const cloneAction = () => runAction('Cloning...', async () => {
-    if (!repoUrl) throw new Error('Please enter a repository URL');
-    // Using a manual status callback directly for fine-grained updates is tricky with useAsyncAction,
-    // so we'll just let cloneRepo run, it might not update the UI string during run but will finish.
-    // We can rewrite to have cloneRepo use a callback that sets state.
-    await core.cloneRepo(repoUrl, (msg) => {
-       // Ideally we'd set status here but it's hard to hook into useAsyncAction midway.
-       // Let's just run it.
-    });
-    await core.seedChatHistory();
-    core.saveChatState();
-    setHistory([...core.history]);
-    setSystemPrompt(core.systemPrompt);
-    setClonedWordCount(core.clonedWordCount);
-    return 'Cloned and seeded successfully.';
-  }, 'Cloned and seeded successfully.');
+  const {
+    runAction,
+    isLoading: isCloning,
+    statusText: cloneStatusText,
+    isError: cloneIsError,
+  } = useAsyncAction();
+  const cloneAction = () =>
+    runAction(
+      'Cloning...',
+      async () => {
+        if (!repoUrl) throw new Error('Please enter a repository URL');
+        // Using a manual status callback directly for fine-grained updates is tricky with useAsyncAction,
+        // so we'll just let cloneRepo run, it might not update the UI string during run but will finish.
+        // We can rewrite to have cloneRepo use a callback that sets state.
+        await core.cloneRepo(repoUrl, (msg) => {
+          // Ideally we'd set status here but it's hard to hook into useAsyncAction midway.
+          // Let's just run it.
+        });
+        await core.seedChatHistory();
+        core.saveChatState();
+        setHistory([...core.history]);
+        setSystemPrompt(core.systemPrompt);
+        setClonedWordCount(core.clonedWordCount);
+        return 'Cloned and seeded successfully.';
+      },
+      'Cloned and seeded successfully.',
+    );
 
   const handleRestartChat = () => {
     core.restartChat();
@@ -246,108 +264,113 @@ export const App: React.FC = () => {
     }
   };
 
+  const {
+    runAction: runChatAction,
+    isLoading: isChatLoading,
+    statusText: chatStatusText,
+    isError: chatIsError,
+  } = useAsyncAction();
+  const handleSend = () =>
+    runChatAction('Generating...', async () => {
+      if (!userInput.trim()) return;
 
-  const { runAction: runChatAction, isLoading: isChatLoading, statusText: chatStatusText, isError: chatIsError } = useAsyncAction();
-  const handleSend = () => runChatAction('Generating...', async () => {
-    if (!userInput.trim()) return;
+      setIsSending(true);
 
-    setIsSending(true);
+      const userMsg: ChatMessage = {
+        id: 'msg_' + Date.now(),
+        role: 'user',
+        content: userInput.trim(),
+      };
 
-    const userMsg: ChatMessage = {
-      id: 'msg_' + Date.now(),
-      role: 'user',
-      content: userInput.trim(),
-    };
-
-    core.history.push(userMsg);
-    core.saveChatState();
-    setUserInput('');
-    setHistory([...core.history]);
-
-    const doStream = async (assistantMsg: ChatMessage) => {
-      setStreamingMsg(assistantMsg);
-
-      const generator = core.streamChatCompletionWithTools([]);
-
-      for await (const chunk of generator) {
-        if (chunk.type === 'text' && chunk.text) {
-          assistantMsg.content += chunk.text;
-        } else if (chunk.type === 'tool_call' && chunk.toolCall) {
-          if (!assistantMsg.tool_calls) {
-            assistantMsg.tool_calls = [];
-          }
-          assistantMsg.tool_calls.push({
-            id: chunk.toolCall.id,
-            type: 'function',
-            function: {
-              name: chunk.toolCall.name,
-              arguments: chunk.toolCall.arguments,
-            },
-          });
-        }
-        setStreamingMsg({ ...assistantMsg }); // force re-render
-      }
-
-      setStreamingMsg(null);
-
-      if (
-        assistantMsg.content ||
-        (assistantMsg.tool_calls && assistantMsg.tool_calls.length > 0)
-      ) {
-        core.history.push(assistantMsg);
-      }
+      core.history.push(userMsg);
       core.saveChatState();
+      setUserInput('');
       setHistory([...core.history]);
 
-      if (
-        assistantMsg.tool_calls &&
-        assistantMsg.tool_calls.length > 0
-      ) {
-        for (const tc of assistantMsg.tool_calls) {
-          const tool = core.tools.find((t) => t.name === tc.function.name);
-          let resultStr = '';
-          if (!tool) {
-            resultStr = `Error: Tool ${tc.function.name} not found.`;
-          } else {
-            try {
-              const args = JSON.parse(tc.function.arguments);
-              const result = await tool.execute(args, { toolCallId: tc.id, threadId: core.storagePrefix });
-              resultStr =
-                typeof result === 'string' ? result : JSON.stringify(result);
-            } catch (e: any) {
-              resultStr = `Error executing tool: ${e.message}`;
-            }
-          }
+      const doStream = async (assistantMsg: ChatMessage) => {
+        setStreamingMsg(assistantMsg);
 
-          const toolMsg: ChatMessage = {
-            id: 'msg_tool_' + crypto.randomUUID(),
-            role: 'tool',
-            content: resultStr,
-            tool_call_id: tc.id,
-          };
-          core.history.push(toolMsg);
-          core.saveChatState();
-          setHistory([...core.history]);
+        const generator = core.streamChatCompletionWithTools([]);
+
+        for await (const chunk of generator) {
+          if (chunk.type === 'text' && chunk.text) {
+            assistantMsg.content += chunk.text;
+          } else if (chunk.type === 'tool_call' && chunk.toolCall) {
+            if (!assistantMsg.tool_calls) {
+              assistantMsg.tool_calls = [];
+            }
+            assistantMsg.tool_calls.push({
+              id: chunk.toolCall.id,
+              type: 'function',
+              function: {
+                name: chunk.toolCall.name,
+                arguments: chunk.toolCall.arguments,
+              },
+            });
+          }
+          setStreamingMsg({ ...assistantMsg }); // force re-render
         }
 
-        const nextAssistantMsg: ChatMessage = {
-          id: 'msg_' + Date.now(),
-          role: 'assistant',
-          content: '',
-        };
-        await doStream(nextAssistantMsg);
-      } else {
-        setIsSending(false);
-      }
-    };
+        setStreamingMsg(null);
 
-    const initialAssistantMsg: ChatMessage = {
-      id: 'msg_' + Date.now(),
-      role: 'assistant',
-      content: '',
-    };
-    await doStream(initialAssistantMsg);
-  });
+        if (
+          assistantMsg.content ||
+          (assistantMsg.tool_calls && assistantMsg.tool_calls.length > 0)
+        ) {
+          core.history.push(assistantMsg);
+        }
+        core.saveChatState();
+        setHistory([...core.history]);
+
+        if (assistantMsg.tool_calls && assistantMsg.tool_calls.length > 0) {
+          for (const tc of assistantMsg.tool_calls) {
+            const tool = core.tools.find((t) => t.name === tc.function.name);
+            let resultStr = '';
+            if (!tool) {
+              resultStr = `Error: Tool ${tc.function.name} not found.`;
+            } else {
+              try {
+                const args = JSON.parse(tc.function.arguments);
+                const result = await tool.execute(args, {
+                  toolCallId: tc.id,
+                  threadId: core.storagePrefix,
+                });
+                resultStr =
+                  typeof result === 'string' ? result : JSON.stringify(result);
+              } catch (e: any) {
+                resultStr = `Error executing tool: ${e.message}`;
+              }
+            }
+
+            const toolMsg: ChatMessage = {
+              id: 'msg_tool_' + crypto.randomUUID(),
+              role: 'tool',
+              content: resultStr,
+              tool_call_id: tc.id,
+            };
+            core.history.push(toolMsg);
+            core.saveChatState();
+            setHistory([...core.history]);
+          }
+
+          const nextAssistantMsg: ChatMessage = {
+            id: 'msg_' + Date.now(),
+            role: 'assistant',
+            content: '',
+          };
+          await doStream(nextAssistantMsg);
+        } else {
+          setIsSending(false);
+        }
+      };
+
+      const initialAssistantMsg: ChatMessage = {
+        id: 'msg_' + Date.now(),
+        role: 'assistant',
+        content: '',
+      };
+      await doStream(initialAssistantMsg);
+    });
 
   return (
     <PageLayout>
@@ -360,28 +383,32 @@ export const App: React.FC = () => {
 
       <Panel title="Repository">
         <Input
-            label="GitHub Repo URL:"
-            type="text"
-            id="repo-url"
-            placeholder="https://github.com/user/repo"
-            value={repoUrl}
-            onChange={(e) => setRepoUrl(e.target.value)}
+          label="GitHub Repo URL:"
+          type="text"
+          id="repo-url"
+          placeholder="https://github.com/user/repo"
+          value={repoUrl}
+          onChange={(e) => setRepoUrl(e.target.value)}
         />
         <div className="flex-row" style={{ marginTop: '10px' }}>
           <Button onClick={cloneAction} loading={isCloning} id="clone-btn">
             Clone Repository
           </Button>
           <span
-              id="clone-status"
-              className="status"
-              style={{ color: cloneIsError ? 'red' : 'green' }}
+            id="clone-status"
+            className="status"
+            style={{ color: cloneIsError ? 'red' : 'green' }}
           >
-              {cloneStatusText}
+            {cloneStatusText}
           </span>
         </div>
         <div style={{ marginTop: '10px', fontSize: '0.9em', color: '#555' }}>
           {clonedWordCount > 0 ? (
-            <span>Repository cloned. Approximately <strong>{clonedWordCount}</strong> words are currently appended to the system prompt.</span>
+            <span>
+              Repository cloned. Approximately{' '}
+              <strong>{clonedWordCount}</strong> words are currently appended to
+              the system prompt.
+            </span>
           ) : (
             <span>Nothing is cloned yet.</span>
           )}
@@ -415,8 +442,15 @@ export const App: React.FC = () => {
             )}
           </select>
           {selectedPromptId && hasChanges && (
-            <span style={{ color: '#d97706', marginLeft: '10px', fontWeight: 'bold' }}>
-              ⚠️ Unsaved changes (Click Save to persist changes to this prompt slot)
+            <span
+              style={{
+                color: '#d97706',
+                marginLeft: '10px',
+                fontWeight: 'bold',
+              }}
+            >
+              ⚠️ Unsaved changes (Click Save to persist changes to this prompt
+              slot)
             </span>
           )}
         </div>
@@ -428,7 +462,10 @@ export const App: React.FC = () => {
           rows={4}
         />
 
-        <div className="flex-row" style={{ marginTop: '10px', marginBottom: '10px' }}>
+        <div
+          className="flex-row"
+          style={{ marginTop: '10px', marginBottom: '10px' }}
+        >
           <Input
             type="checkbox"
             id="enable-tools-checkbox"
@@ -470,34 +507,36 @@ export const App: React.FC = () => {
         )}
 
         <div className="flex-row" style={{ marginTop: '10px' }}>
-          {selectedPromptId && !BUILT_IN_PROMPTS.find(p => p.id === selectedPromptId) && (
-            <Button onClick={handleUpdatePrompt} id="update-prompt-btn">
-              Save
-            </Button>
-          )}
+          {selectedPromptId &&
+            !BUILT_IN_PROMPTS.find((p) => p.id === selectedPromptId) && (
+              <Button onClick={handleUpdatePrompt} id="update-prompt-btn">
+                Save
+              </Button>
+            )}
           <Button onClick={handleSavePrompt} id="save-prompt-btn">
             Save As New...
           </Button>
-          {selectedPromptId && !BUILT_IN_PROMPTS.find(p => p.id === selectedPromptId) && (
-            <Button
-              variant="danger"
-              onClick={handleDeletePrompt}
-              id="delete-prompt-btn"
-            >
-              Delete
-            </Button>
-          )}
+          {selectedPromptId &&
+            !BUILT_IN_PROMPTS.find((p) => p.id === selectedPromptId) && (
+              <Button
+                variant="danger"
+                onClick={handleDeletePrompt}
+                id="delete-prompt-btn"
+              >
+                Delete
+              </Button>
+            )}
         </div>
       </Panel>
 
       <Panel title="Chat History">
         <div className="flex-row mb-2">
-            <Button id="restart-chat-btn" onClick={handleRestartChat}>
-              Restart Chat
-            </Button>
-            <Button id="clear-all-btn" variant="danger" onClick={handleClearAll}>
-              Clear All
-            </Button>
+          <Button id="restart-chat-btn" onClick={handleRestartChat}>
+            Restart Chat
+          </Button>
+          <Button id="clear-all-btn" variant="danger" onClick={handleClearAll}>
+            Clear All
+          </Button>
         </div>
         <div
           id="history-container"

@@ -40,10 +40,12 @@ export const ChatMessageUI: React.FC<ChatMessageUIProps> = ({
   let toolCallName = 'Tool Result';
   if (msg.role === 'tool' && core?.history && msg.tool_call_id) {
     const originMsg = core.history.find((m: any) =>
-      m.tool_calls?.some((tc: any) => tc.id === msg.tool_call_id)
+      m.tool_calls?.some((tc: any) => tc.id === msg.tool_call_id),
     );
     if (originMsg) {
-      const tc = originMsg.tool_calls.find((t: any) => t.id === msg.tool_call_id);
+      const tc = originMsg.tool_calls.find(
+        (t: any) => t.id === msg.tool_call_id,
+      );
       if (tc) {
         toolCallName = `Tool Result: ${tc.function.name}`;
         try {
@@ -148,21 +150,29 @@ export const ChatMessageUI: React.FC<ChatMessageUIProps> = ({
           onChange={(e) => setEditContent(e.target.value)}
         />
       ) : hideDetails ? (
-        <details style={{
-          marginTop: '10px',
-          padding: '5px',
-          border: '1px solid #ccc',
-          borderRadius: '4px',
-          background: '#f9f9f9',
-        }}>
-          <summary style={{ cursor: 'pointer', fontWeight: 'bold' }}>{toolCallName}</summary>
+        <details
+          style={{
+            marginTop: '10px',
+            padding: '5px',
+            border: '1px solid #ccc',
+            borderRadius: '4px',
+            background: '#f9f9f9',
+          }}
+        >
+          <summary style={{ cursor: 'pointer', fontWeight: 'bold' }}>
+            {toolCallName}
+          </summary>
           <div style={{ marginTop: '10px' }}>
             {renderMarkdown ? (
               <div className="content markdown-body">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayContent}</ReactMarkdown>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {displayContent}
+                </ReactMarkdown>
               </div>
             ) : (
-              <div className="content" style={{ whiteSpace: 'pre-wrap' }}>{displayContent}</div>
+              <div className="content" style={{ whiteSpace: 'pre-wrap' }}>
+                {displayContent}
+              </div>
             )}
           </div>
         </details>
@@ -186,18 +196,37 @@ export const ChatMessageUI: React.FC<ChatMessageUIProps> = ({
         </div>
       )}
 
-      <div className="message-controls" style={{ marginTop: '10px', display: 'flex', gap: '5px' }}>
+      <div
+        className="message-controls"
+        style={{ marginTop: '10px', display: 'flex', gap: '5px' }}
+      >
         <button
           onClick={() => setShowImprove(!showImprove)}
           title="Improve"
-          style={{ background: 'transparent', padding: '4px', color: 'inherit', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+          style={{
+            background: 'transparent',
+            padding: '4px',
+            color: 'inherit',
+            border: 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+          }}
         >
           <Wand2 size={16} />
         </button>
         <button
           onClick={handleEdit}
           title={isEditing ? 'Save' : 'Edit'}
-          style={{ background: 'transparent', padding: '4px', color: 'inherit', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+          style={{
+            background: 'transparent',
+            padding: '4px',
+            color: 'inherit',
+            border: 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+          }}
         >
           <Edit2 size={16} />
         </button>
@@ -205,7 +234,15 @@ export const ChatMessageUI: React.FC<ChatMessageUIProps> = ({
           <button
             onClick={() => onRegenerate(msg.id!)}
             title="Regenerate"
-            style={{ background: 'transparent', padding: '4px', color: 'inherit', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+            style={{
+              background: 'transparent',
+              padding: '4px',
+              color: 'inherit',
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+            }}
           >
             <RefreshCw size={16} />
           </button>
@@ -213,14 +250,30 @@ export const ChatMessageUI: React.FC<ChatMessageUIProps> = ({
         <button
           onClick={handleDelete}
           title="Delete"
-          style={{ background: 'transparent', padding: '4px', color: 'inherit', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+          style={{
+            background: 'transparent',
+            padding: '4px',
+            color: 'inherit',
+            border: 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+          }}
         >
           <Trash2 size={16} />
         </button>
         <button
           onClick={handleDeleteBelow}
           title="Delete Below"
-          style={{ background: 'transparent', padding: '4px', color: 'inherit', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+          style={{
+            background: 'transparent',
+            padding: '4px',
+            color: 'inherit',
+            border: 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+          }}
         >
           <ArrowDown size={16} />
         </button>

@@ -36,18 +36,22 @@ test.describe('LLM Chat Tool', () => {
     );
   });
 
-  test('should allow saving new prompt and updating existing saved prompt', async ({ page }) => {
+  test('should allow saving new prompt and updating existing saved prompt', async ({
+    page,
+  }) => {
     await page.goto('/llm-chat');
 
     // Make a change and save it as a new prompt
     await page.fill('#system-prompt', 'Prompt 1 content');
-    page.once('dialog', dialog => {
+    page.once('dialog', (dialog) => {
       dialog.accept('My First Prompt');
     });
     await page.click('#save-prompt-btn');
 
     // Wait for the prompt to be selected in the dropdown
-    await expect(page.locator('#saved-prompts-select')).toHaveValue(/^[0-9a-fA-F-]{36}$/);
+    await expect(page.locator('#saved-prompts-select')).toHaveValue(
+      /^[0-9a-fA-F-]{36}$/,
+    );
 
     // Check that "Save" button is now visible
     await expect(page.locator('#update-prompt-btn')).toBeVisible();
@@ -65,7 +69,9 @@ test.describe('LLM Chat Tool', () => {
     await page.locator('#saved-prompts-select').selectOption(promptId); // Select again
 
     // Verify the updated content was loaded
-    await expect(page.locator('#system-prompt')).toHaveValue('Updated prompt 1 content');
+    await expect(page.locator('#system-prompt')).toHaveValue(
+      'Updated prompt 1 content',
+    );
   });
 
   test('should allow fetching models from OpenRouter from settings', async ({
@@ -234,7 +240,9 @@ test.describe('LLM Chat Tool', () => {
     ).toHaveText('Response');
 
     // Currently we have 4 messages: User 1, Assistant 1, User 2, Assistant 2
-    await expect(history.locator('.message')).toHaveCount(4, { timeout: 10000 });
+    await expect(history.locator('.message')).toHaveCount(4, {
+      timeout: 10000,
+    });
 
     page.on('dialog', (dialog) => dialog.accept());
 
@@ -290,7 +298,9 @@ test.describe('LLM Chat Tool', () => {
     await expect(
       history.locator('.message.assistant .content').first(),
     ).toHaveText('Resp 1');
-    await expect(history.locator('.message')).toHaveCount(2, { timeout: 10000 });
+    await expect(history.locator('.message')).toHaveCount(2, {
+      timeout: 10000,
+    });
 
     // Ensure input is empty
     await page.fill('#user-input', '');
@@ -311,7 +321,9 @@ test.describe('LLM Chat Tool', () => {
     await expect(history.locator('.message').nth(2)).toHaveClass(/assistant/);
   });
 
-  test('should allow adding messages directly to history without triggering generation', async ({ page }) => {
+  test('should allow adding messages directly to history without triggering generation', async ({
+    page,
+  }) => {
     let callCount = 0;
     await page.route(
       'https://openrouter.ai/api/v1/chat/completions',
@@ -354,13 +366,19 @@ test.describe('LLM Chat Tool', () => {
 
     // Verify messages and types
     await expect(history.locator('.message').nth(0)).toHaveClass(/assistant/);
-    await expect(history.locator('.message .content').nth(0)).toHaveText('Prefilled assistant response');
+    await expect(history.locator('.message .content').nth(0)).toHaveText(
+      'Prefilled assistant response',
+    );
 
     await expect(history.locator('.message').nth(1)).toHaveClass(/system/);
-    await expect(history.locator('.message .content').nth(1)).toHaveText('Prefilled system response');
+    await expect(history.locator('.message .content').nth(1)).toHaveText(
+      'Prefilled system response',
+    );
 
     await expect(history.locator('.message').nth(2)).toHaveClass(/user/);
-    await expect(history.locator('.message .content').nth(2)).toHaveText('Prefilled user response');
+    await expect(history.locator('.message .content').nth(2)).toHaveText(
+      'Prefilled user response',
+    );
 
     // Verify no network call was made
     expect(callCount).toBe(0);
@@ -368,5 +386,4 @@ test.describe('LLM Chat Tool', () => {
     // Ensure input is cleared
     await expect(page.locator('#user-input')).toHaveValue('');
   });
-
 });

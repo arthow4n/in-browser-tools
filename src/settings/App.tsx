@@ -39,9 +39,9 @@ export const App: React.FC = () => {
   const [rateLimitWaitSeconds, setRateLimitWaitSeconds] = useState(
     core.providerPrefs.rateLimitWaitSeconds ?? 3,
   );
-  const [appendedPrompts, setAppendedPrompts] = useState(
-    [...core.appendedSystemPrompts],
-  );
+  const [appendedPrompts, setAppendedPrompts] = useState([
+    ...core.appendedSystemPrompts,
+  ]);
   const [availableModels, setAvailableModels] = useState<
     { id: string; name: string }[]
   >([]);

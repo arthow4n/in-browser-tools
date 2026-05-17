@@ -69,7 +69,9 @@ export const App: React.FC = () => {
           copiedPages.forEach((page) => newPdf.addPage(page));
 
           const pdfBytes = await newPdf.save();
-          const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+          const blob = new Blob([pdfBytes as unknown as BlobPart], {
+            type: 'application/pdf',
+          });
           const url = URL.createObjectURL(blob);
           const fileSizeFormatted = formatBytes(blob.size);
 

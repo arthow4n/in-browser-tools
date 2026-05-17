@@ -1,5 +1,10 @@
 import React, { useState } from 'react';
-import { PageLayout, Panel, TextArea, Input } from '../shared/components/index.js';
+import {
+  PageLayout,
+  Panel,
+  TextArea,
+  Input,
+} from '../shared/components/index.js';
 
 export const App: React.FC = () => {
   const [text, setText] = useState('');
@@ -108,13 +113,21 @@ export const App: React.FC = () => {
                   </span>
                   <span
                     className="char-upper"
-                    style={{ fontSize: '0.8em', color: '#0066cc', marginTop: '2px' }}
+                    style={{
+                      fontSize: '0.8em',
+                      color: '#0066cc',
+                      marginTop: '2px',
+                    }}
                   >
                     {upperChar}
                   </span>
                   <span
                     className="char-code"
-                    style={{ fontSize: '0.7em', color: '#888', marginTop: '2px' }}
+                    style={{
+                      fontSize: '0.7em',
+                      color: '#888',
+                      marginTop: '2px',
+                    }}
                   >
                     {hexCode}
                   </span>

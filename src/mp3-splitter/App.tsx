@@ -93,7 +93,9 @@ export const App: React.FC = () => {
 
         for (const fileName of outputFiles) {
           const data = await ffmpeg.readFile(fileName);
-          const blob = new Blob([data as Uint8Array], { type: 'audio/mpeg' });
+          const blob = new Blob([data as unknown as BlobPart], {
+            type: 'audio/mpeg',
+          });
           const url = URL.createObjectURL(blob);
 
           const partMatch = fileName.match(/output(\d{3})\.mp3/);

@@ -22,8 +22,19 @@ export const AskQuestionUI: React.FC<AskQuestionUIProps> = ({
 
   const [answers, setAnswers] = useState<any[]>(
     safeQuestions.map((q) => {
-      if (q.type === 'single_select') return { selected: null, freetext: '', refused: false, refuseReason: '' };
-      return { selected: [] as string[], freetext: '', refused: false, refuseReason: '' };
+      if (q.type === 'single_select')
+        return {
+          selected: null,
+          freetext: '',
+          refused: false,
+          refuseReason: '',
+        };
+      return {
+        selected: [] as string[],
+        freetext: '',
+        refused: false,
+        refuseReason: '',
+      };
     }),
   );
 
@@ -31,7 +42,10 @@ export const AskQuestionUI: React.FC<AskQuestionUIProps> = ({
 
   const handleSingleSelect = (questionIndex: number, option: string) => {
     const newAnswers = [...answers];
-    newAnswers[questionIndex] = { ...newAnswers[questionIndex], selected: option };
+    newAnswers[questionIndex] = {
+      ...newAnswers[questionIndex],
+      selected: option,
+    };
     setAnswers(newAnswers);
   };
 
@@ -54,13 +68,19 @@ export const AskQuestionUI: React.FC<AskQuestionUIProps> = ({
 
   const handleRefuseToggle = (questionIndex: number) => {
     const newAnswers = [...answers];
-    newAnswers[questionIndex] = { ...newAnswers[questionIndex], refused: !newAnswers[questionIndex].refused };
+    newAnswers[questionIndex] = {
+      ...newAnswers[questionIndex],
+      refused: !newAnswers[questionIndex].refused,
+    };
     setAnswers(newAnswers);
   };
 
   const handleRefuseReasonChange = (questionIndex: number, text: string) => {
     const newAnswers = [...answers];
-    newAnswers[questionIndex] = { ...newAnswers[questionIndex], refuseReason: text };
+    newAnswers[questionIndex] = {
+      ...newAnswers[questionIndex],
+      refuseReason: text,
+    };
     setAnswers(newAnswers);
   };
 
@@ -80,7 +100,10 @@ export const AskQuestionUI: React.FC<AskQuestionUIProps> = ({
 
   const handleFreetextChange = (questionIndex: number, text: string) => {
     const newAnswers = [...answers];
-    newAnswers[questionIndex] = { ...newAnswers[questionIndex], freetext: text };
+    newAnswers[questionIndex] = {
+      ...newAnswers[questionIndex],
+      freetext: text,
+    };
     setAnswers(newAnswers);
   };
 
@@ -116,7 +139,9 @@ export const AskQuestionUI: React.FC<AskQuestionUIProps> = ({
     <Panel title="Please answer the following questions:">
       {safeQuestions.map((q, i) => (
         <div key={i} style={{ marginBottom: '20px' }}>
-          <h4>{i + 1}. {q.text}</h4>
+          <h4>
+            {i + 1}. {q.text}
+          </h4>
 
           <div style={{ marginBottom: '10px' }}>
             <Button
@@ -139,43 +164,67 @@ export const AskQuestionUI: React.FC<AskQuestionUIProps> = ({
           ) : (
             <>
               {q.type === 'single_select' && Array.isArray(q.options) && (
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '10px' }}>
-              {q.options.map((opt) => (
-                <Button
-                  key={opt}
-                  variant={answers[i].selected === opt ? 'primary' : 'secondary'}
-                  onClick={() => handleSingleSelect(i, opt)}
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: '10px',
+                    flexWrap: 'wrap',
+                    marginBottom: '10px',
+                  }}
                 >
-                  {opt}
-                </Button>
-              ))}
-            </div>
-          )}
+                  {q.options.map((opt) => (
+                    <Button
+                      key={opt}
+                      variant={
+                        answers[i].selected === opt ? 'primary' : 'secondary'
+                      }
+                      onClick={() => handleSingleSelect(i, opt)}
+                    >
+                      {opt}
+                    </Button>
+                  ))}
+                </div>
+              )}
 
-          {q.type === 'multi_select' && Array.isArray(q.options) && (
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '10px' }}>
-              {q.options.map((opt) => (
-                <Button
-                  key={opt}
-                  variant={answers[i].selected.includes(opt) ? 'primary' : 'secondary'}
-                  onClick={() => handleMultiSelect(i, opt)}
+              {q.type === 'multi_select' && Array.isArray(q.options) && (
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: '10px',
+                    flexWrap: 'wrap',
+                    marginBottom: '10px',
+                  }}
                 >
-                  {opt}
-                </Button>
-              ))}
-            </div>
-          )}
+                  {q.options.map((opt) => (
+                    <Button
+                      key={opt}
+                      variant={
+                        answers[i].selected.includes(opt)
+                          ? 'primary'
+                          : 'secondary'
+                      }
+                      onClick={() => handleMultiSelect(i, opt)}
+                    >
+                      {opt}
+                    </Button>
+                  ))}
+                </div>
+              )}
 
-          {q.allow_freetext !== false && (
-            <input
-              type="text"
-              placeholder="Additional comments (freetext)"
-              value={answers[i].freetext}
-              onChange={(e) => handleFreetextChange(i, e.target.value)}
-              className="form-control"
-              style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
-            />
-          )}
+              {q.allow_freetext !== false && (
+                <input
+                  type="text"
+                  placeholder="Additional comments (freetext)"
+                  value={answers[i].freetext}
+                  onChange={(e) => handleFreetextChange(i, e.target.value)}
+                  className="form-control"
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              )}
             </>
           )}
         </div>

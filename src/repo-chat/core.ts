@@ -10,13 +10,11 @@ const DEFAULT_SYSTEM_PROMPT =
 function getTabSessionId(): string {
   let sessionId = sessionStorage.getItem('tab-session-id');
   if (!sessionId) {
-    sessionId =
-      crypto.randomUUID();
+    sessionId = crypto.randomUUID();
     sessionStorage.setItem('tab-session-id', sessionId);
   }
   return sessionId;
 }
-
 
 export const BUILT_IN_PROMPTS = [
   {
@@ -32,7 +30,8 @@ Output ONLY the final plan content. Do NOT invoke any implementation or edit too
   {
     id: 'repo-chat-quick',
     name: 'Quick chat',
-    content: 'You are a chat assistant that has access to a cloned repository. You can access information from the repo or answer questions grounded by the repo context.',
+    content:
+      'You are a chat assistant that has access to a cloned repository. You can access information from the repo or answer questions grounded by the repo context.',
     toolsEnabled: false,
     disabledTools: [],
   },
@@ -46,7 +45,10 @@ export class RepoChatCore extends ChatCore {
     super(`repo-chat-${getTabSessionId()}-`, 'repo-chat-');
     this.toolsEnabled = false; // Disable tools
     this.loadChatState(); // load states explicitly here as well to overwrite ChatCore defaults
-    if (!this.selectedPromptId || this.selectedPromptId === 'builtin-assistant') {
+    if (
+      !this.selectedPromptId ||
+      this.selectedPromptId === 'builtin-assistant'
+    ) {
       this.selectedPromptId = 'repo-chat-planner';
       this.systemPrompt = BUILT_IN_PROMPTS[0].content;
       this.toolsEnabled = true;
@@ -68,7 +70,6 @@ export class RepoChatCore extends ChatCore {
     vol.reset();
     this.saveChatState();
   }
-
 
   async *streamChatCompletion(newMessages: ChatMessage[]) {
     const originalPrompt = this.systemPrompt;

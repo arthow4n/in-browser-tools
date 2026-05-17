@@ -1,3 +1,6 @@
+/// <reference types="gapi" />
+/// <reference types="gapi.client.drive" />
+/// <reference types="google.accounts" />
 import React, { useState, useEffect } from 'react';
 import {
   PageLayout,
@@ -21,7 +24,7 @@ export const App: React.FC = () => {
 
   const [gapiLoaded, setGapiLoaded] = useState(false);
   const [gisLoaded, setGisLoaded] = useState(false);
-  const [tokenClient, setTokenClient] = useState<any>(null);
+  const [tokenClient, setTokenClient] = useState<unknown>(null);
 
   const { isLoading, statusText, isError, runAction } = useAsyncAction();
   const [customStatus, setCustomStatus] = useState<string>('');
@@ -37,8 +40,8 @@ export const App: React.FC = () => {
             });
             setGapiLoaded(true);
             setCustomStatus('GAPI client loaded.');
-          } catch (e: any) {
-            setCustomStatus(`Error loading GAPI: ${e.message}`);
+          } catch (e: unknown) {
+            setCustomStatus(`Error loading GAPI: ${(e as Error).message}`);
           }
         });
       }
@@ -75,8 +78,8 @@ export const App: React.FC = () => {
         setFileId(null);
         setCustomStatus('No existing file found. Ready to save a new one.');
       }
-    } catch (err: any) {
-      setCustomStatus(`Error finding file: ${err.message}`);
+    } catch (err: unknown) {
+      setCustomStatus(`Error finding file: ${(err as Error).message}`);
     }
   };
 
@@ -94,9 +97,10 @@ export const App: React.FC = () => {
     const client = google.accounts.oauth2.initTokenClient({
       client_id: clientId,
       scope: SCOPES,
-      callback: async (resp: any) => {
-        if (resp.error !== undefined) {
-          setCustomStatus(`Auth error: ${resp.error}`);
+      callback: async (resp: unknown) => {
+        const response = resp as { error?: string };
+        if (response.error !== undefined) {
+          setCustomStatus(`Auth error: ${response.error}`);
           return;
         }
         setCustomStatus('Authorized successfully.');

@@ -11,7 +11,9 @@ interface ToolCallMessageUIProps {
   };
 }
 
-export const ToolCallMessageUI: React.FC<ToolCallMessageUIProps> = ({ toolCall }) => {
+export const ToolCallMessageUI: React.FC<ToolCallMessageUIProps> = ({
+  toolCall,
+}) => {
   const [askQuestionData, setAskQuestionData] = useState<any>(null);
 
   useEffect(() => {
@@ -50,7 +52,11 @@ export const ToolCallMessageUI: React.FC<ToolCallMessageUIProps> = ({ toolCall }
         delete w.pendingAskQuestions[toolCall.id];
       }
       setAskQuestionData(null);
-      window.dispatchEvent(new CustomEvent('askQuestionUpdate', { detail: { toolCallId: toolCall.id } }));
+      window.dispatchEvent(
+        new CustomEvent('askQuestionUpdate', {
+          detail: { toolCallId: toolCall.id },
+        }),
+      );
     }
   };
 
@@ -66,7 +72,11 @@ export const ToolCallMessageUI: React.FC<ToolCallMessageUIProps> = ({ toolCall }
   const hideDetails = parsedArgs?.hide_details;
   // If it's a pending question, open it.
   // Else if it's the random tool and hide_details is strictly false, open it.
-  const isOpen = isPendingAskQuestion || (toolCall.function.name === 'random' && hideDetails === false) ? true : undefined;
+  const isOpen =
+    isPendingAskQuestion ||
+    (toolCall.function.name === 'random' && hideDetails === false)
+      ? true
+      : undefined;
 
   return (
     <details
@@ -82,7 +92,9 @@ export const ToolCallMessageUI: React.FC<ToolCallMessageUIProps> = ({ toolCall }
       <summary style={{ cursor: 'pointer', fontWeight: 'bold' }}>
         Tool Call: {toolCall.function.name}
       </summary>
-      <pre style={{ whiteSpace: 'pre-wrap', marginTop: '10px', fontSize: '0.9em' }}>
+      <pre
+        style={{ whiteSpace: 'pre-wrap', marginTop: '10px', fontSize: '0.9em' }}
+      >
         {toolCall.function.arguments}
       </pre>
       {isPendingAskQuestion && (

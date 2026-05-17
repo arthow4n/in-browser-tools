@@ -70,7 +70,13 @@ export const App: React.FC = () => {
   const [systemPrompt, setSystemPrompt] = useState(core.systemPrompt);
   const [history, setHistory] = useState<ChatMessage[]>([]);
   const [savedPrompts, setSavedPrompts] = useState<
-    { id: string; name: string; content: string; toolsEnabled?: boolean; disabledTools?: string[] }[]
+    {
+      id: string;
+      name: string;
+      content: string;
+      toolsEnabled?: boolean;
+      disabledTools?: string[];
+    }[]
   >([]);
   const [selectedPromptId, setSelectedPromptId] = useState<string>('');
   const [toolsEnabled, setToolsEnabled] = useState(core.toolsEnabled);
@@ -83,7 +89,9 @@ export const App: React.FC = () => {
   const [promptEvaluationFocus, setPromptEvaluationFocus] = useState('');
 
   const [userInput, setUserInput] = useState('');
-  const [insertRole, setInsertRole] = useState<'user' | 'assistant' | 'system'>('user');
+  const [insertRole, setInsertRole] = useState<'user' | 'assistant' | 'system'>(
+    'user',
+  );
   const [isSending, setIsSending] = useState(false);
   const [chatStatus, setChatStatus] = useState({ text: '', isError: false });
 
@@ -97,11 +105,7 @@ export const App: React.FC = () => {
   // Streaming assistant message state
   const [streamingMsg, setStreamingMsg] = useState<ChatMessage | null>(null);
 
-
-
   useEffect(() => {
-
-
     core.registerTool(askQuestionTool);
     core.registerTool(randomTool);
     core.loadChatState();
@@ -115,15 +119,25 @@ export const App: React.FC = () => {
 
   const hasChanges = (() => {
     if (!selectedPromptId) return false;
-    const builtin = BUILT_IN_PROMPTS.find(p => p.id === selectedPromptId);
+    const builtin = BUILT_IN_PROMPTS.find((p) => p.id === selectedPromptId);
     if (builtin) {
-      return builtin.content !== systemPrompt || builtin.toolsEnabled !== toolsEnabled || JSON.stringify(builtin.disabledTools.sort()) !== JSON.stringify(Array.from(disabledTools).sort());
+      return (
+        builtin.content !== systemPrompt ||
+        builtin.toolsEnabled !== toolsEnabled ||
+        JSON.stringify(builtin.disabledTools.sort()) !==
+          JSON.stringify(Array.from(disabledTools).sort())
+      );
     }
-    const custom = savedPrompts.find(p => p.id === selectedPromptId);
+    const custom = savedPrompts.find((p) => p.id === selectedPromptId);
     if (custom) {
       const customToolsEnabled = custom.toolsEnabled ?? false;
       const customDisabledTools = custom.disabledTools ?? [];
-      return custom.content !== systemPrompt || customToolsEnabled !== toolsEnabled || JSON.stringify(customDisabledTools.sort()) !== JSON.stringify(Array.from(disabledTools).sort());
+      return (
+        custom.content !== systemPrompt ||
+        customToolsEnabled !== toolsEnabled ||
+        JSON.stringify(customDisabledTools.sort()) !==
+          JSON.stringify(Array.from(disabledTools).sort())
+      );
     }
     return false;
   })();
@@ -161,7 +175,7 @@ export const App: React.FC = () => {
       name,
       content: core.systemPrompt,
       toolsEnabled: core.toolsEnabled,
-      disabledTools: Array.from(core.disabledTools)
+      disabledTools: Array.from(core.disabledTools),
     });
     core.selectedPromptId = id;
     core.saveChatState();
@@ -340,8 +354,6 @@ export const App: React.FC = () => {
       }
     };
 
-
-
     const initialMsg = currentAssistantMsg || {
       id: crypto.randomUUID(),
       role: 'assistant',
@@ -396,11 +408,16 @@ export const App: React.FC = () => {
       setUserInput('');
     }
 
-    const currentSavedThreads = JSON.parse(getStorage('llm-chat-threads') || '[]');
+    const currentSavedThreads = JSON.parse(
+      getStorage('llm-chat-threads') || '[]',
+    );
     if (!currentSavedThreads.find((t: any) => t.id === activeThreadId)) {
-      const activeThread = threads.find(t => t.id === activeThreadId);
+      const activeThread = threads.find((t) => t.id === activeThreadId);
       if (activeThread) {
-        setStorage('llm-chat-threads', JSON.stringify([...currentSavedThreads, activeThread]));
+        setStorage(
+          'llm-chat-threads',
+          JSON.stringify([...currentSavedThreads, activeThread]),
+        );
       }
     }
 
@@ -433,7 +450,10 @@ export const App: React.FC = () => {
               const newThreadId = crypto.randomUUID();
               const newThreads = [
                 ...threads,
-                { id: newThreadId, name: `Session ${new Date().toLocaleString()}` },
+                {
+                  id: newThreadId,
+                  name: `Session ${new Date().toLocaleString()}`,
+                },
               ];
               setThreads(newThreads);
               setActiveThreadId(newThreadId);
@@ -480,8 +500,6 @@ export const App: React.FC = () => {
 
       <LlmSettings core={core} />
 
-
-
       <Panel title="System Prompt">
         <div className="flex-row" style={{ marginBottom: '10px' }}>
           <select
@@ -509,8 +527,15 @@ export const App: React.FC = () => {
             )}
           </select>
           {selectedPromptId && hasChanges && (
-            <span style={{ color: '#d97706', marginLeft: '10px', fontWeight: 'bold' }}>
-              ⚠️ Unsaved changes (Click Save to persist changes to this prompt slot)
+            <span
+              style={{
+                color: '#d97706',
+                marginLeft: '10px',
+                fontWeight: 'bold',
+              }}
+            >
+              ⚠️ Unsaved changes (Click Save to persist changes to this prompt
+              slot)
             </span>
           )}
         </div>
@@ -522,7 +547,10 @@ export const App: React.FC = () => {
           rows={4}
         />
 
-        <div className="flex-row" style={{ marginTop: '10px', marginBottom: '10px' }}>
+        <div
+          className="flex-row"
+          style={{ marginTop: '10px', marginBottom: '10px' }}
+        >
           <Input
             type="checkbox"
             id="enable-tools-checkbox"
@@ -564,23 +592,25 @@ export const App: React.FC = () => {
         )}
 
         <div className="flex-row" style={{ marginTop: '10px' }}>
-          {selectedPromptId && !BUILT_IN_PROMPTS.find(p => p.id === selectedPromptId) && (
-            <Button onClick={handleUpdatePrompt} id="update-prompt-btn">
-              Save
-            </Button>
-          )}
+          {selectedPromptId &&
+            !BUILT_IN_PROMPTS.find((p) => p.id === selectedPromptId) && (
+              <Button onClick={handleUpdatePrompt} id="update-prompt-btn">
+                Save
+              </Button>
+            )}
           <Button onClick={handleSavePrompt} id="save-prompt-btn">
             Save As New...
           </Button>
-          {selectedPromptId && !BUILT_IN_PROMPTS.find(p => p.id === selectedPromptId) && (
-            <Button
-              variant="danger"
-              onClick={handleDeletePrompt}
-              id="delete-prompt-btn"
-            >
-              Delete
-            </Button>
-          )}
+          {selectedPromptId &&
+            !BUILT_IN_PROMPTS.find((p) => p.id === selectedPromptId) && (
+              <Button
+                variant="danger"
+                onClick={handleDeletePrompt}
+                id="delete-prompt-btn"
+              >
+                Delete
+              </Button>
+            )}
         </div>
 
         <details
@@ -649,7 +679,8 @@ export const App: React.FC = () => {
           }}
         >
           {history.map((msg) => (
-            <ChatMessageUI onRegenerate={handleRegenerate}
+            <ChatMessageUI
+              onRegenerate={handleRegenerate}
               key={msg.id}
               msg={msg}
               core={core}
@@ -657,7 +688,8 @@ export const App: React.FC = () => {
             />
           ))}
           {streamingMsg && (
-            <ChatMessageUI onRegenerate={handleRegenerate}
+            <ChatMessageUI
+              onRegenerate={handleRegenerate}
               msg={streamingMsg}
               core={core}
               onUpdate={triggerUpdate}
@@ -681,7 +713,9 @@ export const App: React.FC = () => {
           <select
             id="insert-role-select"
             value={insertRole}
-            onChange={(e) => setInsertRole(e.target.value as 'user' | 'assistant' | 'system')}
+            onChange={(e) =>
+              setInsertRole(e.target.value as 'user' | 'assistant' | 'system')
+            }
             style={{ marginRight: '10px', marginLeft: '10px', padding: '5px' }}
           >
             <option value="user">User</option>

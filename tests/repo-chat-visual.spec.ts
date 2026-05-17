@@ -25,7 +25,9 @@ test('Repo Chat Verification', async ({ page }) => {
   await expect(page.locator('.message.tool')).toBeHidden();
 
   // We removed the initial seed question, so we verify word count display instead
-  await expect(page.locator('.panel').first()).toContainText('Repository cloned. Approximately');
+  await expect(page.locator('.panel').first()).toContainText(
+    'Repository cloned. Approximately',
+  );
 
   // Test basic streaming behavior without tools
   await page.route(

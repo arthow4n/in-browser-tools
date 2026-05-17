@@ -279,7 +279,7 @@ export const App: React.FC = () => {
       async () => {
         const generator = core.improveScenarioRequest(
           scenarioRequest.trim(),
-          scenarioGuidance.trim()
+          scenarioGuidance.trim(),
         );
 
         let toolArgs = '';
@@ -302,7 +302,7 @@ export const App: React.FC = () => {
           }
         }
       },
-      'Scenario improved.'
+      'Scenario improved.',
     );
   };
 
@@ -740,7 +740,8 @@ export const App: React.FC = () => {
           <span
             className="status"
             style={{
-              color: scenarioIsError || improveScenarioIsError ? 'red' : 'green',
+              color:
+                scenarioIsError || improveScenarioIsError ? 'red' : 'green',
               marginLeft: '10px',
             }}
           >
