@@ -124,7 +124,7 @@ export function createMessageElement(
       // @ts-ignore
       const generator = core.streamChatCompletionWithTools([
         {
-          id: Date.now().toString(),
+          id: crypto.randomUUID(),
           role: 'user',
           content: prompt,
         },

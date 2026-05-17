@@ -542,7 +542,7 @@ async function handleSend() {
 
   if (directionText) {
     const directionMessage: ChatMessage = {
-      id: Date.now().toString() + '-sys',
+      id: crypto.randomUUID() + '-sys',
       role: 'system',
       content: `[OOC - Story Direction]: ${directionText}`,
     };
@@ -551,7 +551,7 @@ async function handleSend() {
 
   const finalContent = `[${core.characterName}]: ${userText || '*Waits silently*'}`;
   const userMessage: ChatMessage = {
-    id: Date.now().toString(),
+    id: crypto.randomUUID(),
     role: 'user',
     content: finalContent,
   };
@@ -718,7 +718,7 @@ async function handleElaborate() {
   }
 
   const elaborateMessage: ChatMessage = {
-    id: Date.now().toString(),
+    id: crypto.randomUUID(),
     role: 'user',
     content:
       '[OOC]: Please rewrite and significantly elaborate on your last response. Make it much more vibrant, detailed, and immersive. Describe the environment, sensory details, and character emotions more deeply, and significantly expand the narrative length by adding more events or richer environmental exposition.',
@@ -771,7 +771,7 @@ async function handleGenerateIntro(params: { guidance: string }) {
   introPrompt += `\n\nStart the story immediately. Make your tool calls to narrate and speak as normal.`;
 
   initialMessages.push({
-    id: Date.now().toString(),
+    id: crypto.randomUUID(),
     role: 'user',
     content: introPrompt,
   });
@@ -788,7 +788,7 @@ async function generateResponse() {
 
   await runWithUIState(sendBtn, chatStatus, 'Generating...', async () => {
     let assistantMessage: ChatMessage = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       role: 'assistant',
       content: '',
       tool_calls: [],
@@ -858,7 +858,7 @@ async function generateResponse() {
     if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
       for (const tc of assistantMessage.tool_calls) {
         core.history.push({
-          id: Date.now().toString() + '-tool-' + tc.id,
+          id: crypto.randomUUID() + '-tool-' + tc.id,
           role: 'tool',
           content: JSON.stringify({ success: true }),
           tool_call_id: tc.id,

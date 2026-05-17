@@ -47,7 +47,7 @@ test.describe('LLM Chat Tool', () => {
     await page.click('#save-prompt-btn');
 
     // Wait for the prompt to be selected in the dropdown
-    await expect(page.locator('#saved-prompts-select')).toHaveValue(/^[0-9]+$/);
+    await expect(page.locator('#saved-prompts-select')).toHaveValue(/^[0-9a-fA-F-]{36}$/);
 
     // Check that "Save" button is now visible
     await expect(page.locator('#update-prompt-btn')).toBeVisible();

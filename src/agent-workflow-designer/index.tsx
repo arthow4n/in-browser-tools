@@ -33,7 +33,7 @@ function getTabSessionId(): string {
   let sessionId = sessionStorage.getItem('tab-session-id');
   if (!sessionId) {
     sessionId =
-      Date.now().toString() + Math.random().toString(36).substring(2, 9);
+      crypto.randomUUID();
     sessionStorage.setItem('tab-session-id', sessionId);
   }
   return sessionId;
@@ -258,7 +258,7 @@ async function handleChatSend() {
 
   await runWithUIState(sendBtn, chatStatus, 'Sending...', async () => {
     const userMsg: ChatMessage = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       role: 'user',
       content: text,
     };
@@ -327,7 +327,7 @@ async function handleChatSend() {
         )?.id;
         if (toolCallId) {
           const toolMsg: ChatMessage = {
-            id: Date.now().toString(),
+            id: crypto.randomUUID(),
             role: 'tool',
             content: JSON.stringify({ success: true }),
             tool_call_id: toolCallId,
@@ -593,7 +593,7 @@ function handleImport() {
     fixImportBtn.style.display = 'none';
 
     const importMsg: ChatMessage = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       role: 'user',
       content: `I am importing an existing workflow:\n\n\`\`\`markdown\n${text}\n\`\`\``,
     };
@@ -668,7 +668,7 @@ ${text}`;
         fixImportBtn.style.display = 'none';
 
         const importMsg: ChatMessage = {
-          id: Date.now().toString(),
+          id: crypto.randomUUID(),
           role: 'user',
           content: `I am importing an existing workflow from the malformed text.`,
         };
@@ -766,7 +766,7 @@ runTestBtn.addEventListener('click', async () => {
   }
 
   const userMsg: ChatMessage = {
-    id: Date.now().toString(),
+    id: crypto.randomUUID(),
     role: 'user',
     content: text,
   };
@@ -788,7 +788,7 @@ runTestBtn.addEventListener('click', async () => {
     let isLooping = true;
     while (isLooping) {
       const assistantMsg: ChatMessage = {
-        id: Date.now().toString(),
+        id: crypto.randomUUID(),
         role: 'assistant',
         content: '',
       };
@@ -853,7 +853,7 @@ runTestBtn.addEventListener('click', async () => {
               subAgentCore.systemPrompt = agent.content;
 
               const subAgentUserMsg: ChatMessage = {
-                id: Date.now().toString(),
+                id: crypto.randomUUID(),
                 role: 'user',
                 content: args.message || '',
               };
@@ -895,7 +895,7 @@ runTestBtn.addEventListener('click', async () => {
           }
 
           const toolMsg: ChatMessage = {
-            id: Date.now().toString(),
+            id: crypto.randomUUID(),
             role: 'tool',
             content: toolResponseContent,
             tool_call_id: pendingToolCall.id,

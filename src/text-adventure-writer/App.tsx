@@ -9,6 +9,7 @@ import {
 } from '../shared/components/index.js';
 import { TextAdventureCore } from './core.js';
 import { useAsyncAction } from '../shared/hooks/useAsyncAction.js';
+import { getStorage, setStorage } from '../shared/storage.js';
 
 export const App: React.FC = () => {
   const coreRef = useRef(new TextAdventureCore());
@@ -67,9 +68,7 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     try {
-      const saved = localStorage.getItem(
-        'in-browser-tools:text-adventure-savedAdventures',
-      );
+      const saved = getStorage('text-adventure-savedAdventures');
       if (saved) {
         setSavedAdventures(JSON.parse(saved));
       }
@@ -95,10 +94,7 @@ export const App: React.FC = () => {
 
     const newSaved = { ...savedAdventures, [saveName.trim()]: data };
     setSavedAdventures(newSaved);
-    localStorage.setItem(
-      'in-browser-tools:text-adventure-savedAdventures',
-      JSON.stringify(newSaved),
-    );
+    setStorage('text-adventure-savedAdventures', JSON.stringify(newSaved));
     setSaveName('');
     setFormError('');
   };
@@ -137,10 +133,7 @@ export const App: React.FC = () => {
     const newSaved = { ...savedAdventures };
     delete newSaved[name];
     setSavedAdventures(newSaved);
-    localStorage.setItem(
-      'in-browser-tools:text-adventure-savedAdventures',
-      JSON.stringify(newSaved),
-    );
+    setStorage('text-adventure-savedAdventures', JSON.stringify(newSaved));
   };
 
   const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -361,7 +354,7 @@ export const App: React.FC = () => {
     introPrompt += `\n\nStart the story immediately. Make your tool calls to narrate and speak as normal.`;
 
     core.history.push({
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       role: 'user',
       content: introPrompt,
     });
@@ -401,14 +394,14 @@ export const App: React.FC = () => {
 
     if (unresolvedWaitToolId) {
       core.history.push({
-        id: Date.now().toString() + '-tool-' + unresolvedWaitToolId,
+        id: crypto.randomUUID() + '-tool-' + unresolvedWaitToolId,
         role: 'tool',
         content: content,
         tool_call_id: unresolvedWaitToolId,
       });
     } else {
       core.history.push({
-        id: Date.now().toString(),
+        id: crypto.randomUUID(),
         role: 'user',
         content: content,
       });
@@ -466,14 +459,14 @@ export const App: React.FC = () => {
 
     if (unresolvedWaitToolId) {
       core.history.push({
-        id: Date.now().toString() + '-tool-' + unresolvedWaitToolId,
+        id: crypto.randomUUID() + '-tool-' + unresolvedWaitToolId,
         role: 'tool',
         content: finalContent,
         tool_call_id: unresolvedWaitToolId,
       });
     } else {
       core.history.push({
-        id: Date.now().toString(),
+        id: crypto.randomUUID(),
         role: 'user',
         content: finalContent,
       });
@@ -481,7 +474,7 @@ export const App: React.FC = () => {
 
     if (directionText) {
       core.history.push({
-        id: Date.now().toString() + '-sys',
+        id: crypto.randomUUID() + '-sys',
         role: 'system',
         content: `[OOC - Story Direction]: ${directionText}`,
       });
@@ -498,7 +491,7 @@ export const App: React.FC = () => {
   const generateResponse = async () => {
     await runResponseAction('Generating...', async () => {
       const assistantMessage: any = {
-        id: Date.now().toString(),
+        id: crypto.randomUUID(),
         role: 'assistant',
         content: '',
         tool_calls: [],
@@ -538,7 +531,7 @@ export const App: React.FC = () => {
         for (const tc of assistantMessage.tool_calls) {
           if (tc.function.name !== 'wait_for_user_input') {
             core.history.push({
-              id: Date.now().toString() + '-tool-' + tc.id,
+              id: crypto.randomUUID() + '-tool-' + tc.id,
               role: 'tool',
               content: JSON.stringify({ success: true }),
               tool_call_id: tc.id,

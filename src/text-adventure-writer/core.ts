@@ -6,7 +6,7 @@ function getTabSessionId(): string {
   let sessionId = sessionStorage.getItem('tab-session-id');
   if (!sessionId) {
     sessionId =
-      Date.now().toString() + Math.random().toString(36).substring(2, 9);
+      crypto.randomUUID();
     sessionStorage.setItem('tab-session-id', sessionId);
   }
   return sessionId;
@@ -305,14 +305,14 @@ ${this.outputLanguage ? `[OOC - Output Language]: You must output the action/dia
     const injectedMessages = [...newMessages];
     if (this.characterDescription) {
       injectedMessages.unshift({
-        id: Date.now().toString() + '-sys-injected-char',
+        id: crypto.randomUUID() + '-sys-injected-char',
         role: 'system',
         content: `[OOC - Character Update]: The user is playing as ${this.characterName || 'an unknown character'}. Description: ${this.characterDescription}`,
       });
     }
     if (this.outputLanguage) {
       injectedMessages.unshift({
-        id: Date.now().toString() + '-sys-injected-lang',
+        id: crypto.randomUUID() + '-sys-injected-lang',
         role: 'system',
         content: `[OOC - Output Language]: You must use the following language for all your outputs, responses, narrations, and character dialogues: ${this.outputLanguage}. Note: "the user" here refers to the human playing the game, not your "user" role in this chat thread.`,
       });
@@ -326,14 +326,14 @@ ${this.outputLanguage ? `[OOC - Output Language]: You must output the action/dia
     const injectedMessages = [...newMessages];
     if (this.characterDescription) {
       injectedMessages.unshift({
-        id: Date.now().toString() + '-sys-injected-char',
+        id: crypto.randomUUID() + '-sys-injected-char',
         role: 'system',
         content: `[OOC - Character Update]: The user is playing as ${this.characterName || 'an unknown character'}. Description: ${this.characterDescription}`,
       });
     }
     if (this.outputLanguage) {
       injectedMessages.unshift({
-        id: Date.now().toString() + '-sys-injected-lang',
+        id: crypto.randomUUID() + '-sys-injected-lang',
         role: 'system',
         content: `[OOC - Output Language]: You must use the following language for all your outputs, responses, narrations, and character dialogues: ${this.outputLanguage}. Note: "the user" here refers to the human playing the game, not your "user" role in this chat thread.`,
       });

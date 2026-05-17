@@ -96,7 +96,7 @@ export const ChatMessageUI: React.FC<ChatMessageUIProps> = ({
     try {
       const generator = core.streamChatCompletionWithTools([
         {
-          id: Date.now().toString(),
+          id: crypto.randomUUID(),
           role: 'user',
           content: prompt,
         },
