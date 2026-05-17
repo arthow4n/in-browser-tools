@@ -255,35 +255,7 @@ export const App: React.FC = () => {
     setHistory([...core.history]);
   };
 
-  const handleSend = async () => {
-    const text = userInput.trim();
-    if (!text && core.history.length === 0) return;
-
-    if (!core.apiKey || !core.model) {
-      setChatStatus({ text: 'API Key and Model are required.', isError: true });
-      return;
-    }
-
-    if (text) {
-      const userMsg: ChatMessage = {
-        id: crypto.randomUUID(),
-        role: 'user',
-        content: text,
-      };
-      core.history.push(userMsg);
-      core.saveChatState();
-      setHistory([...core.history]);
-      setUserInput('');
-    }
-
-    const currentSavedThreads = JSON.parse(getStorage('llm-chat-threads') || '[]');
-    if (!currentSavedThreads.find((t: any) => t.id === activeThreadId)) {
-      const activeThread = threads.find(t => t.id === activeThreadId);
-      if (activeThread) {
-        setStorage('llm-chat-threads', JSON.stringify([...currentSavedThreads, activeThread]));
-      }
-    }
-
+  const triggerGeneration = async (currentAssistantMsg?: ChatMessage) => {
     setIsSending(true);
     setChatStatus({ text: '', isError: false });
 
@@ -369,12 +341,56 @@ export const App: React.FC = () => {
       }
     };
 
-    const initialAssistantMsg: ChatMessage = {
-      id: (Date.now() + 1).toString(),
+
+
+    const initialMsg = currentAssistantMsg || {
+      id: crypto.randomUUID(),
       role: 'assistant',
       content: '',
     };
-    await doStream(initialAssistantMsg);
+    await doStream(initialMsg);
+  };
+
+  const handleRegenerate = async (msgId: string) => {
+    const idx = core.history.findIndex((m: any) => m.id === msgId);
+    if (idx !== -1) {
+      core.history = core.history.slice(0, idx);
+      core.saveChatState();
+      setHistory([...core.history]);
+      await triggerGeneration();
+    }
+  };
+
+  const handleSend = async () => {
+    const text = userInput.trim();
+    if (!text && core.history.length === 0) return;
+
+    if (!core.apiKey || !core.model) {
+      setChatStatus({ text: 'API Key and Model are required.', isError: true });
+      return;
+    }
+
+    if (text) {
+      const userMsg: ChatMessage = {
+        id: crypto.randomUUID(),
+        role: 'user',
+        content: text,
+      };
+      core.history.push(userMsg);
+      core.saveChatState();
+      setHistory([...core.history]);
+      setUserInput('');
+    }
+
+    const currentSavedThreads = JSON.parse(getStorage('llm-chat-threads') || '[]');
+    if (!currentSavedThreads.find((t: any) => t.id === activeThreadId)) {
+      const activeThread = threads.find(t => t.id === activeThreadId);
+      if (activeThread) {
+        setStorage('llm-chat-threads', JSON.stringify([...currentSavedThreads, activeThread]));
+      }
+    }
+
+    await triggerGeneration();
   };
 
   return (
@@ -619,7 +635,7 @@ export const App: React.FC = () => {
           }}
         >
           {history.map((msg) => (
-            <ChatMessageUI
+            <ChatMessageUI onRegenerate={handleRegenerate}
               key={msg.id}
               msg={msg}
               core={core}
@@ -627,7 +643,7 @@ export const App: React.FC = () => {
             />
           ))}
           {streamingMsg && (
-            <ChatMessageUI
+            <ChatMessageUI onRegenerate={handleRegenerate}
               msg={streamingMsg}
               core={core}
               onUpdate={triggerUpdate}

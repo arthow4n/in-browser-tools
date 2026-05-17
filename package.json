@@ -41,6 +41,7 @@
     "@ffmpeg/util": "^0.12.2",
     "@rsbuild/plugin-node-polyfill": "^1.4.4",
     "isomorphic-git": "^1.37.6",
+    "lucide-react": "^1.16.0",
     "memfs": "^4.57.2",
     "pdf-lib": "^1.17.1",
     "react": "^19.2.6",

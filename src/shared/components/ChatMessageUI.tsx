@@ -5,6 +5,7 @@ import { Input } from './Input.js';
 import { TextArea } from './TextArea.js';
 import { Button } from './Button.js';
 import { ToolCallMessageUI } from './ToolCallMessageUI.js';
+import { Wand2, Edit2, RefreshCw, Trash2, ArrowDown } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -12,6 +13,7 @@ interface ChatMessageUIProps {
   msg: ChatMessage & { id?: string };
   core: any; // We can type this to ChatCore if we expose a shared interface that provides streamChatCompletionWithTools
   onUpdate: () => void;
+  onRegenerate?: (msgId: string) => void;
   isStreaming?: boolean;
 }
 
@@ -19,6 +21,7 @@ export const ChatMessageUI: React.FC<ChatMessageUIProps> = ({
   msg,
   core,
   onUpdate,
+  onRegenerate,
   isStreaming,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -183,22 +186,44 @@ export const ChatMessageUI: React.FC<ChatMessageUIProps> = ({
         </div>
       )}
 
-      <div className="message-controls" style={{ marginTop: '10px' }}>
-        <Button
-          variant="secondary"
+      <div className="message-controls" style={{ marginTop: '10px', display: 'flex', gap: '5px' }}>
+        <button
           onClick={() => setShowImprove(!showImprove)}
+          title="Improve"
+          style={{ background: 'transparent', padding: '4px', color: 'inherit', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
         >
-          Improve
-        </Button>
-        <Button variant="secondary" onClick={handleEdit}>
-          {isEditing ? 'Save' : 'Edit'}
-        </Button>
-        <Button variant="danger" onClick={handleDelete}>
-          Delete
-        </Button>
-        <Button variant="danger" onClick={handleDeleteBelow}>
-          Delete ↓
-        </Button>
+          <Wand2 size={16} />
+        </button>
+        <button
+          onClick={handleEdit}
+          title={isEditing ? 'Save' : 'Edit'}
+          style={{ background: 'transparent', padding: '4px', color: 'inherit', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+        >
+          <Edit2 size={16} />
+        </button>
+        {onRegenerate && msg.id && (
+          <button
+            onClick={() => onRegenerate(msg.id!)}
+            title="Regenerate"
+            style={{ background: 'transparent', padding: '4px', color: 'inherit', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+          >
+            <RefreshCw size={16} />
+          </button>
+        )}
+        <button
+          onClick={handleDelete}
+          title="Delete"
+          style={{ background: 'transparent', padding: '4px', color: 'inherit', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+        >
+          <Trash2 size={16} />
+        </button>
+        <button
+          onClick={handleDeleteBelow}
+          title="Delete Below"
+          style={{ background: 'transparent', padding: '4px', color: 'inherit', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+        >
+          <ArrowDown size={16} />
+        </button>
       </div>
 
       {showImprove && (

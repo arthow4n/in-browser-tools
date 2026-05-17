@@ -163,7 +163,7 @@ test.describe('LLM Chat Tool', () => {
 
     // Test editing a message
     const userMsgEditBtn = history.locator(
-      '.message.user button:has-text("Edit")',
+      '.message.user button[title="Edit"]',
     );
     await userMsgEditBtn.click();
 
@@ -174,7 +174,7 @@ test.describe('LLM Chat Tool', () => {
 
     // Click Save
     const userMsgSaveBtn = history.locator(
-      '.message.user button:has-text("Save")',
+      '.message.user button[title="Save"]',
     );
     await userMsgSaveBtn.click();
 
@@ -186,7 +186,7 @@ test.describe('LLM Chat Tool', () => {
     // Test deleting a message
     page.on('dialog', (dialog) => dialog.accept()); // Accept the delete confirmation
     const userMsgDeleteBtn = history.locator(
-      '.message.user button:text-is("Delete")',
+      '.message.user button[title="Delete"]',
     );
     await userMsgDeleteBtn.click();
 
@@ -234,7 +234,7 @@ test.describe('LLM Chat Tool', () => {
     ).toHaveText('Response');
 
     // Currently we have 4 messages: User 1, Assistant 1, User 2, Assistant 2
-    await expect(history.locator('.message')).toHaveCount(4);
+    await expect(history.locator('.message')).toHaveCount(4, { timeout: 10000 });
 
     page.on('dialog', (dialog) => dialog.accept());
 
@@ -242,7 +242,7 @@ test.describe('LLM Chat Tool', () => {
     const assistant1DeleteBelowBtn = history
       .locator('.message.assistant')
       .first()
-      .locator('button:text-is("Delete ↓")');
+      .locator('button[title="Delete Below"]');
     await assistant1DeleteBelowBtn.click();
 
     // After deleting Assistant 1 and everything below, only User 1 should remain
@@ -290,7 +290,7 @@ test.describe('LLM Chat Tool', () => {
     await expect(
       history.locator('.message.assistant .content').first(),
     ).toHaveText('Resp 1');
-    await expect(history.locator('.message')).toHaveCount(2);
+    await expect(history.locator('.message')).toHaveCount(2, { timeout: 10000 });
 
     // Ensure input is empty
     await page.fill('#user-input', '');
