@@ -51,6 +51,7 @@ export interface SavedPrompt {
 
 export class ChatCore extends LLMCore {
   public storagePrefix: string;
+  public appStoragePrefix: string;
   public systemPrompt: string = 'You are a helpful assistant.';
   public selectedPromptId: string = 'builtin-assistant';
   public savedPrompts: SavedPrompt[] = [];
@@ -59,9 +60,16 @@ export class ChatCore extends LLMCore {
   public disabledTools: Set<string> = new Set();
   public tools: AgentTool[] = [];
 
-  constructor(storagePrefix: string = 'llm-chat-') {
+  constructor(storagePrefix: string = 'llm-chat-', appStoragePrefix?: string) {
     super();
     this.storagePrefix = storagePrefix;
+    if (appStoragePrefix) {
+      this.appStoragePrefix = appStoragePrefix;
+    } else if (storagePrefix.startsWith('repo-chat-')) {
+      this.appStoragePrefix = 'repo-chat-';
+    } else {
+      this.appStoragePrefix = 'llm-chat-';
+    }
     this.loadChatState();
   }
 
@@ -92,7 +100,7 @@ export class ChatCore extends LLMCore {
     try {
       this.savedPrompts = JSON.parse(
         getStorage(
-          `${this.storagePrefix}savedPrompts` as import('../shared/storage.js').StorageKey,
+          `${this.appStoragePrefix}savedPrompts` as import('../shared/storage.js').StorageKey,
         ) || '[]',
       );
     } catch {
@@ -135,7 +143,7 @@ export class ChatCore extends LLMCore {
       this.selectedPromptId,
     );
     setStorage(
-      `${this.storagePrefix}savedPrompts` as import('../shared/storage.js').StorageKey,
+      `${this.appStoragePrefix}savedPrompts` as import('../shared/storage.js').StorageKey,
       JSON.stringify(this.savedPrompts),
     );
     setStorage(
