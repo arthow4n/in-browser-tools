@@ -310,4 +310,63 @@ test.describe('LLM Chat Tool', () => {
     await expect(history.locator('.message').nth(1)).toHaveClass(/assistant/);
     await expect(history.locator('.message').nth(2)).toHaveClass(/assistant/);
   });
+
+  test('should allow adding messages directly to history without triggering generation', async ({ page }) => {
+    let callCount = 0;
+    await page.route(
+      'https://openrouter.ai/api/v1/chat/completions',
+      async (route) => {
+        callCount++;
+        const streamBody = `data: {"choices":[{"delta":{"content":"Should not trigger"}}]}\n\ndata: [DONE]\n\n`;
+        await route.fulfill({
+          status: 200,
+          contentType: 'text/event-stream',
+          body: streamBody,
+        });
+      },
+    );
+
+    await page.goto('/settings');
+    await page.fill('#shared-api-key', 'test-key');
+    await page.fill('#shared-model-input', 'test-model');
+
+    await page.goto('/llm-chat');
+
+    const history = page.locator('#history-container');
+
+    // Add assistant message directly to history
+    await page.fill('#user-input', 'Prefilled assistant response');
+    await page.selectOption('#insert-role-select', 'assistant');
+    await page.click('#add-history-btn');
+
+    // Add system message directly to history
+    await page.fill('#user-input', 'Prefilled system response');
+    await page.selectOption('#insert-role-select', 'system');
+    await page.click('#add-history-btn');
+
+    // Add user message directly to history
+    await page.fill('#user-input', 'Prefilled user response');
+    await page.selectOption('#insert-role-select', 'user');
+    await page.click('#add-history-btn');
+
+    // Check history count
+    await expect(history.locator('.message')).toHaveCount(3);
+
+    // Verify messages and types
+    await expect(history.locator('.message').nth(0)).toHaveClass(/assistant/);
+    await expect(history.locator('.message .content').nth(0)).toHaveText('Prefilled assistant response');
+
+    await expect(history.locator('.message').nth(1)).toHaveClass(/system/);
+    await expect(history.locator('.message .content').nth(1)).toHaveText('Prefilled system response');
+
+    await expect(history.locator('.message').nth(2)).toHaveClass(/user/);
+    await expect(history.locator('.message .content').nth(2)).toHaveText('Prefilled user response');
+
+    // Verify no network call was made
+    expect(callCount).toBe(0);
+
+    // Ensure input is cleared
+    await expect(page.locator('#user-input')).toHaveValue('');
+  });
+
 });

@@ -84,6 +84,7 @@ export const App: React.FC = () => {
   const [promptEvaluationFocus, setPromptEvaluationFocus] = useState('');
 
   const [userInput, setUserInput] = useState('');
+  const [insertRole, setInsertRole] = useState<'user' | 'assistant' | 'system'>('user');
   const [isSending, setIsSending] = useState(false);
   const [chatStatus, setChatStatus] = useState({ text: '', isError: false });
 
@@ -359,6 +360,21 @@ export const App: React.FC = () => {
       setHistory([...core.history]);
       await triggerGeneration();
     }
+  };
+
+  const handleAddToHistory = () => {
+    const text = userInput.trim();
+    if (!text) return;
+
+    const userMsg: ChatMessage = {
+      id: crypto.randomUUID(),
+      role: insertRole,
+      content: text,
+    };
+    core.history.push(userMsg);
+    core.saveChatState();
+    setHistory([...core.history]);
+    setUserInput('');
   };
 
   const handleSend = async () => {
@@ -663,6 +679,19 @@ export const App: React.FC = () => {
         <div className="flex-row" style={{ marginTop: '10px' }}>
           <Button onClick={handleSend} disabled={isSending} id="send-btn">
             Send
+          </Button>
+          <select
+            id="insert-role-select"
+            value={insertRole}
+            onChange={(e) => setInsertRole(e.target.value as 'user' | 'assistant' | 'system')}
+            style={{ marginRight: '10px', marginLeft: '10px', padding: '5px' }}
+          >
+            <option value="user">User</option>
+            <option value="assistant">Assistant</option>
+            <option value="system">System</option>
+          </select>
+          <Button onClick={handleAddToHistory} id="add-history-btn">
+            Add to History
           </Button>
           <Button
             variant="danger"
