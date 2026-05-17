@@ -15,6 +15,8 @@ interface ChatMessageUIProps {
   onUpdate: () => void;
   onRegenerate?: (msgId: string) => void;
   isStreaming?: boolean;
+  disabled?: boolean;
+  onReanswer?: (toolCallId: string) => void;
 }
 
 export const ChatMessageUI: React.FC<ChatMessageUIProps> = ({
@@ -23,6 +25,8 @@ export const ChatMessageUI: React.FC<ChatMessageUIProps> = ({
   onUpdate,
   onRegenerate,
   isStreaming,
+  disabled,
+  onReanswer,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(msg.content);
@@ -181,17 +185,24 @@ export const ChatMessageUI: React.FC<ChatMessageUIProps> = ({
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
             {displayContent}
           </ReactMarkdown>
+          {isStreaming && <span className="streaming-indicator" />}
         </div>
       ) : (
         <div className="content" style={{ whiteSpace: 'pre-wrap' }}>
           {displayContent}
+          {isStreaming && <span className="streaming-indicator" />}
         </div>
       )}
 
       {msg.tool_calls && msg.tool_calls.length > 0 && (
         <div className="tool-calls" style={{ marginTop: '10px' }}>
           {msg.tool_calls.map((tc: any, idx: number) => (
-            <ToolCallMessageUI key={tc.id || idx} toolCall={tc} />
+            <ToolCallMessageUI
+              key={tc.id || idx}
+              toolCall={tc}
+              disabled={disabled}
+              onReanswer={onReanswer}
+            />
           ))}
         </div>
       )}
@@ -203,6 +214,7 @@ export const ChatMessageUI: React.FC<ChatMessageUIProps> = ({
         <button
           onClick={() => setShowImprove(!showImprove)}
           title="Improve"
+          disabled={disabled}
           style={{
             background: 'transparent',
             padding: '4px',
@@ -218,6 +230,7 @@ export const ChatMessageUI: React.FC<ChatMessageUIProps> = ({
         <button
           onClick={handleEdit}
           title={isEditing ? 'Save' : 'Edit'}
+          disabled={disabled}
           style={{
             background: 'transparent',
             padding: '4px',
@@ -234,6 +247,7 @@ export const ChatMessageUI: React.FC<ChatMessageUIProps> = ({
           <button
             onClick={() => onRegenerate(msg.id!)}
             title="Regenerate"
+            disabled={disabled}
             style={{
               background: 'transparent',
               padding: '4px',
@@ -250,6 +264,7 @@ export const ChatMessageUI: React.FC<ChatMessageUIProps> = ({
         <button
           onClick={handleDelete}
           title="Delete"
+          disabled={disabled}
           style={{
             background: 'transparent',
             padding: '4px',
@@ -265,6 +280,7 @@ export const ChatMessageUI: React.FC<ChatMessageUIProps> = ({
         <button
           onClick={handleDeleteBelow}
           title="Delete Below"
+          disabled={disabled}
           style={{
             background: 'transparent',
             padding: '4px',

@@ -1,4 +1,4 @@
-import { AgentTool } from '../../llm-chat/tools/index.js';
+import { AgentTool, ToolExecutionContext } from '../../llm-chat/tools/index.js';
 
 export const randomTool: AgentTool = {
   name: 'random',
@@ -27,9 +27,10 @@ export const randomTool: AgentTool = {
     },
     required: ['options', 'num_choices', 'hide_details'],
   },
-  execute: async (args: any) => {
-    const options = args.options;
-    const num_choices = args.num_choices;
+  execute: async (args: unknown, context: ToolExecutionContext) => {
+    const typedArgs = args as any;
+    const options = typedArgs.options;
+    const num_choices = typedArgs.num_choices;
 
     if (!Array.isArray(options) || options.length === 0) {
       return { error: 'options must be a non-empty array of strings.' };

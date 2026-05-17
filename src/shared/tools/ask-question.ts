@@ -1,4 +1,4 @@
-import { AgentTool } from '../../llm-chat/tools/index.js';
+import { AgentTool, ToolExecutionContext } from '../../llm-chat/tools/index.js';
 
 export const askQuestionTool: AgentTool = {
   name: 'ask_question',
@@ -38,13 +38,14 @@ export const askQuestionTool: AgentTool = {
     },
     required: ['questions'],
   },
-  execute: async (args: any, context?: any) => {
-    return new Promise((resolve) => {
+  execute: async (args: unknown, context: ToolExecutionContext) => {
+    return new Promise((resolve, reject) => {
+      const typedArgs = args as any;
       const toolCallId = context?.toolCallId;
       if (!toolCallId) {
         // Fallback for isolated executions without a context ID
         if (typeof (window as any).showAskQuestionUI === 'function') {
-          (window as any).showAskQuestionUI(args.questions, resolve);
+          (window as any).showAskQuestionUI(typedArgs.questions, resolve);
         } else {
           resolve({
             error: 'Missing toolCallId and showAskQuestionUI is not defined.',
@@ -56,9 +57,33 @@ export const askQuestionTool: AgentTool = {
       const w = window as any;
       w.pendingAskQuestions = w.pendingAskQuestions || {};
       w.pendingAskQuestions[toolCallId] = {
-        questions: args.questions,
+        questions: typedArgs.questions,
         resolve,
       };
+
+      if (context.abortSignal) {
+        context.abortSignal.addEventListener(
+          'abort',
+          () => {
+            const w = window as unknown as Record<string, unknown>;
+            const pending = w.pendingAskQuestions as
+              | Record<string, unknown>
+              | undefined;
+            if (pending && context.toolCallId) {
+              delete pending[context.toolCallId];
+            }
+            window.dispatchEvent(
+              new CustomEvent('askQuestionUpdate', {
+                detail: { toolCallId: context.toolCallId },
+              }),
+            );
+            reject(
+              new DOMException('User cancelled the tool call', 'AbortError'),
+            );
+          },
+          { once: true },
+        );
+      }
 
       // Dispatch event so React components can re-render if necessary
       window.dispatchEvent(

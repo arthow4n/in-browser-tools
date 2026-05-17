@@ -65,6 +65,7 @@ export const App: React.FC = () => {
   const [savedAdventures, setSavedAdventures] = useState<Record<string, any>>(
     {},
   );
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     try {
@@ -240,33 +241,43 @@ export const App: React.FC = () => {
     await runScenarioAction(
       'Suggesting scenarios...',
       async () => {
-        const generator = core.generateScenarioSuggestions({
-          currentScenario: scenarioRequest.trim(),
-          guidance: scenarioGuidance.trim(),
-          previousSuggestions: previousScenarioSuggestions,
-        });
+        abortControllerRef.current = new AbortController();
+        try {
+          const generator = core.generateScenarioSuggestions(
+            {
+              currentScenario: scenarioRequest.trim(),
+              guidance: scenarioGuidance.trim(),
+              previousSuggestions: previousScenarioSuggestions,
+            },
+            { abortSignal: abortControllerRef.current.signal },
+          );
 
-        let toolArgs = '';
-        for await (const chunk of generator) {
-          if (chunk.type === 'tool_call' && chunk.toolCall) {
-            toolArgs += chunk.toolCall.arguments;
-          }
-        }
-
-        if (toolArgs) {
-          try {
-            const parsed = JSON.parse(toolArgs);
-            if (parsed.suggestions && Array.isArray(parsed.suggestions)) {
-              setScenarioSuggestions(parsed.suggestions);
-              setPreviousScenarioSuggestions((prev) => [
-                ...prev,
-                ...parsed.suggestions,
-              ]);
+          let toolArgs = '';
+          for await (const chunk of generator) {
+            if (chunk.type === 'tool_call' && chunk.toolCall) {
+              toolArgs += chunk.toolCall.arguments;
             }
-          } catch (e) {
-            console.error('Failed to parse scenario suggestions', e);
-            throw new Error('Failed to parse suggestions from the AI.');
           }
+
+          if (toolArgs) {
+            try {
+              const parsed = JSON.parse(toolArgs);
+              if (parsed.suggestions && Array.isArray(parsed.suggestions)) {
+                setScenarioSuggestions(parsed.suggestions);
+                setPreviousScenarioSuggestions((prev) => [
+                  ...prev,
+                  ...parsed.suggestions,
+                ]);
+              }
+            } catch (e) {
+              console.error('Failed to parse scenario suggestions', e);
+              throw new Error('Failed to parse suggestions from the AI.');
+            }
+          }
+        } catch (e: any) {
+          if (e.name !== 'AbortError') throw e;
+        } finally {
+          abortControllerRef.current = null;
         }
       },
       'Scenarios suggested.',
@@ -277,29 +288,37 @@ export const App: React.FC = () => {
     await runImproveScenarioAction(
       'Improving scenario...',
       async () => {
-        const generator = core.improveScenarioRequest(
-          scenarioRequest.trim(),
-          scenarioGuidance.trim(),
-        );
+        abortControllerRef.current = new AbortController();
+        try {
+          const generator = core.improveScenarioRequest(
+            scenarioRequest.trim(),
+            scenarioGuidance.trim(),
+            { abortSignal: abortControllerRef.current.signal },
+          );
 
-        let toolArgs = '';
-        for await (const chunk of generator) {
-          if (chunk.type === 'tool_call' && chunk.toolCall) {
-            toolArgs += chunk.toolCall.arguments;
-          }
-        }
-
-        if (toolArgs) {
-          try {
-            const parsed = JSON.parse(toolArgs);
-            if (parsed.improvedScenario) {
-              handleScenarioChange(parsed.improvedScenario);
-              setScenarioSuggestions([]);
+          let toolArgs = '';
+          for await (const chunk of generator) {
+            if (chunk.type === 'tool_call' && chunk.toolCall) {
+              toolArgs += chunk.toolCall.arguments;
             }
-          } catch (e) {
-            console.error('Failed to parse improved scenario', e);
-            throw new Error('Failed to parse improved scenario from the AI.');
           }
+
+          if (toolArgs) {
+            try {
+              const parsed = JSON.parse(toolArgs);
+              if (parsed.improvedScenario) {
+                handleScenarioChange(parsed.improvedScenario);
+                setScenarioSuggestions([]);
+              }
+            } catch (e) {
+              console.error('Failed to parse improved scenario', e);
+              throw new Error('Failed to parse improved scenario from the AI.');
+            }
+          }
+        } catch (e: any) {
+          if (e.name !== 'AbortError') throw e;
+        } finally {
+          abortControllerRef.current = null;
         }
       },
       'Scenario improved.',
@@ -313,27 +332,37 @@ export const App: React.FC = () => {
         if (!scenarioRequest.trim()) {
           throw new Error('Please enter a scenario request first.');
         }
-        const generator = core.generateCharacter({
-          scenarioRequest: scenarioRequest.trim(),
-          guidance: charGuidance.trim(),
-        });
-        let toolArgs = '';
-        for await (const chunk of generator) {
-          if (chunk.type === 'tool_call' && chunk.toolCall) {
-            toolArgs += chunk.toolCall.arguments;
+        abortControllerRef.current = new AbortController();
+        try {
+          const generator = core.generateCharacter(
+            {
+              scenarioRequest: scenarioRequest.trim(),
+              guidance: charGuidance.trim(),
+            },
+            { abortSignal: abortControllerRef.current.signal },
+          );
+          let toolArgs = '';
+          for await (const chunk of generator) {
+            if (chunk.type === 'tool_call' && chunk.toolCall) {
+              toolArgs += chunk.toolCall.arguments;
+            }
           }
-        }
-        if (toolArgs) {
-          const parsed = JSON.parse(toolArgs);
-          if (parsed.characterName) {
-            setCharacterName(parsed.characterName);
-            core.characterName = parsed.characterName;
+          if (toolArgs) {
+            const parsed = JSON.parse(toolArgs);
+            if (parsed.characterName) {
+              setCharacterName(parsed.characterName);
+              core.characterName = parsed.characterName;
+            }
+            if (parsed.characterDescription) {
+              setCharacterDescription(parsed.characterDescription);
+              core.characterDescription = parsed.characterDescription;
+            }
+            core.saveChatState();
           }
-          if (parsed.characterDescription) {
-            setCharacterDescription(parsed.characterDescription);
-            core.characterDescription = parsed.characterDescription;
-          }
-          core.saveChatState();
+        } catch (e: any) {
+          if (e.name !== 'AbortError') throw e;
+        } finally {
+          abortControllerRef.current = null;
         }
       },
       'Character generated.',
@@ -416,11 +445,20 @@ export const App: React.FC = () => {
     await runActionAction(
       'Generating next action...',
       async () => {
-        const generator = core.generateNextAction(actionGuidance.trim());
-        let fullText = '';
-        for await (const chunk of generator) {
-          fullText += chunk;
-          setUserInput(fullText);
+        abortControllerRef.current = new AbortController();
+        try {
+          const generator = core.generateNextAction(actionGuidance.trim(), {
+            abortSignal: abortControllerRef.current.signal,
+          });
+          let fullText = '';
+          for await (const chunk of generator) {
+            fullText += chunk;
+            setUserInput(fullText);
+          }
+        } catch (e: any) {
+          if (e.name !== 'AbortError') throw e;
+        } finally {
+          abortControllerRef.current = null;
         }
       },
       'Action suggested.',
@@ -490,6 +528,7 @@ export const App: React.FC = () => {
 
   const generateResponse = async () => {
     await runResponseAction('Generating...', async () => {
+      abortControllerRef.current = new AbortController();
       const assistantMessage: any = {
         id: crypto.randomUUID(),
         role: 'assistant',
@@ -498,29 +537,37 @@ export const App: React.FC = () => {
       };
       setStreamingMsg(assistantMessage);
 
-      const generator = core.streamChatCompletionWithTools([]);
-      for await (const chunk of generator) {
-        if (chunk.type === 'text' && chunk.text) {
-          assistantMessage.content += chunk.text;
-        } else if (chunk.type === 'tool_call' && chunk.toolCall) {
-          let tc = assistantMessage.tool_calls.find(
-            (t: any) => t.id === chunk.toolCall!.id,
-          );
-          if (!tc) {
-            tc = {
-              id: chunk.toolCall.id,
-              type: 'function',
-              function: {
-                name: chunk.toolCall.name,
-                arguments: chunk.toolCall.arguments,
-              },
-            };
-            assistantMessage.tool_calls.push(tc);
-          } else {
-            tc.function.arguments = chunk.toolCall.arguments;
+      try {
+        const generator = core.streamChatCompletionWithTools([], {
+          abortSignal: abortControllerRef.current.signal,
+        });
+        for await (const chunk of generator) {
+          if (chunk.type === 'text' && chunk.text) {
+            assistantMessage.content += chunk.text;
+          } else if (chunk.type === 'tool_call' && chunk.toolCall) {
+            let tc = assistantMessage.tool_calls.find(
+              (t: any) => t.id === chunk.toolCall!.id,
+            );
+            if (!tc) {
+              tc = {
+                id: chunk.toolCall.id,
+                type: 'function',
+                function: {
+                  name: chunk.toolCall.name,
+                  arguments: chunk.toolCall.arguments,
+                },
+              };
+              assistantMessage.tool_calls.push(tc);
+            } else {
+              tc.function.arguments = chunk.toolCall.arguments;
+            }
           }
+          setStreamingMsg({ ...assistantMessage });
         }
-        setStreamingMsg({ ...assistantMessage });
+      } catch (e: any) {
+        if (e.name !== 'AbortError') throw e;
+      } finally {
+        abortControllerRef.current = null;
       }
 
       core.history.push(assistantMessage);
@@ -933,6 +980,14 @@ export const App: React.FC = () => {
           >
             Send & Continue
           </Button>
+          {isGeneratingResponse && (
+            <Button
+              variant="danger"
+              onClick={() => abortControllerRef.current?.abort()}
+            >
+              Cancel
+            </Button>
+          )}
           <Button
             variant="secondary"
             onClick={handleElaborate}

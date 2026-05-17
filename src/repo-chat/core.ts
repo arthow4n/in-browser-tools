@@ -71,21 +71,27 @@ export class RepoChatCore extends ChatCore {
     this.saveChatState();
   }
 
-  async *streamChatCompletion(newMessages: ChatMessage[]) {
+  async *streamChatCompletion(
+    newMessages: ChatMessage[],
+    options?: { abortSignal?: AbortSignal },
+  ) {
     const originalPrompt = this.systemPrompt;
     this.systemPrompt = originalPrompt + this.clonedRepoContext;
     try {
-      yield* super.streamChatCompletion(newMessages);
+      yield* super.streamChatCompletion(newMessages, options);
     } finally {
       this.systemPrompt = originalPrompt;
     }
   }
 
-  async *streamChatCompletionWithTools(newMessages: ChatMessage[]) {
+  async *streamChatCompletionWithTools(
+    newMessages: ChatMessage[],
+    options?: { abortSignal?: AbortSignal },
+  ) {
     const originalPrompt = this.systemPrompt;
     this.systemPrompt = originalPrompt + this.clonedRepoContext;
     try {
-      yield* super.streamChatCompletionWithTools(newMessages);
+      yield* super.streamChatCompletionWithTools(newMessages, options);
     } finally {
       this.systemPrompt = originalPrompt;
     }

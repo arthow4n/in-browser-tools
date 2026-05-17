@@ -426,6 +426,7 @@ export class LLMCore {
 
   public async *streamCompletion(
     messages: ChatMessage[],
+    options?: { abortSignal?: AbortSignal },
   ): AsyncGenerator<string, void, unknown> {
     if (!this.apiKey) throw new Error('API Key is required');
     if (!this.model) throw new Error('Model is required');
@@ -455,6 +456,7 @@ export class LLMCore {
             zdr: this.providerPrefs.zdr,
           },
         }),
+        signal: options?.abortSignal,
       });
 
       if (!res.ok) {
@@ -495,34 +497,42 @@ export class LLMCore {
     const decoder = new TextDecoder();
     let buffer = '';
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
 
-      for (const line of lines) {
-        if (line.startsWith('data: ') && line !== 'data: [DONE]') {
-          const dataStr = line.slice(6);
-          try {
-            const data = JSON.parse(dataStr);
-            const content = data.choices[0]?.delta?.content;
-            if (content) {
-              yield content;
+        for (const line of lines) {
+          if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+            const dataStr = line.slice(6);
+            try {
+              const data = JSON.parse(dataStr);
+              const content = data.choices[0]?.delta?.content;
+              if (content) {
+                yield content;
+              }
+            } catch (e) {
+              console.error('Failed to parse streaming data', e, line);
             }
-          } catch (e) {
-            console.error('Failed to parse streaming data', e, line);
           }
         }
       }
+    } catch (e: any) {
+      if (e.name === 'AbortError') {
+        return;
+      }
+      throw e;
     }
   }
 
   public async *streamCompletionWithTools(
     messages: ChatMessage[],
     tools?: any[],
+    options?: { abortSignal?: AbortSignal },
   ): AsyncGenerator<StreamChunk, void, unknown> {
     if (!this.apiKey) throw new Error('API Key is required');
     if (!this.model) throw new Error('Model is required');
@@ -566,6 +576,7 @@ export class LLMCore {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(body),
+        signal: options?.abortSignal,
       });
 
       if (!res.ok) {
@@ -623,50 +634,67 @@ export class LLMCore {
     // Track ongoing tool calls across chunks
     const toolCallsMap = new Map<number, any>();
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
 
-      for (const line of lines) {
-        if (line.startsWith('data: ') && line !== 'data: [DONE]') {
-          const dataStr = line.slice(6);
-          try {
-            const data = JSON.parse(dataStr);
-            const delta = data.choices[0]?.delta;
+        for (const line of lines) {
+          if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+            const dataStr = line.slice(6);
+            try {
+              const data = JSON.parse(dataStr);
+              const delta = data.choices[0]?.delta;
 
-            if (delta?.content) {
-              yield { type: 'text', text: delta.content };
-            }
+              if (delta?.content) {
+                yield { type: 'text', text: delta.content };
+              }
 
-            if (delta?.tool_calls) {
-              for (const tc of delta.tool_calls) {
-                const index = tc.index;
-                if (!toolCallsMap.has(index)) {
-                  toolCallsMap.set(index, {
-                    id: tc.id,
-                    type: 'function',
-                    function: {
-                      name: tc.function.name,
-                      arguments: tc.function.arguments || '',
-                    },
-                  });
-                } else {
-                  const existing = toolCallsMap.get(index);
-                  if (tc.function?.arguments) {
-                    existing.function.arguments += tc.function.arguments;
+              if (delta?.tool_calls) {
+                for (const tc of delta.tool_calls) {
+                  const index = tc.index;
+                  if (!toolCallsMap.has(index)) {
+                    toolCallsMap.set(index, {
+                      id: tc.id,
+                      type: 'function',
+                      function: {
+                        name: tc.function.name,
+                        arguments: tc.function.arguments || '',
+                      },
+                    });
+                  } else {
+                    const existing = toolCallsMap.get(index);
+                    if (tc.function?.arguments) {
+                      existing.function.arguments += tc.function.arguments;
+                    }
                   }
                 }
               }
+            } catch (e) {
+              console.error('Failed to parse streaming data', e, line);
             }
-          } catch (e) {
-            console.error('Failed to parse streaming data', e, line);
           }
         }
       }
+    } catch (e: any) {
+      if (e.name === 'AbortError') {
+        for (const [_, tc] of toolCallsMap.entries()) {
+          yield {
+            type: 'tool_call',
+            toolCall: {
+              id: tc.id,
+              name: tc.function.name,
+              arguments: tc.function.arguments,
+            },
+          };
+        }
+        return;
+      }
+      throw e;
     }
 
     // Yield final aggregated tool calls

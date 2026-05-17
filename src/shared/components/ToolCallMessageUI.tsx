@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { AskQuestionUI } from './AskQuestionUI.js';
+import { Button } from './Button.js';
 
 interface ToolCallMessageUIProps {
   toolCall: {
@@ -9,10 +10,14 @@ interface ToolCallMessageUIProps {
       arguments: string;
     };
   };
+  disabled?: boolean;
+  onReanswer?: (toolCallId: string) => void;
 }
 
 export const ToolCallMessageUI: React.FC<ToolCallMessageUIProps> = ({
   toolCall,
+  disabled,
+  onReanswer,
 }) => {
   const [askQuestionData, setAskQuestionData] = useState<any>(null);
 
@@ -105,6 +110,19 @@ export const ToolCallMessageUI: React.FC<ToolCallMessageUIProps> = ({
           />
         </div>
       )}
+      {toolCall.function.name === 'ask_question' &&
+        !isPendingAskQuestion &&
+        onReanswer && (
+          <div style={{ marginTop: '10px' }}>
+            <Button
+              variant="secondary"
+              disabled={disabled}
+              onClick={() => onReanswer(toolCall.id)}
+            >
+              Change Answer
+            </Button>
+          </div>
+        )}
     </details>
   );
 };

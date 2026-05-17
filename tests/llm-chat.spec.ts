@@ -123,6 +123,11 @@ test.describe('LLM Chat Tool', () => {
   });
 
   test('should simulate streaming and edit history', async ({ page }) => {
+    let streamPromiseResolve: () => void;
+    const streamPromise = new Promise<void>((resolve) => {
+      streamPromiseResolve = resolve;
+    });
+
     // Mock the streaming endpoint
     await page.route(
       'https://openrouter.ai/api/v1/chat/completions',
@@ -133,6 +138,9 @@ test.describe('LLM Chat Tool', () => {
           'data: {"choices":[{"delta":{"content":" world!"}}]}\n\n',
           'data: [DONE]\n\n',
         ];
+
+        // Wait to fulfill so we can test intermediate streaming state
+        await streamPromise;
 
         // Use a custom response mimicking stream
         const streamBody = chunks.join('');
@@ -153,6 +161,16 @@ test.describe('LLM Chat Tool', () => {
     // Send a message
     await page.fill('#user-input', 'Hi there');
     await page.click('#send-btn');
+
+    // Verify intermediate streaming state
+    await expect(page.locator('#cancel-btn')).toBeVisible();
+    await expect(
+      page.locator('.message-controls button[title="Edit"]').first(),
+    ).toBeDisabled();
+    await expect(page.locator('.streaming-indicator').first()).toBeVisible();
+
+    // Release stream
+    streamPromiseResolve!();
 
     // Check history container
     const history = page.locator('#history-container');

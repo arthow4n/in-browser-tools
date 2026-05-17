@@ -294,6 +294,7 @@ export class ChatCore extends LLMCore {
 
   async *streamChatCompletion(
     newMessages: ChatMessage[],
+    options?: { abortSignal?: AbortSignal },
   ): AsyncGenerator<string, void, unknown> {
     const allMessages = [...this.history, ...newMessages];
 
@@ -314,11 +315,12 @@ export class ChatCore extends LLMCore {
       }),
     ];
 
-    yield* this.streamCompletion(messages);
+    yield* this.streamCompletion(messages, options);
   }
 
   async *streamChatCompletionWithTools(
     newMessages: ChatMessage[],
+    options?: { abortSignal?: AbortSignal },
   ): AsyncGenerator<StreamChunk, void, unknown> {
     const allMessages = [...this.history, ...newMessages];
 
@@ -347,7 +349,7 @@ export class ChatCore extends LLMCore {
       }
     }
 
-    yield* this.streamCompletionWithTools(messages, toolsToPass);
+    yield* this.streamCompletionWithTools(messages, toolsToPass, options);
   }
 
   async improveSystemPrompt(
