@@ -268,6 +268,32 @@ function createAdvancedMessageElement(msg: ChatMessage): HTMLDivElement {
   const contentDiv = document.createElement('div');
   contentDiv.className = 'content';
 
+  if (msg.reasoning) {
+    const reasoningDetails = document.createElement('details');
+    reasoningDetails.style.marginBottom = '10px';
+    reasoningDetails.style.padding = '5px';
+    reasoningDetails.style.border = '1px solid #ddd';
+    reasoningDetails.style.borderRadius = '4px';
+    reasoningDetails.style.backgroundColor = '#f9f9f9';
+
+    const reasoningSummary = document.createElement('summary');
+    reasoningSummary.style.cursor = 'pointer';
+    reasoningSummary.style.fontWeight = 'bold';
+    reasoningSummary.style.fontSize = '0.9em';
+    reasoningSummary.textContent = 'Reasoning';
+    reasoningDetails.appendChild(reasoningSummary);
+
+    const reasoningContent = document.createElement('div');
+    reasoningContent.style.marginTop = '5px';
+    reasoningContent.style.whiteSpace = 'pre-wrap';
+    reasoningContent.style.fontSize = '0.9em';
+    reasoningContent.style.color = '#444';
+    reasoningContent.textContent = msg.reasoning;
+    reasoningDetails.appendChild(reasoningContent);
+
+    contentDiv.appendChild(reasoningDetails);
+  }
+
   if (msg.content) {
     const textDiv = document.createElement('div');
     if (msg.role === 'assistant') {
@@ -805,6 +831,47 @@ async function generateResponse() {
     for await (const chunk of generator) {
       if (chunk.type === 'text' && chunk.text) {
         assistantMessage.content += chunk.text;
+      } else if (chunk.type === 'reasoning' && chunk.reasoning) {
+        assistantMessage.reasoning =
+          (assistantMessage.reasoning || '') + chunk.reasoning;
+
+        // Dynamic rendering of reasoning during streaming
+        let reasoningDetails = streamContainer.querySelector(
+          'details.reasoning-stream',
+        ) as HTMLDetailsElement;
+        if (!reasoningDetails) {
+          reasoningDetails = document.createElement('details');
+          reasoningDetails.className = 'reasoning-stream';
+          reasoningDetails.style.marginBottom = '10px';
+          reasoningDetails.style.padding = '5px';
+          reasoningDetails.style.border = '1px solid #ddd';
+          reasoningDetails.style.borderRadius = '4px';
+          reasoningDetails.style.backgroundColor = '#f9f9f9';
+
+          const reasoningSummary = document.createElement('summary');
+          reasoningSummary.style.cursor = 'pointer';
+          reasoningSummary.style.fontWeight = 'bold';
+          reasoningSummary.style.fontSize = '0.9em';
+          reasoningSummary.textContent = 'Reasoning';
+          reasoningDetails.appendChild(reasoningSummary);
+
+          const reasoningContent = document.createElement('div');
+          reasoningContent.className = 'reasoning-content';
+          reasoningContent.style.marginTop = '5px';
+          reasoningContent.style.whiteSpace = 'pre-wrap';
+          reasoningContent.style.fontSize = '0.9em';
+          reasoningContent.style.color = '#444';
+          reasoningDetails.appendChild(reasoningContent);
+
+          // Prepend reasoning so it's above other content
+          streamContainer.prepend(reasoningDetails);
+        }
+        const contentDiv = reasoningDetails.querySelector(
+          '.reasoning-content',
+        ) as HTMLDivElement;
+        if (contentDiv) {
+          contentDiv.textContent = assistantMessage.reasoning;
+        }
       } else if (chunk.type === 'tool_call' && chunk.toolCall) {
         let tc = assistantMessage.tool_calls?.find(
           (t) => t.id === chunk.toolCall!.id,

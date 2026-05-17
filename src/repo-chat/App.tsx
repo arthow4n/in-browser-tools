@@ -301,6 +301,9 @@ export const App: React.FC = () => {
             for await (const chunk of generator) {
               if (chunk.type === 'text' && chunk.text) {
                 assistantMsg.content += chunk.text;
+              } else if (chunk.type === 'reasoning' && chunk.reasoning) {
+                assistantMsg.reasoning =
+                  (assistantMsg.reasoning || '') + chunk.reasoning;
               } else if (chunk.type === 'tool_call' && chunk.toolCall) {
                 if (!assistantMsg.tool_calls) {
                   assistantMsg.tool_calls = [];
@@ -428,6 +431,8 @@ export const App: React.FC = () => {
           for await (const chunk of generator) {
             if (chunk.type === 'text' && chunk.text) {
               msg.content += chunk.text;
+            } else if (chunk.type === 'reasoning' && chunk.reasoning) {
+              msg.reasoning = (msg.reasoning || '') + chunk.reasoning;
             } else if (chunk.type === 'tool_call' && chunk.toolCall) {
               if (!msg.tool_calls) msg.tool_calls = [];
               msg.tool_calls.push({
@@ -528,6 +533,8 @@ export const App: React.FC = () => {
           for await (const chunk of generator) {
             if (chunk.type === 'text' && chunk.text) {
               msg.content += chunk.text;
+            } else if (chunk.type === 'reasoning' && chunk.reasoning) {
+              msg.reasoning = (msg.reasoning || '') + chunk.reasoning;
             } else if (chunk.type === 'tool_call' && chunk.toolCall) {
               if (!msg.tool_calls) msg.tool_calls = [];
               msg.tool_calls.push({

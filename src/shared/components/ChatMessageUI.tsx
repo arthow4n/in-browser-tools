@@ -153,7 +153,48 @@ export const ChatMessageUI: React.FC<ChatMessageUIProps> = ({
           value={editContent}
           onChange={(e) => setEditContent(e.target.value)}
         />
-      ) : hideDetails ? (
+      ) : (
+        <>
+          {msg.reasoning && (
+            <details
+              style={{
+                marginBottom: '10px',
+                padding: '10px',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                background: '#fcfcfc',
+              }}
+            >
+              <summary
+                style={{
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  fontSize: '0.9em',
+                  color: '#666',
+                }}
+              >
+                Reasoning
+              </summary>
+              <div style={{ marginTop: '10px', fontSize: '0.9em' }}>
+                {renderMarkdown ? (
+                  <div className="content markdown-body">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {msg.reasoning}
+                    </ReactMarkdown>
+                  </div>
+                ) : (
+                  <div
+                    className="content"
+                    style={{ whiteSpace: 'pre-wrap', color: '#444' }}
+                  >
+                    {msg.reasoning}
+                  </div>
+                )}
+              </div>
+            </details>
+          )}
+
+          {hideDetails ? (
         <details
           style={{
             marginTop: '10px',
@@ -179,19 +220,21 @@ export const ChatMessageUI: React.FC<ChatMessageUIProps> = ({
               </div>
             )}
           </div>
-        </details>
-      ) : renderMarkdown ? (
-        <div className="content markdown-body">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {displayContent}
-          </ReactMarkdown>
-          {isStreaming && <span className="streaming-indicator" />}
-        </div>
-      ) : (
-        <div className="content" style={{ whiteSpace: 'pre-wrap' }}>
-          {displayContent}
-          {isStreaming && <span className="streaming-indicator" />}
-        </div>
+            </details>
+          ) : renderMarkdown ? (
+            <div className="content markdown-body">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {displayContent}
+              </ReactMarkdown>
+              {isStreaming && <span className="streaming-indicator" />}
+            </div>
+          ) : (
+            <div className="content" style={{ whiteSpace: 'pre-wrap' }}>
+              {displayContent}
+              {isStreaming && <span className="streaming-indicator" />}
+            </div>
+          )}
+        </>
       )}
 
       {msg.tool_calls && msg.tool_calls.length > 0 && (

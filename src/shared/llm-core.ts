@@ -13,13 +13,15 @@ export interface ChatMessage {
   id?: string;
   role: 'user' | 'assistant' | 'system' | 'tool';
   content: string;
+  reasoning?: string;
   tool_calls?: ToolCall[];
   tool_call_id?: string; // For role='tool'
 }
 
 export interface StreamChunk {
-  type: 'text' | 'tool_call';
+  type: 'text' | 'tool_call' | 'reasoning';
   text?: string;
+  reasoning?: string;
   toolCall?: {
     id: string;
     name: string;
@@ -652,6 +654,22 @@ export class LLMCore {
 
               if (delta?.content) {
                 yield { type: 'text', text: delta.content };
+              }
+
+              if (delta?.reasoning) {
+                yield { type: 'reasoning', reasoning: delta.reasoning };
+              }
+
+              if (delta?.reasoning_content) {
+                yield { type: 'reasoning', reasoning: delta.reasoning_content };
+              }
+
+              if (delta?.reasoning_details) {
+                for (const detail of delta.reasoning_details) {
+                  if (detail.type === 'reasoning.text' && detail.text) {
+                    yield { type: 'reasoning', reasoning: detail.text };
+                  }
+                }
               }
 
               if (delta?.tool_calls) {
