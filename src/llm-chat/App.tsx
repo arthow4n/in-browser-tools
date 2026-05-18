@@ -326,14 +326,21 @@ export const App: React.FC = () => {
           currentAssistantMsg.tool_calls.length > 0 &&
           !abortControllerRef.current?.signal.aborted
         ) {
+          let hasParsingError = false;
           for (const tc of currentAssistantMsg.tool_calls) {
             const tool = core.tools.find((t) => t.name === tc.function.name);
             let resultStr = '';
             if (!tool) {
               resultStr = `Error: Tool ${tc.function.name} not found.`;
             } else {
+              let args;
               try {
-                const args = JSON.parse(tc.function.arguments);
+                args = JSON.parse(tc.function.arguments);
+              } catch (e: any) {
+                hasParsingError = true;
+                break;
+              }
+              try {
                 const result = await tool.execute(args, {
                   toolCallId: tc.id,
                   abortSignal: abortControllerRef.current?.signal,
@@ -359,7 +366,7 @@ export const App: React.FC = () => {
             setHistory([...core.history]);
           }
 
-          if (!abortControllerRef.current?.signal.aborted) {
+          if (!abortControllerRef.current?.signal.aborted && !hasParsingError) {
             const nextAssistantMsg: ChatMessage = {
               id: (Date.now() + 2).toString(),
               role: 'assistant',
