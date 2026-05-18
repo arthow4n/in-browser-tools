@@ -7,3 +7,4 @@ export * from './LlmSettings.js';
 export * from './ChatMessageUI.js';
 export { AskQuestionUI } from './AskQuestionUI.js';
 export * from './ToolCallMessageUI.js';
+export * from './SystemPromptManager.js';
