@@ -658,13 +658,9 @@ export class LLMCore {
 
               if (delta?.reasoning) {
                 yield { type: 'reasoning', reasoning: delta.reasoning };
-              }
-
-              if (delta?.reasoning_content) {
+              } else if (delta?.reasoning_content) {
                 yield { type: 'reasoning', reasoning: delta.reasoning_content };
-              }
-
-              if (delta?.reasoning_details) {
+              } else if (delta?.reasoning_details) {
                 for (const detail of delta.reasoning_details) {
                   if (detail.type === 'reasoning.text' && detail.text) {
                     yield { type: 'reasoning', reasoning: detail.text };
