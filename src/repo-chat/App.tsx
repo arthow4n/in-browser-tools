@@ -128,11 +128,54 @@ export const App: React.FC = () => {
     );
     if (msgIdx !== -1) {
       const assistantMsg = core.history[msgIdx];
-      core.history = core.history.slice(0, msgIdx);
-      core.saveChatState();
-      setHistory([...core.history]);
+      const toolCall = assistantMsg.tool_calls!.find((tc: any) => tc.id === toolCallId);
 
-      await triggerGeneration(assistantMsg);
+      let parsedArgs: any = {};
+      try {
+        parsedArgs = JSON.parse(toolCall!.function.arguments);
+      } catch (e) {
+        // ignore
+      }
+
+      const w = window as any;
+      if (!w.pendingAskQuestions) {
+        w.pendingAskQuestions = {};
+      }
+
+      w.pendingAskQuestions[toolCallId] = {
+        questions: parsedArgs.questions || [],
+        resolve: async (answers: any[]) => {
+          const toolResultIdx = core.history.findIndex(
+            (m: any) => m.role === 'tool' && m.tool_call_id === toolCallId
+          );
+
+          if (toolResultIdx !== -1) {
+            core.history = core.history.slice(0, toolResultIdx);
+          } else {
+            // Fallback
+            const nextIdx = msgIdx + 1;
+            core.history = core.history.slice(0, nextIdx);
+          }
+
+          const toolMsg: ChatMessage = {
+            id: 'msg_tool_' + crypto.randomUUID(),
+            role: 'tool',
+            content: JSON.stringify(answers),
+            tool_call_id: toolCallId,
+          };
+
+          core.history.push(toolMsg);
+          core.saveChatState();
+          setHistory([...core.history]);
+          await triggerGeneration();
+        },
+      };
+
+      window.dispatchEvent(
+        new CustomEvent('askQuestionUpdate', {
+          detail: { toolCallId },
+        })
+      );
     }
   };
 
