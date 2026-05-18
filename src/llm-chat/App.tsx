@@ -7,12 +7,14 @@ import {
   TextArea,
   LlmSettings,
   ChatMessageUI,
+  SystemPromptManager,
 } from '../shared/components/index.js';
 import { ChatCore, ChatMessage, BUILT_IN_PROMPTS } from './core.js';
 import { getStorage, setStorage } from '../shared/storage.js';
 import { askQuestionTool } from '../shared/tools/ask-question.js';
 import { randomTool } from '../shared/tools/random.js';
 import { useAsyncAction } from '../shared/hooks/useAsyncAction.js';
+import { useChatGenerator } from '../shared/hooks/useChatGenerator.js';
 
 export const App: React.FC = () => {
   const [threads, setThreads] = useState<{ id: string; name: string }[]>([]);
@@ -57,32 +59,12 @@ export const App: React.FC = () => {
     core.storagePrefix = `llm-chat-thread-${activeThreadId}-`;
     core.loadChatState();
 
-    setSystemPrompt(core.systemPrompt);
-    setSelectedPromptId(core.selectedPromptId);
     setHistory([...core.history]);
-    setSavedPrompts([...core.savedPrompts]);
-    setToolsEnabled(core.toolsEnabled);
-    setDisabledTools(new Set(core.disabledTools));
 
     setStorage('llm-chat-activeThreadId', activeThreadId);
   }, [activeThreadId]);
 
-  const [systemPrompt, setSystemPrompt] = useState(core.systemPrompt);
   const [history, setHistory] = useState<ChatMessage[]>([]);
-  const [savedPrompts, setSavedPrompts] = useState<
-    {
-      id: string;
-      name: string;
-      content: string;
-      toolsEnabled?: boolean;
-      disabledTools?: string[];
-    }[]
-  >([]);
-  const [selectedPromptId, setSelectedPromptId] = useState<string>('');
-  const [toolsEnabled, setToolsEnabled] = useState(core.toolsEnabled);
-  const [disabledTools, setDisabledTools] = useState<Set<string>>(
-    new Set(core.disabledTools),
-  );
 
   const [promptIntention, setPromptIntention] = useState('');
   const [promptHowToImprove, setPromptHowToImprove] = useState('');
@@ -92,8 +74,6 @@ export const App: React.FC = () => {
   const [insertRole, setInsertRole] = useState<'user' | 'assistant' | 'system'>(
     'user',
   );
-  const [isSending, setIsSending] = useState(false);
-  const [chatStatus, setChatStatus] = useState({ text: '', isError: false });
 
   const {
     isLoading: isImproving,
@@ -102,53 +82,25 @@ export const App: React.FC = () => {
     runAction: runImproveAction,
   } = useAsyncAction();
 
-  // Streaming assistant message state
-  const [streamingMsg, setStreamingMsg] = useState<ChatMessage | null>(null);
+  const triggerUpdate = () => {
+    setHistory([...core.history]);
+  };
+
+  const {
+    isSending,
+    streamingMsg,
+    chatStatusText,
+    chatIsError,
+    triggerGeneration,
+    abortGeneration,
+  } = useChatGenerator(core, triggerUpdate);
 
   useEffect(() => {
     core.registerTool(askQuestionTool);
     core.registerTool(randomTool);
     core.loadChatState();
-    setSystemPrompt(core.systemPrompt);
-    setSelectedPromptId(core.selectedPromptId);
     setHistory([...core.history]);
-    setSavedPrompts([...core.savedPrompts]);
-    setToolsEnabled(core.toolsEnabled);
-    setDisabledTools(new Set(core.disabledTools));
   }, []);
-
-  const hasChanges = (() => {
-    if (!selectedPromptId) return false;
-    const builtin = BUILT_IN_PROMPTS.find((p) => p.id === selectedPromptId);
-    if (builtin) {
-      return (
-        builtin.content !== systemPrompt ||
-        builtin.toolsEnabled !== toolsEnabled ||
-        JSON.stringify(builtin.disabledTools.sort()) !==
-          JSON.stringify(Array.from(disabledTools).sort())
-      );
-    }
-    const custom = savedPrompts.find((p) => p.id === selectedPromptId);
-    if (custom) {
-      const customToolsEnabled = custom.toolsEnabled ?? false;
-      const customDisabledTools = custom.disabledTools ?? [];
-      return (
-        custom.content !== systemPrompt ||
-        customToolsEnabled !== toolsEnabled ||
-        JSON.stringify(customDisabledTools.sort()) !==
-          JSON.stringify(Array.from(disabledTools).sort())
-      );
-    }
-    return false;
-  })();
-
-  const handleSystemPromptChange = (
-    e: React.ChangeEvent<HTMLTextAreaElement>,
-  ) => {
-    setSystemPrompt(e.target.value);
-    core.systemPrompt = e.target.value;
-    core.saveChatState();
-  };
 
   const handleImprovePrompt = async () => {
     await runImproveAction('Improving...', async () => {
@@ -160,87 +112,13 @@ export const App: React.FC = () => {
         promptHowToImprove,
         promptEvaluationFocus,
       );
-      setSystemPrompt(improved);
       core.systemPrompt = improved;
       core.saveChatState();
+      // To trigger a re-render in SystemPromptManager, we might need a signal,
+      // but modifying core directly will update it if we trigger a re-render in App.
+      // Easiest is to force a re-render here.
+      setPromptIntention(promptIntention); // No-op to trigger re-render if needed
     });
-  };
-
-  const handleSavePrompt = () => {
-    const name = prompt('Enter a name for this system prompt:');
-    if (!name) return;
-    const id = crypto.randomUUID();
-    core.savedPrompts.push({
-      id,
-      name,
-      content: core.systemPrompt,
-      toolsEnabled: core.toolsEnabled,
-      disabledTools: Array.from(core.disabledTools),
-    });
-    core.selectedPromptId = id;
-    core.saveChatState();
-    setSavedPrompts([...core.savedPrompts]);
-    setSelectedPromptId(id);
-  };
-
-  const handleUpdatePrompt = () => {
-    if (!selectedPromptId) return;
-    const sp = core.savedPrompts.find((p) => p.id === selectedPromptId);
-    if (sp) {
-      sp.content = core.systemPrompt;
-      sp.toolsEnabled = core.toolsEnabled;
-      sp.disabledTools = Array.from(core.disabledTools);
-      core.saveChatState();
-      setSavedPrompts([...core.savedPrompts]);
-    }
-  };
-
-  const handlePromptSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const id = e.target.value;
-    setSelectedPromptId(id);
-    core.selectedPromptId = id;
-
-    if (!id) {
-      core.saveChatState();
-      return;
-    }
-
-    const builtin = BUILT_IN_PROMPTS.find((p) => p.id === id);
-    if (builtin) {
-      setSystemPrompt(builtin.content);
-      core.systemPrompt = builtin.content;
-      setToolsEnabled(builtin.toolsEnabled);
-      core.toolsEnabled = builtin.toolsEnabled;
-      setDisabledTools(new Set(builtin.disabledTools));
-      core.disabledTools = new Set(builtin.disabledTools);
-      core.saveChatState();
-      return;
-    }
-
-    const custom = core.savedPrompts.find((p) => p.id === id);
-    if (custom) {
-      setSystemPrompt(custom.content);
-      core.systemPrompt = custom.content;
-      const customToolsEnabled = custom.toolsEnabled ?? false;
-      const customDisabledTools = custom.disabledTools ?? [];
-      setToolsEnabled(customToolsEnabled);
-      core.toolsEnabled = customToolsEnabled;
-      setDisabledTools(new Set(customDisabledTools));
-      core.disabledTools = new Set(customDisabledTools);
-      core.saveChatState();
-    }
-  };
-
-  const handleDeletePrompt = () => {
-    if (!selectedPromptId) return;
-    if (confirm('Delete this saved prompt?')) {
-      core.savedPrompts = core.savedPrompts.filter(
-        (p) => p.id !== selectedPromptId,
-      );
-      core.saveChatState();
-      setSavedPrompts([...core.savedPrompts]);
-      setSelectedPromptId('');
-    }
   };
 
   const handleClearHistory = () => {
@@ -249,146 +127,6 @@ export const App: React.FC = () => {
       core.saveChatState();
       setHistory([]);
     }
-  };
-
-  const handleToolEnableToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const checked = e.target.checked;
-    setToolsEnabled(checked);
-    core.toolsEnabled = checked;
-    core.saveChatState();
-  };
-
-  const handleToolToggle = (toolName: string, enabled: boolean) => {
-    core.setToolEnabled(toolName, enabled);
-    core.saveChatState();
-    setDisabledTools(new Set(core.disabledTools));
-  };
-
-  const abortControllerRef = useRef<AbortController | null>(null);
-
-  const triggerUpdate = () => {
-    setHistory([...core.history]);
-  };
-
-  const triggerGeneration = async (currentAssistantMsg?: ChatMessage) => {
-    setIsSending(true);
-    setChatStatus({ text: '', isError: false });
-
-    const doStream = async (currentAssistantMsg: ChatMessage) => {
-      abortControllerRef.current = new AbortController();
-      setStreamingMsg(currentAssistantMsg);
-
-      try {
-        const generator = core.streamChatCompletionWithTools([], {
-          abortSignal: abortControllerRef.current.signal,
-        });
-        for await (const chunk of generator) {
-          if (chunk.type === 'text' && chunk.text) {
-            currentAssistantMsg.content += chunk.text;
-          } else if (chunk.type === 'reasoning' && chunk.reasoning) {
-            currentAssistantMsg.reasoning =
-              (currentAssistantMsg.reasoning || '') + chunk.reasoning;
-          } else if (chunk.type === 'tool_call' && chunk.toolCall) {
-            if (!currentAssistantMsg.tool_calls) {
-              currentAssistantMsg.tool_calls = [];
-            }
-            currentAssistantMsg.tool_calls.push({
-              id: chunk.toolCall.id,
-              type: 'function',
-              function: {
-                name: chunk.toolCall.name,
-                arguments: chunk.toolCall.arguments,
-              },
-            });
-          }
-          setStreamingMsg({ ...currentAssistantMsg }); // Force re-render
-        }
-      } catch (e: any) {
-        if (e.name !== 'AbortError') {
-          setChatStatus({ text: `Chat Error: ${e.message}`, isError: true });
-          currentAssistantMsg.content += `\n[Error: ${e.message}]`;
-          setStreamingMsg({ ...currentAssistantMsg });
-        }
-      } finally {
-        setStreamingMsg(null);
-        if (
-          currentAssistantMsg.content ||
-          (currentAssistantMsg.tool_calls &&
-            currentAssistantMsg.tool_calls.length > 0)
-        ) {
-          core.history.push(currentAssistantMsg);
-        }
-        core.saveChatState();
-        setHistory([...core.history]);
-
-        if (
-          currentAssistantMsg.tool_calls &&
-          currentAssistantMsg.tool_calls.length > 0 &&
-          !abortControllerRef.current?.signal.aborted
-        ) {
-          let hasParsingError = false;
-          for (const tc of currentAssistantMsg.tool_calls) {
-            const tool = core.tools.find((t) => t.name === tc.function.name);
-            let resultStr = '';
-            if (!tool) {
-              resultStr = `Error: Tool ${tc.function.name} not found.`;
-            } else {
-              let args;
-              try {
-                args = JSON.parse(tc.function.arguments);
-              } catch (e: any) {
-                hasParsingError = true;
-                break;
-              }
-              try {
-                const result = await tool.execute(args, {
-                  toolCallId: tc.id,
-                  abortSignal: abortControllerRef.current?.signal,
-                });
-                resultStr =
-                  typeof result === 'string' ? result : JSON.stringify(result);
-              } catch (e: any) {
-                if (e.name === 'AbortError') {
-                  break;
-                }
-                resultStr = `Error executing tool: ${e.message}`;
-              }
-            }
-
-            const toolMsg: ChatMessage = {
-              id: crypto.randomUUID(),
-              role: 'tool',
-              content: resultStr,
-              tool_call_id: tc.id,
-            };
-            core.history.push(toolMsg);
-            core.saveChatState();
-            setHistory([...core.history]);
-          }
-
-          if (!abortControllerRef.current?.signal.aborted && !hasParsingError) {
-            const nextAssistantMsg: ChatMessage = {
-              id: (Date.now() + 2).toString(),
-              role: 'assistant',
-              content: '',
-            };
-            await doStream(nextAssistantMsg);
-          } else {
-            setIsSending(false);
-          }
-        } else {
-          setIsSending(false);
-        }
-        abortControllerRef.current = null;
-      }
-    };
-
-    const initialMsg = currentAssistantMsg || {
-      id: crypto.randomUUID(),
-      role: 'assistant',
-      content: '',
-    };
-    await doStream(initialMsg);
   };
 
   const handleReanswer = async (toolCallId: string) => {
@@ -437,7 +175,7 @@ export const App: React.FC = () => {
     if (!text && core.history.length === 0) return;
 
     if (!core.apiKey || !core.model) {
-      setChatStatus({ text: 'API Key and Model are required.', isError: true });
+      alert('API Key and Model are required.');
       return;
     }
 
@@ -545,119 +283,7 @@ export const App: React.FC = () => {
 
       <LlmSettings core={core} />
 
-      <Panel title="System Prompt">
-        <div className="flex-row" style={{ marginBottom: '10px' }}>
-          <select
-            id="saved-prompts-select"
-            value={selectedPromptId}
-            onChange={handlePromptSelect}
-            style={{ minWidth: '200px' }}
-          >
-            <option value="">-- No Prompt Selected --</option>
-            <optgroup label="--- Built-in ---">
-              {BUILT_IN_PROMPTS.map((bp) => (
-                <option key={bp.id} value={bp.id}>
-                  {bp.name}
-                </option>
-              ))}
-            </optgroup>
-            {savedPrompts.length > 0 && (
-              <optgroup label="--- Custom ---">
-                {savedPrompts.map((sp) => (
-                  <option key={sp.id} value={sp.id}>
-                    {sp.name}
-                  </option>
-                ))}
-              </optgroup>
-            )}
-          </select>
-          {selectedPromptId && hasChanges && (
-            <span
-              style={{
-                color: '#d97706',
-                marginLeft: '10px',
-                fontWeight: 'bold',
-              }}
-            >
-              ⚠️ Unsaved changes (Click Save to persist changes to this prompt
-              slot)
-            </span>
-          )}
-        </div>
-
-        <TextArea
-          id="system-prompt"
-          value={systemPrompt}
-          onChange={handleSystemPromptChange}
-          rows={4}
-        />
-
-        <div
-          className="flex-row"
-          style={{ marginTop: '10px', marginBottom: '10px' }}
-        >
-          <Input
-            type="checkbox"
-            id="enable-tools-checkbox"
-            label="Enable Tools"
-            checked={toolsEnabled}
-            onChange={handleToolEnableToggle}
-            containerStyle={{ marginRight: '15px' }}
-          />
-        </div>
-
-        {toolsEnabled && (
-          <div
-            id="tool-list-container"
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '5px',
-              padding: '10px',
-              background: '#f0f0f0',
-              border: '1px solid #ccc',
-              borderRadius: '4px',
-              marginBottom: '10px',
-            }}
-          >
-            {core.tools.map((tool) => (
-              <Input
-                key={tool.name}
-                type="checkbox"
-                label={`${tool.name}: ${tool.description}`}
-                checked={!disabledTools.has(tool.name)}
-                onChange={(e) => handleToolToggle(tool.name, e.target.checked)}
-                style={{
-                  fontWeight: 'normal',
-                  fontSize: '0.9em',
-                }}
-              />
-            ))}
-          </div>
-        )}
-
-        <div className="flex-row" style={{ marginTop: '10px' }}>
-          {selectedPromptId &&
-            !BUILT_IN_PROMPTS.find((p) => p.id === selectedPromptId) && (
-              <Button onClick={handleUpdatePrompt} id="update-prompt-btn">
-                Save
-              </Button>
-            )}
-          <Button onClick={handleSavePrompt} id="save-prompt-btn">
-            Save As New...
-          </Button>
-          {selectedPromptId &&
-            !BUILT_IN_PROMPTS.find((p) => p.id === selectedPromptId) && (
-              <Button
-                variant="danger"
-                onClick={handleDeletePrompt}
-                id="delete-prompt-btn"
-              >
-                Delete
-              </Button>
-            )}
-        </div>
-
+      <SystemPromptManager core={core} builtInPrompts={BUILT_IN_PROMPTS}>
         <details
           style={{
             marginTop: '10px',
@@ -708,7 +334,7 @@ export const App: React.FC = () => {
             </span>
           </div>
         </details>
-      </Panel>
+      </SystemPromptManager>
 
       <Panel title="Chat History">
         <div
@@ -762,7 +388,7 @@ export const App: React.FC = () => {
           {isSending && (
             <Button
               variant="danger"
-              onClick={() => abortControllerRef.current?.abort()}
+              onClick={() => abortGeneration()}
               id="cancel-btn"
             >
               Cancel
@@ -793,9 +419,9 @@ export const App: React.FC = () => {
           <span
             id="chat-status"
             className="status"
-            style={{ color: chatStatus.isError ? 'red' : 'green' }}
+            style={{ color: chatIsError ? 'red' : 'green' }}
           >
-            {chatStatus.text}
+            {chatStatusText}
           </span>
         </div>
       </Panel>
