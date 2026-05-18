@@ -44,7 +44,7 @@ export const AskQuestionUI: React.FC<AskQuestionUIProps> = ({
     const newAnswers = [...answers];
     newAnswers[questionIndex] = {
       ...newAnswers[questionIndex],
-      selected: option,
+      selected: newAnswers[questionIndex].selected === option ? null : option,
     };
     setAnswers(newAnswers);
   };
